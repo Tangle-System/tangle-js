@@ -1,9 +1,8 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-      (global = global || self, global.TnglCodeParser = factory());
-}(this, (function () {
-  'use strict';
+  typeof define === 'function' && define.amd ? define(factory) :
+  (global = global || self, global.TnglCodeParser = factory());
+}(this, (function () { 'use strict';
 
   function TnglCodeParser() { }
 
@@ -295,7 +294,7 @@
         }
 
         // === other ===
-        else if (element.matches[0] === "next"); else {
+        else if (element.matches[0] === "next") ; else {
           console.warn("Unknown word >", element.matches[0], "<");
         }
       } else if (element.type === "percentage") {

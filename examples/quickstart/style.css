@@ -1,0 +1,47 @@
+/* Basic styles to make it look OK */
+body {
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  color: #fff;
+  border-radius: 10px;
+  text-align: center;
+  padding: 12px 20px;
+  border: none;
+  transition: all 0.3s ease-in-out;
+  font-weight: bold;
+  cursor: pointer;
+  outline: none !important;
+  background: #33b4da;
+  margin: 20px;
+
+}
+
+button:hover {
+  background: #59ddcd;
+}
+
+button.danger {
+  background: #f03564 !important;
+}
+
+input {
+  cursor: pointer;
+  outline: none;
+  max-width: 100%;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  min-width: 50px;
+  min-height: 30px;
+  color: #fff !important;
+  font-size: 16px;
+  margin: 10px 0px;
+  font-weight: 600;
+  padding: 10px;
+  border: 2px solid #d7dae4 !important;
+}
