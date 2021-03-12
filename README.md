@@ -5,6 +5,7 @@
 - Your browser must support WebBluetooth, check your browser here [caniuse.com/web-bluetooth](https://caniuse.com/web-bluetooth)  
 
 ## QuickStart
+play with demo here https://tangle-example.glitch.me/
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -67,6 +68,7 @@
   </body>
 </html>
 ```
+
 
 You can also install it as NPM package to your project
 ```bash
