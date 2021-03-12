@@ -1,0 +1,23 @@
+{
+  "name": "tangle-js",
+  "version": "1.0.1",
+  "main": "dist/tangle-lib.cjs.js",
+  "module": "dist/tangle-lib.esm.js",
+  "browser": "dist/tangle-lib.umd.js",
+  "dependencies": {},
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.1",
+    "@rollup/plugin-node-resolve": "^7.0.0",
+    "rollup": "^1.29.0"
+  },
+  "homepage": "https://github.com/Tangle-System/tangle-js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "node test/test.js",
+    "pretest": "npm run build"
+  },
+  "files": [
+    "dist"
+  ]
+}
