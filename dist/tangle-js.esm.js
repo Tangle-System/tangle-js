@@ -771,7 +771,7 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
       }
 
       // === other ===
-      else if (element.matches[0] === "next"); else {
+      else if (element.matches[0] === "next") ; else {
         console.warn("Unknown word >", element.matches[0], "<");
       }
     } else if (element.type === "percentage") {

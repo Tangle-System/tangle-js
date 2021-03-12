@@ -1,9 +1,9 @@
 {
   "name": "tangle-js",
-  "version": "1.0.2",
-  "main": "dist/tangle-lib.cjs.js",
-  "module": "dist/tangle-lib.esm.js",
-  "browser": "dist/tangle-lib.umd.js",
+  "version": "1.0.3",
+  "main": "dist/tangle-js.cjs.js",
+  "module": "dist/tangle-js.esm.js",
+  "browser": "dist/tangle-js.umd.js",
   "dependencies": {},
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.1",
