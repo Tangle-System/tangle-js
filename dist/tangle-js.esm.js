@@ -1,17 +1,17 @@
 var timeOffset = new Date().getTime() % 0x7fffffff;
 // must be positive int32_t (4 bytes)
 function getTimestamp() {
-  return (new Date().getTime() % 0x7fffffff) - timeOffset;
+	return (new Date().getTime() % 0x7fffffff) - timeOffset;
 }
 
 function toBytes(value, byteCount) {
-  var byteArray = [];
-  for (var index = 0; index < byteCount; index++) {
-    var byte = value & 0xff;
-    byteArray.push(byte);
-    value = (value - byte) / 256;
-  }
-  return byteArray;
+	var byteArray = [];
+	for (var index = 0; index < byteCount; index++) {
+		var byte = value & 0xff;
+		byteArray.push(byte);
+		value = (value - byte) / 256;
+	}
+	return byteArray;
 }
 
 // The MIT License (MIT)
@@ -36,14 +36,14 @@ function toBytes(value, byteCount) {
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const createNanoEvents = () => ({
-  events: {},
-  emit(event, ...args) {
-    (this.events[event] || []).forEach((i) => i(...args));
-  },
-  on(event, cb) {
-    (this.events[event] = this.events[event] || []).push(cb);
-    return () => (this.events[event] = (this.events[event] || []).filter((i) => i !== cb));
-  },
+	events: {},
+	emit(event, ...args) {
+		(this.events[event] || []).forEach((i) => i(...args));
+	},
+	on(event, cb) {
+		(this.events[event] = this.events[event] || []).push(cb);
+		return () => (this.events[event] = (this.events[event] || []).filter((i) => i !== cb));
+	},
 });
 
 //////////////////////////////////////////////////////////////////////////
@@ -941,25 +941,35 @@ TnglCodeParser.prototype._tokenize = function (s, parsers, deftok) {
 
 const tangleBluetoothDevice = new TangleBluetoothDevice();
 
-const TangleConnectWEBBLE = {
-	uploadTngl: tangleBluetoothDevice.uploadTngl,
-};
+function TangleDevice() {
+	let tangleDevice;
 
-let tangleDevice;
+	if ("tangleConnect" in window) {
+		const tangleConnect = window.tangleConnect;
 
-if ("tangleConnect" in window) {
-	const tangleConnect = window.tangleConnect;
+		const TangleConnectANDROID = {
+			uploadTnglBytes: (v) => {
+				console.log("SEND ANDROID", v);
+				tangleConnect.uploadTnglBytes(v);
+			},
+			setTime: tangleConnect.setTime,
+		};
 
-	const TangleConnectANDROID = {
-		uploadTngl: tangleConnect.uploadTngl,
-	};
+		tangleDevice = TangleConnectANDROID;
 
-	TangleDevice = TangleConnectANDROID;
-
-	console.info("tangleConnect mode");
-} else {
-	TangleDevice = TangleConnectWEBBLE;
-	console.info("WebBluetooth mode");
+		console.info("tangleConnect mode");
+	} else {
+		const TangleConnectWEBBLE = {
+			uploadTnglBytes: (v) => {
+				console.log("SEND WEB", v);
+				tangleBluetoothDevice.uploadTnglBytes(v, 0, false);
+			},
+			setTime: () => {},
+		};
+		tangleDevice = TangleConnectWEBBLE;
+		console.info("WebBluetooth mode");
+	}
+	return tangleDevice;
 }
 
-export { TnglCodeParser, tangleDevice };
+export { TangleDevice, TnglCodeParser, tangleBluetoothDevice };

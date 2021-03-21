@@ -3,25 +3,35 @@ import TnglCodeParser from "./TangleCodeParser.js";
 
 const tangleBluetoothDevice = new TangleBluetoothDevice();
 
-const TangleConnectWEBBLE = {
-	uploadTngl: tangleBluetoothDevice.uploadTngl,
-};
+function TangleDevice() {
+	let tangleDevice;
 
-let tangleDevice;
+	if ("tangleConnect" in window) {
+		const tangleConnect = window.tangleConnect;
 
-if ("tangleConnect" in window) {
-	const tangleConnect = window.tangleConnect;
+		const TangleConnectANDROID = {
+			uploadTnglBytes: (v) => {
+				console.log("SEND ANDROID", v);
+				tangleConnect.uploadTnglBytes(v);
+			},
+			setTime: tangleConnect.setTime,
+		};
 
-	const TangleConnectANDROID = {
-		uploadTngl: tangleConnect.uploadTngl,
-	};
+		tangleDevice = TangleConnectANDROID;
 
-	TangleDevice = TangleConnectANDROID;
-
-	console.info("tangleConnect mode");
-} else {
-	TangleDevice = TangleConnectWEBBLE;
-	console.info("WebBluetooth mode");
+		console.info("tangleConnect mode");
+	} else {
+		const TangleConnectWEBBLE = {
+			uploadTnglBytes: (v) => {
+				console.log("SEND WEB", v);
+				tangleBluetoothDevice.uploadTnglBytes(v, 0, false);
+			},
+			setTime: () => {},
+		};
+		tangleDevice = TangleConnectWEBBLE;
+		console.info("WebBluetooth mode");
+	}
+	return tangleDevice;
 }
 
-export { TnglCodeParser, tangleBluetoothDevice, tangleDevice };
+export { TnglCodeParser, tangleBluetoothDevice, TangleDevice };

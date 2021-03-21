@@ -3,17 +3,17 @@
 var timeOffset = new Date().getTime() % 0x7fffffff;
 // must be positive int32_t (4 bytes)
 function getTimestamp() {
-  return (new Date().getTime() % 0x7fffffff) - timeOffset;
+	return (new Date().getTime() % 0x7fffffff) - timeOffset;
 }
 
 function toBytes(value, byteCount) {
-  var byteArray = [];
-  for (var index = 0; index < byteCount; index++) {
-    var byte = value & 0xff;
-    byteArray.push(byte);
-    value = (value - byte) / 256;
-  }
-  return byteArray;
+	var byteArray = [];
+	for (var index = 0; index < byteCount; index++) {
+		var byte = value & 0xff;
+		byteArray.push(byte);
+		value = (value - byte) / 256;
+	}
+	return byteArray;
 }
 
 // The MIT License (MIT)
@@ -38,14 +38,14 @@ function toBytes(value, byteCount) {
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 const createNanoEvents = () => ({
-  events: {},
-  emit(event, ...args) {
-    (this.events[event] || []).forEach((i) => i(...args));
-  },
-  on(event, cb) {
-    (this.events[event] = this.events[event] || []).push(cb);
-    return () => (this.events[event] = (this.events[event] || []).filter((i) => i !== cb));
-  },
+	events: {},
+	emit(event, ...args) {
+		(this.events[event] || []).forEach((i) => i(...args));
+	},
+	on(event, cb) {
+		(this.events[event] = this.events[event] || []).push(cb);
+		return () => (this.events[event] = (this.events[event] || []).filter((i) => i !== cb));
+	},
 });
 
-export { createNanoEvents, getTimestamp, timeOffset, toBytes }
+export { createNanoEvents, getTimestamp, timeOffset, toBytes };
