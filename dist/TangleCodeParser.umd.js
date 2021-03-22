@@ -4,7 +4,7 @@
 	(global = global || self, global.TnglCodeParser = factory());
 }(this, (function () { 'use strict';
 
-	function TnglCodeParser() {}
+	function TnglCodeParser() { }
 
 	TnglCodeParser.prototype.TRIGGERS = Object.freeze({
 		/* null */

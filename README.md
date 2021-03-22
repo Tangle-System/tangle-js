@@ -72,7 +72,7 @@ play with demo here https://tangle-example.glitch.me/
 
 You can also install it as NPM package to your project
 ```bash
-npm install tangle-js
+npm install @tangle-system/tangle-js 
 ```
 Then import and initialize 
 ```js

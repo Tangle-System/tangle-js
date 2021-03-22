@@ -268,14 +268,14 @@
 		return this.eventEmitter.on(event, callback);
 	};
 
-	TangleBluetoothConnection.prototype.scan = function () {
+	TangleBluetoothConnection.prototype.scan = function (params) {
 		//console.log("scan()");
 
 		if (this.bluetoothDevice) {
 			this.disconnect();
 		}
 
-		return navigator.bluetooth.requestDevice(this.BLE_OPTIONS).then((device) => {
+		return navigator.bluetooth.requestDevice(params ? params : this.BLE_OPTIONS).then((device) => {
 			this.bluetoothDevice = device;
 			this.bluetoothDevice.connection = this;
 			this.bluetoothDevice.addEventListener("gattserverdisconnected", this.onDisconnected);
@@ -403,9 +403,9 @@
 		console.log("Bluetooth Device connected");
 	};
 
-	TangleBluetoothDevice.prototype.connect = function () {
+	TangleBluetoothDevice.prototype.connect = function (params = null) {
 		return this.bluetoothConnection
-			.scan()
+			.scan(params)
 			.then(() => {
 				return this.bluetoothConnection.connect();
 			})
@@ -436,8 +436,8 @@
 		return this.bluetoothConnection.connected;
 	};
 
-	TangleBluetoothDevice.prototype.uploadTngl = function (tngl_bytes, timeline_timestamp, timeline_paused) {
-		//console.log("uploadTngl()");
+	TangleBluetoothDevice.prototype.uploadTnglBytes = function (tngl_bytes, timeline_timestamp, timeline_paused) {
+		//console.log("uploadTnglBytes()");
 
 		if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
 			console.warn("Bluetooth device disconnected");

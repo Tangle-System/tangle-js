@@ -1,5 +1,3 @@
-"use strict";
-
 var timeOffset = new Date().getTime() % 0x7fffffff;
 // must be positive int32_t (4 bytes)
 function getTimestamp() {
@@ -48,4 +46,4 @@ const createNanoEvents = () => ({
 	},
 });
 
-export { createNanoEvents, getTimestamp, timeOffset, toBytes };
+export { createNanoEvents, getTimestamp, timeOffset, toBytes }

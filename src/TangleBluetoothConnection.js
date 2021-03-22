@@ -216,14 +216,14 @@ TangleBluetoothConnection.prototype.addEventListener = function (event, callback
 	return this.eventEmitter.on(event, callback);
 };
 
-TangleBluetoothConnection.prototype.scan = function () {
+TangleBluetoothConnection.prototype.scan = function (params) {
 	//console.log("scan()");
 
 	if (this.bluetoothDevice) {
 		this.disconnect();
 	}
 
-	return navigator.bluetooth.requestDevice(this.BLE_OPTIONS).then((device) => {
+	return navigator.bluetooth.requestDevice(params ? params : this.BLE_OPTIONS).then((device) => {
 		this.bluetoothDevice = device;
 		this.bluetoothDevice.connection = this;
 		this.bluetoothDevice.addEventListener("gattserverdisconnected", this.onDisconnected);

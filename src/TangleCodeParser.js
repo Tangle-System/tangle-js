@@ -1,4 +1,4 @@
-export default function TnglCodeParser() {}
+export default function TnglCodeParser() { }
 
 TnglCodeParser.prototype.TRIGGERS = Object.freeze({
 	/* null */

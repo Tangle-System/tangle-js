@@ -52,9 +52,9 @@ TangleBluetoothDevice.prototype.onConnect = function (event) {
 	console.log("Bluetooth Device connected");
 };
 
-TangleBluetoothDevice.prototype.connect = function () {
+TangleBluetoothDevice.prototype.connect = function (params = null) {
 	return this.bluetoothConnection
-		.scan()
+		.scan(params)
 		.then(() => {
 			return this.bluetoothConnection.connect();
 		})
@@ -85,8 +85,8 @@ TangleBluetoothDevice.prototype.isConnected = function () {
 	return this.bluetoothConnection.connected;
 };
 
-TangleBluetoothDevice.prototype.uploadTngl = function (tngl_bytes, timeline_timestamp, timeline_paused) {
-	//console.log("uploadTngl()");
+TangleBluetoothDevice.prototype.uploadTnglBytes = function (tngl_bytes, timeline_timestamp, timeline_paused) {
+	//console.log("uploadTnglBytes()");
 
 	if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
 		console.warn("Bluetooth device disconnected");
