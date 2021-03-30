@@ -9,63 +9,60 @@ play with demo here https://tangle-example.glitch.me/
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.jsdelivr.net/npm/tangle-js@1.0.3/dist/TangleBluetoothDevice.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tangle-js@1.0.3/dist/TangleCodeParser.umd.js"></script>
-    <link rel="stylesheet" href="style.css" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@tangle-system/tangle-js@0.5.2/dist/TangleBluetoothDevice.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tangle-system/tangle-js@0.5.2/dist/TangleDevice.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+  <title>Tangle Example</title>
+</head>
 
-    <title>Tangle Example</title>
-  </head>
+<body>
+  <button id="connect">Connect</button>
+  <input type="color" value="#ffffff" id="color" />
+  <button id="upload">Upload</button>
 
-  <body>
-    <button id="connect">Connect</button>
-    <input type="color" value="#ffffff" id="color" />
-    <button id="upload">Upload</button>
+  <script>
+    const tangleBluetoothDevice = new TangleBluetoothDevice();
+    const tangleDevice = TangleDevice({ ble: tangleBluetoothDevice });
 
-    <script>
-      const tangleBluetoothDevice = new TangleBluetoothDevice();
-      const tnglParser = new TnglCodeParser();
+    const connectButton = document.querySelector("#connect");
+    const colorInput = document.querySelector("#color");
 
-      const connectButton = document.querySelector("#connect");
-      const colorInput = document.querySelector("#color");
+    connectButton.onclick = () => {
+      tangleDevice.connect();
 
-      connectButton.onclick = () => {
-        tangleBluetoothDevice.connect();
+      // Events for bluetooth connection and disconnect
+      tangleBluetoothDevice.bluetoothConnection.addEventListener("disconnected", (_) => {
+        connectButton.textContent = "Connect";
+        connectButton.classList.remove("danger");
+      });
+      tangleBluetoothDevice.bluetoothConnection.addEventListener("connected", (_) => {
+        connectButton.textContent = "Disconnect";
+        connectButton.classList.add("danger");
+      });
+    };
 
-        // Events for bluetooth connection and disconnect
-        tangleBluetoothDevice.bluetoothConnection.addEventListener("disconnected", (_) => {
-          connectButton.textContent = "Connect";
-          connectButton.classList.remove("danger");
-        });
-        tangleBluetoothDevice.bluetoothConnection.addEventListener("connected", (_) => {
-          connectButton.textContent = "Disconnect";
-          connectButton.classList.add("danger");
-        });
-      };
+    document.querySelector("#upload").onclick = () => {
+      if (tangleBluetoothDevice.bluetoothConnection.connected) {
+        // Tangle run this effect for 15s
+        const time = 1000 * 15;
 
-      document.querySelector("#upload").onclick = () => {
-        if (tangleBluetoothDevice.bluetoothConnection.connected) {
-          // Tangle run this effect for 15s
-          const time = 1000 * 15;
+        // User selected color value
+        const selectedColor = colorInput.value;
 
-          // User selected color value
-          const selectedColor = colorInput.value;
+        // Code we generated via Tangle Blockly
+        const code = `addDrawing(0, ${time}, animFill(${time}, ${selectedColor}););`;
 
-          // Code we generated via Tangle Blockly
-          const code = `addDrawing(0, ${time}, animFill(${time}, ${selectedColor}););`;
-
-          const compiledCode = tnglParser.parseTnglCode(code);
-
-          // Uploads code to tangle device
-          tangleBluetoothDevice.uploadTngl(compiledCode, 0, false);
-        } else {
-          alert("You have to connect your device first.");
-        }
-      };
-    </script>
-  </body>
+        // Uploads code to tangle device
+        tangleDevice.uploadTngl(code);
+      } else {
+        alert("You have to connect your device first.");
+      }
+    };
+  </script>
+</body>
 </html>
 ```
 

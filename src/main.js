@@ -1,6 +1,6 @@
 import TnglCodeParser from "./TangleCodeParser.js";
 import TangleDevice from './TangleDevice'
-import { tangleBluetoothDevice } from './initDevice'
+import TangleBluetoothDevice from './TangleBluetoothDevice'
 
 
-export { TnglCodeParser, tangleBluetoothDevice, TangleDevice };
+export { TnglCodeParser, TangleBluetoothDevice, TangleDevice };
