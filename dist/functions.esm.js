@@ -49,4 +49,4 @@ function getHexColor(colorStr) {
   return colors.length >= 3 ? "#" + ((1 << 24) + (colors[0] << 16) + (colors[1] << 8) + colors[2]).toString(16).substr(1) : false;
 }
 
-export { createNanoEvents, getTimestamp, timeOffset, toBytes, replaceConstants, getHexColor };
+export { createNanoEvents, getHexColor, getTimestamp, replaceConstants, timeOffset, toBytes };

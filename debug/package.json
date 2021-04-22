@@ -1,0 +1,13 @@
+{
+  "name": "debug",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "snowpack dev"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "snowpack": "^3.3.5"
+  }
+}
