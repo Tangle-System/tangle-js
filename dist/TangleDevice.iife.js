@@ -26,7 +26,7 @@ var TangleDevice = (function () {
     }
 
     setStatus(timestamp, paused) {
-      this.paused_ = paused ?? this.paused_;
+      this.paused_ = paused === undefined ? this.paused_ : paused;
       this.memory_ = this.paused_ ? timestamp : Date.now() - timestamp;
     }
 
