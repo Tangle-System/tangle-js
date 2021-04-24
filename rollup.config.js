@@ -1,6 +1,8 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import pkg from "./package.json";
+import babel, { getBabelOutputPlugin } from '@rollup/plugin-babel';
+
 
 export default [
   // browser-friendly UMD build
@@ -75,14 +77,25 @@ export default [
     input: "src/main.js",
     output: [
       // { file: pkg.main, format: 'cjs' },
-      { file: pkg.module, format: "es" },
+      { file: pkg.module, format: "esm" },
+
     ],
+    plugins: [
+      getBabelOutputPlugin({
+        presets: ['@babel/preset-env']
+      })
+    ]
   },
   {
     input: "src/functions.js",
     output: [
       // { file: pkg.main, format: 'cjs' },
-      { file: "dist/functions.esm.js", format: "es" },
+      { file: "dist/functions.esm.js", format: "esm" },
     ],
+    plugins: [
+      getBabelOutputPlugin({
+        presets: ['@babel/preset-env']
+      })
+    ]
   },
 ];
