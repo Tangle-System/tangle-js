@@ -6,7 +6,7 @@ function initBluetoothDevice() {
   return new TangleBluetoothDevice();
 }
 
-function initSerialDevice() {}
+function initSerialDevice() { }
 
 export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevice(), serial: initSerialDevice() }) {
   const tnglParser = new TnglCodeParser();
@@ -79,7 +79,7 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
 
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
-        debugLog(".setTime", 3, charAsciiCode, timeTrack.millis());
+        debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
       trigger: (character) => {
         const charAsciiCode = character.toUpperCase().charCodeAt(0);

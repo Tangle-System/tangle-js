@@ -1170,7 +1170,7 @@ function TangleDevice() {
         var timeline_paused = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
         tangleBluetoothDevice.setTime(timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
-        debugLog(".setTime", 3, charAsciiCode, timeTrack.millis());
+        debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
       trigger: function trigger(character) {
         var charAsciiCode = character.toUpperCase().charCodeAt(0);

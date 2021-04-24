@@ -957,7 +957,7 @@ var TangleDevice = (function () {
     return new TangleBluetoothDevice();
   }
 
-  function initSerialDevice() {}
+  function initSerialDevice() { }
 
   function TangleDevice({ ble, serial } = { ble: initBluetoothDevice(), serial: initSerialDevice() }) {
     const tnglParser = new TnglCodeParser();
@@ -1030,7 +1030,7 @@ var TangleDevice = (function () {
 
           timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
-          debugLog(".setTime", 3, charAsciiCode, timeTrack.millis());
+          debugLog(".setTime", timeline_timestamp, timeline_paused);
         },
         trigger: (character) => {
           const charAsciiCode = character.toUpperCase().charCodeAt(0);
