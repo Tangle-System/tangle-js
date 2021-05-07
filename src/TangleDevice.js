@@ -61,33 +61,39 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
       },
       uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
         const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
-        tangleBluetoothDevice.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
 
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
         debugLog(".uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
       },
       uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-        tangleBluetoothDevice.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
 
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
         debugLog(".uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
       },
       setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-        tangleBluetoothDevice.setTime(timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.setTime(0, timeline_timestamp, timeline_paused);
 
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
         debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
-      trigger: (character) => {
+      emitEvent: (character, param, device_id = 0) => {
         const charAsciiCode = character.toUpperCase().charCodeAt(0);
 
-        tangleBluetoothDevice.writeTrigger(3, charAsciiCode, timeTrack.millis());
+        tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
 
-        debugLog(".trigger", 3, charAsciiCode, timeTrack.millis());
+        debugLog(".triggeremitEvent", charAsciiCode, param, timeTrack.millis());
       },
+      emitEvents: (events) => {
+
+        tangleBluetoothDevice.emitEvents(events);
+
+        debugLog(".emitEvents", events);
+      }
     };
 
     tangleDevice = TangleConnectWEBBLE;
@@ -96,7 +102,35 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
   } else if (tangleSerialDevice) {
     console.log("tangleSerialDevice is not supported yet.");
   } else {
-    console.error("No supported module found, you need to add atleast one supported connection module.");
+
+    const PlaceHolderConnection = {
+      connect: (filters = null) => {
+        debugLog("Placeholder .connect", filters);
+      },
+      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
+
+        debugLog("Placeholder .uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
+
+        debugLog("Placeholder .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
+
+        debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
+      },
+      emitEvent: (character, param, device_id) => {
+
+        debugLog("Placeholder .triggeremitEvent", 3, charAsciiCode, timeTrack.millis());
+      },
+      emitEvents: (events) => {
+
+        debugLog("Placeholder .emitEvents", events);
+      }
+    };
+    tangleDevice = PlaceHolderConnection;
+
+    console.error("No supported module found, you need to add atleast one supported connection module.", 'Running in placeholder mode (will be handled in future by Tangle Devtools)');
   }
   return tangleDevice;
 }

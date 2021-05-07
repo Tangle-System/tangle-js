@@ -1,5 +1,6 @@
-import { getTimestamp, toBytes } from "./functions.js";
+import { getClockTimestamp, getTimelineFlags, toBytes, FLAGS, CONSTANTS } from "./functions.js";
 import TangleBluetoothConnection from "./TangleBluetoothConnection.js";
+
 
 export default function TangleBluetoothDevice() {
   this.bluetoothConnection = new TangleBluetoothConnection();
@@ -10,9 +11,9 @@ export default function TangleBluetoothDevice() {
   var self = this;
   setInterval(() => {
     if (self.isConnected()) {
-      self.syncClock(getTimestamp());
+      self.syncClock(getClockTimestamp());
     }
-  }, 10000);
+  }, 60000);
 
   window.addEventListener("beforeunload", this.bluetoothConnection.disconnect);
 }
@@ -38,8 +39,23 @@ TangleBluetoothDevice.prototype.onDisconnect = function (event) {
       console.log("Reconnecting device...");
       return event.target
         .reconnect()
-        .then(() => {
-          event.target.transmitter.sync(getTimestamp());
+        .then(async () => {
+          let success = false;
+
+          for (let index = 0; index < 3; index++) {
+            if (await event.target.transmitter.sync(getClockTimestamp())) {
+              success = true;
+              break;
+            } else {
+              await sleep(100);
+            }
+          }
+
+          if (success) {
+            console.log("Sync time success");
+          } else {
+            console.error("Sync time on connection failed");
+          }
         })
         .catch((error) => {
           console.error(error);
@@ -52,14 +68,29 @@ TangleBluetoothDevice.prototype.onConnect = function (event) {
   console.log("Bluetooth Device connected");
 };
 
-TangleBluetoothDevice.prototype.connect = function (params = null) {
+TangleBluetoothDevice.prototype.connect = function () {
   return this.bluetoothConnection
-    .scan(params)
+    .scan()
     .then(() => {
       return this.bluetoothConnection.connect();
     })
-    .then(() => {
-      this.bluetoothConnection.transmitter.sync(getTimestamp());
+    .then(async () => {
+      let success = false;
+
+      for (let index = 0; index < 3; index++) {
+        if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+          success = true;
+          break;
+        } else {
+          await sleep(100);
+        }
+      }
+
+      if (success) {
+        console.log("Sync time success");
+      } else {
+        console.error("Sync time on connection failed");
+      }
     })
     .catch((error) => {
       console.warn(error);
@@ -69,8 +100,23 @@ TangleBluetoothDevice.prototype.connect = function (params = null) {
 TangleBluetoothDevice.prototype.reconnect = function () {
   return this.bluetoothConnection
     .reconnect()
-    .then(() => {
-      this.bluetoothConnection.transmitter.sync(getTimestamp());
+    .then(async () => {
+      let success = false;
+
+      for (let index = 0; index < 3; index++) {
+        if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+          success = true;
+          break;
+        } else {
+          await sleep(100);
+        }
+      }
+
+      if (success) {
+        console.log("Sync time success");
+      } else {
+        console.error("Sync time on connection failed");
+      }
     })
     .catch((error) => {
       console.warn(error);
@@ -85,59 +131,134 @@ TangleBluetoothDevice.prototype.isConnected = function () {
   return this.bluetoothConnection.connected;
 };
 
-TangleBluetoothDevice.prototype.uploadTnglBytes = function (tngl_bytes, timeline_timestamp, timeline_paused) {
+TangleBluetoothDevice.prototype.uploadTngl = function (tngl_bytes, timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("uploadTngl()");
+
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  const FLAG_SYNC_TIMELINE = 242;
-  const payload = [FLAG_SYNC_TIMELINE, ...toBytes(getTimestamp(), 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0, ...tngl_bytes];
+  const flags = getTimelineFlags(timeline_index, timeline_paused);
+  const timeline_bytes = [FLAGS.FLAG_SET_TIMELINE, ...toBytes(getClockTimestamp(), 4), ...toBytes(timeline_timestamp, 4), flags];
+
+  const payload = [...timeline_bytes, ...tngl_bytes];
   this.bluetoothConnection.transmitter.deliver(payload);
 
   return true;
 };
 
-TangleBluetoothDevice.prototype.setTime = function (timeline_timestamp, timeline_paused) {
-  //console.log("setTime()");
+TangleBluetoothDevice.prototype.setTimeline = function (timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("setTimeline()");
 
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  const FLAG_SYNC_TIMELINE = 242;
-  const payload = [FLAG_SYNC_TIMELINE, ...toBytes(getTimestamp(), 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0];
+  const flags = getTimelineFlags(timeline_index, timeline_paused);
+
+  const payload = [FLAGS.FLAG_SET_TIMELINE, ...toBytes(getClockTimestamp(), 4), ...toBytes(timeline_timestamp, 4), flags];
   this.bluetoothConnection.transmitter.deliver(payload);
 
   return true;
 };
 
-TangleBluetoothDevice.prototype.writeTrigger = function (trigger_type, trigger_param, timeline_timestamp) {
-  //console.log("writeTrigger()");
+/* 
+function emitEvent(code, parameter, timeline_timestamp, device_id)
+
+device_id [0; 255]
+code [0; 255]
+parameter [0; 255]
+timeline_timestamp [-2147483648; 2147483647] 
+
+*/
+
+TangleBluetoothDevice.prototype.emitEvent = function (device_id, code, parameter, timeline_timestamp) {
+  //console.log("emitEvent()");
 
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  const FLAG_TRIGGER = 241;
-  const payload = [FLAG_TRIGGER, 0, trigger_type, trigger_param, ...toBytes(timeline_timestamp, 4)];
+  const payload = [FLAGS.FLAG_EMIT_EVENT, device_id, code, parameter, ...toBytes(timeline_timestamp, 4)];
   this.bluetoothConnection.transmitter.deliver(payload);
 
   return true;
 };
 
-TangleBluetoothDevice.prototype.syncTime = function (timeline_timestamp, timeline_paused) {
-  //console.log("syncTime()");
+/* 
+function emitEvents(events)
+
+events - array of event objects
+
+event object must have:
+  device_id [0; 255]
+  code [0; 255]
+  parameter [0; 255]
+  timeline_timestamp [-2147483648; 2147483647] 
+
+
+== EXAMPLE ==
+
+  let events = [];
+
+  let e1 = {};
+  e1.code = 0;
+  e1.parameter = 0;
+  e1.timeline_timestamp = 0;
+
+  let e2 = {};
+  e2.code = 0;
+  e2.parameter = 255;
+  e2.timeline_timestamp = 1000;
+
+  events.push(e1);
+  events.push(e2);
+
+  bluetoothdevice.emitEvents(events);
+
+== EXAMPLE ==
+*/
+
+TangleBluetoothDevice.prototype.emitEvents = function (events) {
+  //console.log("emitEvents()");
 
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  const FLAG_SYNC_TIMELINE = 242;
-  const payload = [FLAG_SYNC_TIMELINE, ...toBytes(getTimestamp(), 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0];
+  let payload = [];
+
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    const bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter, ...toBytes(e.timeline_timestamp, 4)];
+    payload.push(...bytes);
+  }
+
+  this.bluetoothConnection.transmitter.deliver(payload);
+
+  return true;
+};
+
+/* timeline_index [0 - 15]
+
+
+
+*/
+TangleBluetoothDevice.prototype.syncTimeline = function (timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("syncTimeline()");
+
+  if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+    console.warn("Bluetooth device disconnected");
+    return false;
+  }
+
+  const flags = getTimelineFlags(timeline_index, timeline_paused);
+
+  const payload = [FLAGS.FLAG_SET_TIMELINE, ...toBytes(getClockTimestamp(), 4), ...toBytes(timeline_timestamp, 4), flags];
   this.bluetoothConnection.transmitter.transmit(payload);
 
   return true;
@@ -151,6 +272,6 @@ TangleBluetoothDevice.prototype.syncClock = function () {
     return false;
   }
 
-  this.bluetoothConnection.transmitter.sync(getTimestamp()); // bluetooth transmittion slack delay 10ms
+  this.bluetoothConnection.transmitter.sync(getClockTimestamp()); // bluetooth transmittion slack delay 10ms
   return true;
-}; /////////////////////////////////////////////////////////////////////////
+};

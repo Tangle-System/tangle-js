@@ -1,50 +1,61 @@
 export default function TnglCodeParser() { }
 
-TnglCodeParser.prototype.TRIGGERS = Object.freeze({
-	/* null */
-	NONE: 0,
-	TOUCH: 1,
-	MOVEMENT: 2,
-	KEYPRESS: 3,
-	TEST: 255,
+// TnglCodeParser.prototype.TRIGGERS = Object.freeze({
+//   /* null */
+//   NONE: 0,
+//   TOUCH: 1,
+//   MOVEMENT: 2,
+//   KEYPRESS: 3,
+//   TEST: 255,
+// });
+
+TnglCodeParser.prototype.CONSTANTS = Object.freeze({
+	MODIFIER_SWITCH_NONE: 0,
+	MODIFIER_SWITCH_RG: 1,
+	MODIFIER_SWITCH_GB: 2,
+	MODIFIER_SWITCH_BR: 3,
+
+	DEVICE_ID_APP: 255,
 });
 
 TnglCodeParser.prototype.FLAGS = Object.freeze({
 	/* no code or command used by decoder as a validation */
 	NONE: 0,
 
-	/* handlers 1 -> 30 */
-	HANDLER_TOUCH: 1,
-	HANDLER_MOVEMENT: 2,
-	HANDLER_KEYPRESS: 3,
+	/* filters 1 -> 30 */
+	FILTER_NONE: 1,
+	FILTER_BLUR: 2,
+	FILTER_COLOR_SHIFT: 3,
+	FILTER_MIRROR: 4,
+	FILTER_SCATTER: 5,
 
 	/* drawings 31 -> 36 */
 	DRAWING_SET: 31,
 	DRAWING_ADD: 32,
 	DRAWING_SUB: 33,
-	DRAWING_MUL: 34,
-	DRAWING_FIL: 35,
+	DRAWING_SCALE: 34,
+	DRAWING_FILTER: 35,
 
 	/* windows 37 -> 42 */
 	WINDOW_SET: 37,
 	WINDOW_ADD: 38,
 	WINDOW_SUB: 39,
-	WINDOW_MUL: 40,
-	WINDOW_FIL: 41,
+	WINDOW_SCALE: 40,
+	WINDOW_FILTER: 41,
 
-	/* frame 43 */
-	FRAME: 43,
+	/* frame 42 */
+	FRAME: 42,
 
-	/* clip 44 */
-	CLIP: 44,
+	/* clip 43 */
+	CLIP: 43,
 
-	/* time manipulation 45 */
-	TIMETRANSFORMER: 45,
-
-	/* sifters 46 -> 53 */
+	/* sifters 46 -> 52 */
 	SIFT_DEVICE: 46,
 	SIFT_TANGLE: 47,
 	SIFT_GROUP: 48,
+
+	/* event handler 53 */
+	HANDLER: 53,
 
 	/* animations 54 -> 182 */
 	ANIMATION_NONE: 54,
@@ -56,37 +67,62 @@ TnglCodeParser.prototype.FLAGS = Object.freeze({
 	ANIMATION_COLOR_ROLL: 60,
 	ANIMATION_PALLETTE_ROLL: 61,
 	ANIMATION_INL_ANI: 62,
+	ANIMATION_DEFINED: 63,
 
-	/* effects 189 -> 206 */
-	EFFECT_FADEIN: 189,
-	EFFECT_FADEOUT: 190,
-	EFFECT_BLURE: 191,
-	EFFECT_SCATTER: 192,
-	EFFECT_STRIPEIFY: 193,
-	EFFECT_INVERT: 194,
+	/* modifiers and filters 189 -> 206 */
+	MODIFIER_BRIGHTNESS: 189,
+	MODIFIER_TIMELINE: 190,
+	MODIFIER_FADE_IN: 191,
+	MODIFIER_FADE_OUT: 192,
+	MODIFIER_SWITCH_COLORS: 193,
+	MODIFIER_TIME_LOOP: 194,
+	MODIFIER_TIME_SCALE: 195,
+	MODIFIER_TIME_CHANGE: 196,
 
 	/* variables 207 -> 222 */
 	DEVICE: 207,
 	TANGLE: 208,
 	PIXELS: 209,
-	NEOPIXEL: 210,
+	PORT: 210,
 	GROUP: 211,
 	MARK: 212,
+	CONSTANT: 213,
+	CHANNEL: 214,
+	EVENT: 215,
 
-	/* definitions 223 -> 238 */
-	DEFINE_DEVICE: 223,
-	DEFINE_TANGLE: 224,
-	DEFINE_GROUP: 225,
-	DEFINE_MARKS: 226,
+	/* definitions 223 -> 230 */
+	DEFINE_DEVICE_1PORT: 223,
+	DEFINE_DEVICE_2PORT: 224,
+	DEFINE_DEVICE_4PORT: 225,
+	DEFINE_DEVICE_8PORT: 226,
+	DEFINE_TANGLE: 227,
+	DEFINE_GROUP: 228,
+	DEFINE_MARKS: 229,
+	DEFINE_ANIMATION: 230,
 
-	/* control codes 239 -> 254 */
-	COMMAND_SET_TIME_OFFSET: 239,
+	/* events 231 -> 240 */
+	EVENT_EMIT: 231,
+	EVENT_ON: 232,
+	EVENT_SET_PARAM: 233,
 
-	FLAG_TNGL_BYTES: 240,
-	FLAG_TRIGGER: 241,
-	FLAG_SYNC_TIMELINE: 242,
+	/* channels 240 -> 250 */
+	CHANNEL_WRITE: 240,
+	CHANNEL_PARAMETER_VALUE: 241,
+	CHANNEL_PARAMETER_VALUE_SMOOTHED: 242,
+	CHANNEL_ADD_VALUES: 243,
+	CHANNEL_SUB_VALUES: 244,
+	CHANNEL_MUL_VALUES: 245,
+	CHANNEL_DIV_VALUES: 246,
+	CHANNEL_MOD_VALUES: 247,
+	CHANNEL_SCALE_VALUE: 248,
+	CHANNEL_MAP_VALUE: 249,
 
-	/* end of statements with no boundary 255 */
+	/* command flags */
+	FLAG_TNGL_BYTES: 251,
+	FLAG_SET_TIMELINE: 252,
+	FLAG_EMIT_EVENT: 253,
+
+	/* command ends */
 	END_OF_STATEMENT: 254,
 	END_OF_TNGL_BYTES: 255,
 });
@@ -101,12 +137,17 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 		payload.setUint8(payload.cursor++, tngl_code);
 	};
 
+	payload.fillByte = function (value) {
+		payload.setUint8(payload.cursor++, parseInt(value, 16));
+	};
+
 	payload.fillUInt8 = function (value) {
 		payload.setUint8(payload.cursor++, value);
 	};
 
-	payload.fillByte = function (value) {
-		payload.setUint8(payload.cursor++, parseInt(value, 16));
+	payload.fillInt16 = function (value) {
+		payload.setUint8(payload.cursor++, value);
+		payload.setUint8(payload.cursor++, value >> 8);
 	};
 
 	payload.fillInt32 = function (value) {
@@ -123,15 +164,17 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 	};
 
 	payload.fillPercentage = function (percent) {
-		payload.setUint8(payload.cursor++, Math.floor((percent / 100.0) * 255));
+		payload.setUint16(payload.cursor++, Math.round((percent / 100.0) * 0xffff));
 	};
 
 	const parses = {
+		comment: /\/\/[^\n]*/,
 		htmlrgb: /#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i,
 		string: /"([\w ]*)"/,
+		arrow: /->/,
 		char: /'([\W\w])'/,
 		byte: /(0[xX][0-9a-fA-F][0-9a-fA-F](?![0-9a-fA-F]))/,
-		word: /([a-zA-Z_]+)/,
+		word: /([a-zA-Z_][a-zA-Z_0-9]*)/,
 		percentage: /([\d.]+)%/,
 		float: /([+-]?[0-9]*[.][0-9]+)/,
 		number: /([+-]?[0-9]+)/,
@@ -139,9 +182,9 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 		punctuation: /([^\w\s])/,
 	};
 
-	//console.log(tngl_code);
+	console.log(tngl_code);
 	const tokens = this._tokenize(tngl_code, parses);
-	//console.log(tokens);
+	console.log(tokens);
 
 	payload.fillCommand(this.FLAGS.FLAG_TNGL_BYTES);
 
@@ -184,9 +227,9 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 			// === true, false ===
 
 			if (element.matches[0] === "true") {
-				payload.fillUInt8(1);
+				payload.fillUInt8(0x01);
 			} else if (element.matches[0] === "false") {
-				payload.fillUInt8(0);
+				payload.fillUInt8(0x00);
 			}
 
 			// === canvas operations ===
@@ -196,31 +239,35 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 				payload.fillCommand(this.FLAGS.DRAWING_ADD);
 			} else if (element.matches[0] === "subDrawing") {
 				payload.fillCommand(this.FLAGS.DRAWING_SUB);
-			} else if (element.matches[0] === "mulDrawing") {
-				payload.fillCommand(this.FLAGS.DRAWING_MUL);
+			} else if (element.matches[0] === "scaDrawing") {
+				payload.fillCommand(this.FLAGS.DRAWING_SCALE);
 			} else if (element.matches[0] === "filDrawing") {
-				payload.fillCommand(this.FLAGS.DRAWING_FIL);
+				payload.fillCommand(this.FLAGS.DRAWING_FILTER);
 			} else if (element.matches[0] === "setWindow") {
 				payload.fillCommand(this.FLAGS.WINDOW_SET);
 			} else if (element.matches[0] === "addWindow") {
 				payload.fillCommand(this.FLAGS.WINDOW_ADD);
 			} else if (element.matches[0] === "subWindow") {
 				payload.fillCommand(this.FLAGS.WINDOW_SUB);
-			} else if (element.matches[0] === "mulWindow") {
-				payload.fillCommand(this.FLAGS.WINDOW_MUL);
+			} else if (element.matches[0] === "scaWindow") {
+				payload.fillCommand(this.FLAGS.WINDOW_SCALE);
 			} else if (element.matches[0] === "filWindow") {
-				payload.fillCommand(this.FLAGS.WINDOW_FIL);
+				payload.fillCommand(this.FLAGS.WINDOW_FILTER);
 			}
 
 			// === time operations ===
 			else if (element.matches[0] === "frame") {
 				payload.fillCommand(this.FLAGS.FRAME);
 			} else if (element.matches[0] === "timetransformer") {
-				payload.fillCommand(this.FLAGS.TIMETRANSFORMER);
+				payload.fillCommand(this.FLAGS.TIMETRANSFORMER_CONVERT);
+			} else if (element.matches[0] === "timeloop") {
+				payload.fillCommand(this.FLAGS.TIMETRANSFORMER_LOOP);
 			}
 
 			// === animations ===
-			else if (element.matches[0] === "animNone") {
+			else if (element.matches[0] === "animDefined") {
+				payload.fillCommand(this.FLAGS.ANIMATION_DEFINED);
+			} else if (element.matches[0] === "animNone") {
 				payload.fillCommand(this.FLAGS.ANIMATION_NONE);
 			} else if (element.matches[0] === "animFill") {
 				payload.fillCommand(this.FLAGS.ANIMATION_FILL);
@@ -239,12 +286,8 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 			}
 
 			// === handlers ===
-			else if (element.matches[0] === "handlerTouch") {
-				payload.fillCommand(this.FLAGS.HANDLER_TOUCH);
-			} else if (element.matches[0] === "handlerMovement") {
-				payload.fillCommand(this.FLAGS.HANDLER_MOVEMENT);
-			} else if (element.matches[0] === "handlerKeyPress") {
-				payload.fillCommand(this.FLAGS.HANDLER_KEYPRESS);
+			else if (element.matches[0] === "eventHandler") {
+				payload.fillCommand(this.FLAGS.HANDLER);
 			}
 
 			// === clip ===
@@ -253,8 +296,16 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 			}
 
 			// === definitions ===
-			else if (element.matches[0] === "defDevice") {
-				payload.fillCommand(this.FLAGS.DEFINE_DEVICE);
+			else if (element.matches[0] === "defAnimation") {
+				payload.fillCommand(this.FLAGS.DEFINE_ANIMATION);
+			} else if (element.matches[0] === "defDevice1") {
+				payload.fillCommand(this.FLAGS.DEFINE_DEVICE_1PORT);
+			} else if (element.matches[0] === "defDevice2") {
+				payload.fillCommand(this.FLAGS.DEFINE_DEVICE_2PORT);
+			} else if (element.matches[0] === "defDevice4") {
+				payload.fillCommand(this.FLAGS.DEFINE_DEVICE_4PORT);
+			} else if (element.matches[0] === "defDevice8") {
+				payload.fillCommand(this.FLAGS.DEFINE_DEVICE_8PORT);
 			} else if (element.matches[0] === "defTangle") {
 				payload.fillCommand(this.FLAGS.DEFINE_TANGLE);
 			} else if (element.matches[0] === "defGroup") {
@@ -279,34 +330,115 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 				payload.fillCommand(this.FLAGS.TANGLE);
 			} else if (element.matches[0] === "pixels") {
 				payload.fillCommand(this.FLAGS.PIXELS);
-			} else if (element.matches[0] === "neopixel") {
-				payload.fillCommand(this.FLAGS.NEOPIXEL);
+			} else if (element.matches[0] === "port") {
+				payload.fillCommand(this.FLAGS.PORT);
 			} else if (element.matches[0] === "group") {
 				payload.fillCommand(this.FLAGS.GROUP);
 			} else if (element.matches[0] === "mark") {
 				payload.fillCommand(this.FLAGS.MARK);
+			} else if (element.matches[0] === "constant") {
+				payload.fillCommand(this.FLAGS.CONSTANT);
+			} else if (element.matches[0] === "channel") {
+				payload.fillCommand(this.FLAGS.CHANNEL);
+			} else if (element.matches[0] === "event") {
+				payload.fillCommand(this.FLAGS.EVENT);
 			}
 
-			// === other ===
-			else if (element.matches[0] === "next") {
-				// NOP
-			} else {
+			// === modifiers ===
+			else if (element.matches[0] === "modifyBrightness") {
+				payload.fillCommand(this.FLAGS.MODIFIER_BRIGHTNESS);
+			} else if (element.matches[0] === "modifyTimeline") {
+				payload.fillCommand(this.FLAGS.MODIFIER_TIMELINE);
+			} else if (element.matches[0] === "modifyFadeIn") {
+				payload.fillCommand(this.FLAGS.MODIFIER_FADE_IN);
+			} else if (element.matches[0] === "modifyFadeOut") {
+				payload.fillCommand(this.FLAGS.MODIFIER_FADE_OUT);
+			} else if (element.matches[0] === "modifyColorSwitch") {
+				payload.fillCommand(this.FLAGS.MODIFIER_SWITCH_COLORS);
+			} else if (element.matches[0] === "modifyTimeLoop") {
+				payload.fillCommand(this.FLAGS.MODIFIER_TIME_LOOP);
+			} else if (element.matches[0] === "modifyTimeScale") {
+				payload.fillCommand(this.FLAGS.MODIFIER_TIME_SCALE);
+			} else if (element.matches[0] === "modifyTimeChange") {
+				payload.fillCommand(this.FLAGS.MODIFIER_TIME_CHANGE);
+			}
+
+			// === filters ===
+			else if (element.matches[0] === "filterNone") {
+				payload.fillCommand(this.FLAGS.FILTER_NONE);
+			} else if (element.matches[0] === "filterBlur") {
+				payload.fillCommand(this.FLAGS.FILTER_BLUR);
+			} else if (element.matches[0] === "filterColorShift") {
+				payload.fillCommand(this.FLAGS.FILTER_COLOR_SHIFT);
+			} else if (element.matches[0] === "filterMirror") {
+				payload.fillCommand(this.FLAGS.FILTER_MIRROR);
+			} else if (element.matches[0] === "filterScatter") {
+				payload.fillCommand(this.FLAGS.FILTER_SCATTER);
+			}
+
+			// === channels ===
+			else if (element.matches[0] === "writeChannel") {
+				payload.fillCommand(this.FLAGS.CHANNEL_WRITE);
+			} else if (element.matches[0] === "eventParameterValue") {
+				payload.fillCommand(this.FLAGS.CHANNEL_PARAMETER_VALUE);
+			} else if (element.matches[0] === "eventParameterValueSmoothed") {
+				payload.fillCommand(this.FLAGS.CHANNEL_PARAMETER_VALUE_SMOOTHED);
+			} else if (element.matches[0] === "addValues") {
+				payload.fillCommand(this.FLAGS.CHANNEL_ADD_VALUES);
+			} else if (element.matches[0] === "subValues") {
+				payload.fillCommand(this.FLAGS.CHANNEL_SUB_VALUES);
+			} else if (element.matches[0] === "mulValues") {
+				payload.fillCommand(this.FLAGS.CHANNEL_MUL_VALUES);
+			} else if (element.matches[0] === "divValues") {
+				payload.fillCommand(this.FLAGS.CHANNEL_DIV_VALUES);
+			} else if (element.matches[0] === "modValues") {
+				payload.fillCommand(this.FLAGS.CHANNEL_MOD_VALUES);
+			} else if (element.matches[0] === "scaValue") {
+				payload.fillCommand(this.FLAGS.CHANNEL_SCALE_VALUE);
+			} else if (element.matches[0] === "mapValue") {
+				payload.fillCommand(this.FLAGS.CHANNEL_MAP_VALUE);
+			}
+
+			// === events ===
+			else if (element.matches[0] === "emitEvent") {
+				payload.fillCommand(this.FLAGS.EVENT_EMIT);
+			} else if (element.matches[0] === "onEvent") {
+				payload.fillCommand(this.FLAGS.EVENT_ON);
+			} else if (element.matches[0] === "setEventParam") {
+				payload.fillCommand(this.FLAGS.EVENT_SET_PARAM);
+			}
+
+			// === constants ===
+			else if (element.matches[0] === "MODIFIER_SWITCH_NONE") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_NONE);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_RG") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_RG);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_GR") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_RG);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_GB") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_GB);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_BG") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_GB);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_BR") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_BR);
+			} else if (element.matches[0] === "MODIFIER_SWITCH_RB") {
+				payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_BR);
+			}
+
+			// === unknown ===
+			else {
 				console.warn("Unknown word >", element.matches[0], "<");
 			}
 		} else if (element.type === "percentage") {
 			payload.fillPercentage(element.matches[0]);
 		} else if (element.type === "number") {
 			payload.fillInt32(element.matches[0]);
-		}
-		// else if (element.type === "float") {
-		//   payload.fillFloat(element.matches[0]);
-		// }
-		else if (element.type === "htmlrgb") {
-			payload.fillRGB(
-				parseInt(element.matches[0], 16),
-				parseInt(element.matches[1], 16),
-				parseInt(element.matches[2], 16)
-			);
+		} else if (element.type === "htmlrgb") {
+			payload.fillRGB(parseInt(element.matches[0], 16), parseInt(element.matches[1], 16), parseInt(element.matches[2], 16));
+		} else if (element.type === "comment") {
+			// NOP
+		} else if (element.type === "arrow") {
+			// NOP
 		} else {
 			console.warn("Unknown type >", element.type, "<");
 		}
@@ -315,7 +447,7 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 	payload.fillCommand(this.FLAGS.END_OF_TNGL_BYTES);
 
 	let tngl_bytes = new Uint8Array(buffer, 0, payload.cursor);
-	//console.log(tngl_bytes);
+	console.log(tngl_bytes);
 	return tngl_bytes;
 };
 

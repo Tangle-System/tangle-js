@@ -1,6 +1,6 @@
 {
   "name": "@tangle-system/tangle-js",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "main": "dist/tangle-js.cjs.js",
   "module": "dist/tangle-js.esm.js",
   "browser": "dist/tangle-js.umd.js",

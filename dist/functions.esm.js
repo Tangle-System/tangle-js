@@ -14,19 +14,6 @@ var timeOffset = new Date().getTime() % 0x7fffffff; // must be positive int32_t 
 
 function getTimestamp() {
   return new Date().getTime() % 0x7fffffff - timeOffset;
-}
-
-function toBytes(value, byteCount) {
-  var byteArray = [];
-
-  for (var index = 0; index < byteCount; index++) {
-    var _byte = value & 0xff;
-
-    byteArray.push(_byte);
-    value = (value - _byte) / 256;
-  }
-
-  return byteArray;
 } // The MIT License (MIT)
 // Copyright 2016 Andrey Sitnik <andrey@sitnik.ru>
 
@@ -81,4 +68,69 @@ function getHexColor(colorStr) {
   return colors.length >= 3 ? "#" + ((1 << 24) + (colors[0] << 16) + (colors[1] << 8) + colors[2]).toString(16).substr(1) : false;
 }
 
-export { createNanoEvents, getHexColor, getTimestamp, replaceConstants, timeOffset, toBytes };
+var FLAGS = Object.freeze({
+  /* whole flags */
+  FLAG_TNGL_BYTES: 251,
+  FLAG_SET_TIMELINE: 252,
+  FLAG_EMIT_EVENT: 253,
+
+  /* end of statements with no boundary 255 */
+  END_OF_STATEMENT: 254,
+  END_OF_TNGL_BYTES: 255
+});
+var CONSTANTS = Object.freeze({
+  APP_DEVICE_ID: 255
+});
+
+function toBytes(value, byteCount) {
+  var byteArray = [];
+
+  for (var index = 0; index < byteCount; index++) {
+    var _byte = value & 0xff;
+
+    byteArray.push(_byte);
+    value = value >> 8;
+  }
+
+  return byteArray;
+} // timeline_index [0 - 15]
+// timeline_paused [true/false]
+
+
+function getTimelineFlags(timeline_index, timeline_paused) {
+  // flags bits: [ Reserved,Reserved,Reserved,PausedFLag,IndexBit3,IndexBit2,IndexBit1,IndexBit0]
+  timeline_index = timeline_index & 15;
+  timeline_paused = timeline_paused << 4 & 16;
+  return timeline_paused | timeline_index;
+} // function floatingByteToInt16(value) {
+//   if (value < 0.0) {
+//     value = 0.0;
+//   } else if (value > 255.0) {
+//     value = 255.0;
+//   }
+//   let value_whole = Math.floor(value);
+//   let value_rational = Math.round((value - value_whole) / (1 / 256));
+//   let value_int16 = (value_whole << 8) + value_rational;
+//   // console.log(value_whole);
+//   // console.log(value_rational);
+//   // console.log(value_int16);
+//   return value_int16;
+// }
+// function eventParamToBytes(event_param) {
+//   return toBytes(floatingByteToInt16(event_param), 2);
+// }
+
+
+var timeOffset = new Date().getTime() % 0x7fffffff; // must be positive int32 (4 bytes)
+
+function getClockTimestamp() {
+  return new Date().getTime() % 0x7fffffff - timeOffset;
+}
+
+function sleep(ms) {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, ms);
+  });
+}
+
+export { CONSTANTS, FLAGS, createNanoEvents, getClockTimestamp, getHexColor, getTimelineFlags, getTimestamp, replaceConstants, sleep, timeOffset, toBytes };

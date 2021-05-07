@@ -1,6 +1,8 @@
 import { createNanoEvents, toBytes } from "./functions.js";
 
 //////////////////////////////////////////////////////////////////////////
+
+
 function Transmitter() {
 	this.TERMINAL_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
 	this.SYNC_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
@@ -53,12 +55,7 @@ Transmitter.prototype._writeTerminal = function (payload, response) {
 				index_to = payload.length;
 			}
 
-			const bytes = [
-				...toBytes(payload_uuid, 4),
-				...toBytes(index_from, 4),
-				...toBytes(payload.length, 4),
-				...payload.slice(index_from, index_to),
-			];
+			const bytes = [...toBytes(payload_uuid, 4), ...toBytes(index_from, 4), ...toBytes(payload.length, 4), ...payload.slice(index_from, index_to)];
 
 			try {
 				if (response) {
@@ -147,15 +144,23 @@ Transmitter.prototype.transmit = function (data) {
 
 Transmitter.prototype._writeSync = async function (timestamp) {
 	return new Promise(async (resolve, reject) => {
+		let success = true;
+
 		const bytes = [...toBytes(timestamp, 4)];
 		await this._syncChar.writeValueWithoutResponse(new Uint8Array(bytes)).catch((e) => {
-			//console.warn(e);
+			console.warn(e);
+			success = false;
 		});
 		await this._syncChar.writeValueWithoutResponse(new Uint8Array([])).catch((e) => {
-			//console.warn(e);
+			console.warn(e);
+			success = false;
 		});
 
-		resolve();
+		if (success) {
+			resolve();
+		} else {
+			reject();
+		}
 	});
 };
 
@@ -166,9 +171,18 @@ Transmitter.prototype.sync = async function (timestamp) {
 	if (!this._writing) {
 		this._writing = true;
 
-		this._writeSync(timestamp);
+		let success = true;
+
+		await this._writeSync(timestamp).catch((e) => {
+			console.warn(e);
+			success = false;
+		});
 
 		this._writing = false;
+
+		return success;
+	} else {
+		return false;
 	}
 };
 
@@ -216,20 +230,23 @@ TangleBluetoothConnection.prototype.addEventListener = function (event, callback
 	return this.eventEmitter.on(event, callback);
 };
 
-TangleBluetoothConnection.prototype.scan = function (params) {
+TangleBluetoothConnection.prototype.scan = function () {
 	//console.log("scan()");
 
 	if (this.bluetoothDevice) {
 		this.disconnect();
 	}
 
-	return navigator.bluetooth.requestDevice(params ? params : this.BLE_OPTIONS).then((device) => {
+	return navigator.bluetooth.requestDevice(this.BLE_OPTIONS).then((device) => {
 		this.bluetoothDevice = device;
 		this.bluetoothDevice.connection = this;
 		this.bluetoothDevice.addEventListener("gattserverdisconnected", this.onDisconnected);
 	});
 };
 
+/**
+ * TODO - add filter params
+ */
 TangleBluetoothConnection.prototype.connect = function () {
 	//console.log("connect()");
 
@@ -301,3 +318,4 @@ TangleBluetoothConnection.prototype.onDisconnected = function (e) {
 		self.eventEmitter.emit("disconnected", event);
 	}
 };
+//////////////////////////////////////////////////////////////////////////

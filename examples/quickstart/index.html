@@ -47,7 +47,7 @@
         const selectedColor = colorInput.value;
 
         // Code we generated via Tangle Blockly
-        const code = `addDrawing(0, ${time}, animFill(${time}, ${selectedColor}););`;
+        const code = `defDevice4("device1", 0x00, 0x40, 0x01, 10, 0, 0, 0);addDrawing(0, ${time}, animFill(${time}, ${selectedColor}););`;
 
         // Uploads code to tangle device
         tangleDevice.uploadTngl(code);

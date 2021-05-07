@@ -20,52 +20,61 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-function TnglCodeParser() {}
+function TnglCodeParser() {} // TnglCodeParser.prototype.TRIGGERS = Object.freeze({
+//   /* null */
+//   NONE: 0,
+//   TOUCH: 1,
+//   MOVEMENT: 2,
+//   KEYPRESS: 3,
+//   TEST: 255,
+// });
 
-TnglCodeParser.prototype.TRIGGERS = Object.freeze({
-  /* null */
-  NONE: 0,
-  TOUCH: 1,
-  MOVEMENT: 2,
-  KEYPRESS: 3,
-  TEST: 255
+
+TnglCodeParser.prototype.CONSTANTS = Object.freeze({
+  MODIFIER_SWITCH_NONE: 0,
+  MODIFIER_SWITCH_RG: 1,
+  MODIFIER_SWITCH_GB: 2,
+  MODIFIER_SWITCH_BR: 3,
+  DEVICE_ID_APP: 255
 });
 TnglCodeParser.prototype.FLAGS = Object.freeze({
   /* no code or command used by decoder as a validation */
   NONE: 0,
 
-  /* handlers 1 -> 30 */
-  HANDLER_TOUCH: 1,
-  HANDLER_MOVEMENT: 2,
-  HANDLER_KEYPRESS: 3,
+  /* filters 1 -> 30 */
+  FILTER_NONE: 1,
+  FILTER_BLUR: 2,
+  FILTER_COLOR_SHIFT: 3,
+  FILTER_MIRROR: 4,
+  FILTER_SCATTER: 5,
 
   /* drawings 31 -> 36 */
   DRAWING_SET: 31,
   DRAWING_ADD: 32,
   DRAWING_SUB: 33,
-  DRAWING_MUL: 34,
-  DRAWING_FIL: 35,
+  DRAWING_SCALE: 34,
+  DRAWING_FILTER: 35,
 
   /* windows 37 -> 42 */
   WINDOW_SET: 37,
   WINDOW_ADD: 38,
   WINDOW_SUB: 39,
-  WINDOW_MUL: 40,
-  WINDOW_FIL: 41,
+  WINDOW_SCALE: 40,
+  WINDOW_FILTER: 41,
 
-  /* frame 43 */
-  FRAME: 43,
+  /* frame 42 */
+  FRAME: 42,
 
-  /* clip 44 */
-  CLIP: 44,
+  /* clip 43 */
+  CLIP: 43,
 
-  /* time manipulation 45 */
-  TIMETRANSFORMER: 45,
-
-  /* sifters 46 -> 53 */
+  /* sifters 46 -> 52 */
   SIFT_DEVICE: 46,
   SIFT_TANGLE: 47,
   SIFT_GROUP: 48,
+
+  /* event handler 53 */
+  HANDLER: 53,
 
   /* animations 54 -> 182 */
   ANIMATION_NONE: 54,
@@ -77,36 +86,62 @@ TnglCodeParser.prototype.FLAGS = Object.freeze({
   ANIMATION_COLOR_ROLL: 60,
   ANIMATION_PALLETTE_ROLL: 61,
   ANIMATION_INL_ANI: 62,
+  ANIMATION_DEFINED: 63,
 
-  /* effects 189 -> 206 */
-  EFFECT_FADEIN: 189,
-  EFFECT_FADEOUT: 190,
-  EFFECT_BLURE: 191,
-  EFFECT_SCATTER: 192,
-  EFFECT_STRIPEIFY: 193,
-  EFFECT_INVERT: 194,
+  /* modifiers and filters 189 -> 206 */
+  MODIFIER_BRIGHTNESS: 189,
+  MODIFIER_TIMELINE: 190,
+  MODIFIER_FADE_IN: 191,
+  MODIFIER_FADE_OUT: 192,
+  MODIFIER_SWITCH_COLORS: 193,
+  MODIFIER_TIME_LOOP: 194,
+  MODIFIER_TIME_SCALE: 195,
+  MODIFIER_TIME_CHANGE: 196,
 
   /* variables 207 -> 222 */
   DEVICE: 207,
   TANGLE: 208,
   PIXELS: 209,
-  NEOPIXEL: 210,
+  PORT: 210,
   GROUP: 211,
   MARK: 212,
+  CONSTANT: 213,
+  CHANNEL: 214,
+  EVENT: 215,
 
-  /* definitions 223 -> 238 */
-  DEFINE_DEVICE: 223,
-  DEFINE_TANGLE: 224,
-  DEFINE_GROUP: 225,
-  DEFINE_MARKS: 226,
+  /* definitions 223 -> 230 */
+  DEFINE_DEVICE_1PORT: 223,
+  DEFINE_DEVICE_2PORT: 224,
+  DEFINE_DEVICE_4PORT: 225,
+  DEFINE_DEVICE_8PORT: 226,
+  DEFINE_TANGLE: 227,
+  DEFINE_GROUP: 228,
+  DEFINE_MARKS: 229,
+  DEFINE_ANIMATION: 230,
 
-  /* control codes 239 -> 254 */
-  COMMAND_SET_TIME_OFFSET: 239,
-  FLAG_TNGL_BYTES: 240,
-  FLAG_TRIGGER: 241,
-  FLAG_SYNC_TIMELINE: 242,
+  /* events 231 -> 240 */
+  EVENT_EMIT: 231,
+  EVENT_ON: 232,
+  EVENT_SET_PARAM: 233,
 
-  /* end of statements with no boundary 255 */
+  /* channels 240 -> 250 */
+  CHANNEL_WRITE: 240,
+  CHANNEL_PARAMETER_VALUE: 241,
+  CHANNEL_PARAMETER_VALUE_SMOOTHED: 242,
+  CHANNEL_ADD_VALUES: 243,
+  CHANNEL_SUB_VALUES: 244,
+  CHANNEL_MUL_VALUES: 245,
+  CHANNEL_DIV_VALUES: 246,
+  CHANNEL_MOD_VALUES: 247,
+  CHANNEL_SCALE_VALUE: 248,
+  CHANNEL_MAP_VALUE: 249,
+
+  /* command flags */
+  FLAG_TNGL_BYTES: 251,
+  FLAG_SET_TIMELINE: 252,
+  FLAG_EMIT_EVENT: 253,
+
+  /* command ends */
   END_OF_STATEMENT: 254,
   END_OF_TNGL_BYTES: 255
 });
@@ -120,12 +155,17 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
     payload.setUint8(payload.cursor++, tngl_code);
   };
 
+  payload.fillByte = function (value) {
+    payload.setUint8(payload.cursor++, parseInt(value, 16));
+  };
+
   payload.fillUInt8 = function (value) {
     payload.setUint8(payload.cursor++, value);
   };
 
-  payload.fillByte = function (value) {
-    payload.setUint8(payload.cursor++, parseInt(value, 16));
+  payload.fillInt16 = function (value) {
+    payload.setUint8(payload.cursor++, value);
+    payload.setUint8(payload.cursor++, value >> 8);
   };
 
   payload.fillInt32 = function (value) {
@@ -142,25 +182,28 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
   };
 
   payload.fillPercentage = function (percent) {
-    payload.setUint8(payload.cursor++, Math.floor(percent / 100.0 * 255));
+    payload.setUint16(payload.cursor++, Math.round(percent / 100.0 * 0xffff));
   };
 
   var parses = {
+    comment: /\/\/[^\n]*/,
     htmlrgb: /#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i,
     string: /"([\w ]*)"/,
+    arrow: /->/,
     "char": /'([\W\w])'/,
     "byte": /(0[xX][0-9a-fA-F][0-9a-fA-F](?![0-9a-fA-F]))/,
-    word: /([a-zA-Z_]+)/,
+    word: /([a-zA-Z_][a-zA-Z_0-9]*)/,
     percentage: /([\d.]+)%/,
     "float": /([+-]?[0-9]*[.][0-9]+)/,
     number: /([+-]?[0-9]+)/,
     whitespace: /(\s+)/,
     punctuation: /([^\w\s])/
-  }; //console.log(tngl_code);
+  };
+  console.log(tngl_code);
 
-  var tokens = this._tokenize(tngl_code, parses); //console.log(tokens);
+  var tokens = this._tokenize(tngl_code, parses);
 
-
+  console.log(tokens);
   payload.fillCommand(this.FLAGS.FLAG_TNGL_BYTES);
 
   for (var index = 0; index < tokens.length; index++) {
@@ -201,9 +244,9 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
     } else if (element.type === "word") {
       // === true, false ===
       if (element.matches[0] === "true") {
-        payload.fillUInt8(1);
+        payload.fillUInt8(0x01);
       } else if (element.matches[0] === "false") {
-        payload.fillUInt8(0);
+        payload.fillUInt8(0x00);
       } // === canvas operations ===
       else if (element.matches[0] === "setDrawing") {
           payload.fillCommand(this.FLAGS.DRAWING_SET);
@@ -211,27 +254,31 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
           payload.fillCommand(this.FLAGS.DRAWING_ADD);
         } else if (element.matches[0] === "subDrawing") {
           payload.fillCommand(this.FLAGS.DRAWING_SUB);
-        } else if (element.matches[0] === "mulDrawing") {
-          payload.fillCommand(this.FLAGS.DRAWING_MUL);
+        } else if (element.matches[0] === "scaDrawing") {
+          payload.fillCommand(this.FLAGS.DRAWING_SCALE);
         } else if (element.matches[0] === "filDrawing") {
-          payload.fillCommand(this.FLAGS.DRAWING_FIL);
+          payload.fillCommand(this.FLAGS.DRAWING_FILTER);
         } else if (element.matches[0] === "setWindow") {
           payload.fillCommand(this.FLAGS.WINDOW_SET);
         } else if (element.matches[0] === "addWindow") {
           payload.fillCommand(this.FLAGS.WINDOW_ADD);
         } else if (element.matches[0] === "subWindow") {
           payload.fillCommand(this.FLAGS.WINDOW_SUB);
-        } else if (element.matches[0] === "mulWindow") {
-          payload.fillCommand(this.FLAGS.WINDOW_MUL);
+        } else if (element.matches[0] === "scaWindow") {
+          payload.fillCommand(this.FLAGS.WINDOW_SCALE);
         } else if (element.matches[0] === "filWindow") {
-          payload.fillCommand(this.FLAGS.WINDOW_FIL);
+          payload.fillCommand(this.FLAGS.WINDOW_FILTER);
         } // === time operations ===
         else if (element.matches[0] === "frame") {
             payload.fillCommand(this.FLAGS.FRAME);
           } else if (element.matches[0] === "timetransformer") {
-            payload.fillCommand(this.FLAGS.TIMETRANSFORMER);
+            payload.fillCommand(this.FLAGS.TIMETRANSFORMER_CONVERT);
+          } else if (element.matches[0] === "timeloop") {
+            payload.fillCommand(this.FLAGS.TIMETRANSFORMER_LOOP);
           } // === animations ===
-          else if (element.matches[0] === "animNone") {
+          else if (element.matches[0] === "animDefined") {
+              payload.fillCommand(this.FLAGS.ANIMATION_DEFINED);
+            } else if (element.matches[0] === "animNone") {
               payload.fillCommand(this.FLAGS.ANIMATION_NONE);
             } else if (element.matches[0] === "animFill") {
               payload.fillCommand(this.FLAGS.ANIMATION_FILL);
@@ -248,18 +295,22 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
             } else if (element.matches[0] === "animPaletteRoll") {
               payload.fillCommand(this.FLAGS.ANIMATION_PALLETTE_ROLL);
             } // === handlers ===
-            else if (element.matches[0] === "handlerTouch") {
-                payload.fillCommand(this.FLAGS.HANDLER_TOUCH);
-              } else if (element.matches[0] === "handlerMovement") {
-                payload.fillCommand(this.FLAGS.HANDLER_MOVEMENT);
-              } else if (element.matches[0] === "handlerKeyPress") {
-                payload.fillCommand(this.FLAGS.HANDLER_KEYPRESS);
+            else if (element.matches[0] === "eventHandler") {
+                payload.fillCommand(this.FLAGS.HANDLER);
               } // === clip ===
               else if (element.matches[0] === "clip") {
                   payload.fillCommand(this.FLAGS.CLIP);
                 } // === definitions ===
-                else if (element.matches[0] === "defDevice") {
-                    payload.fillCommand(this.FLAGS.DEFINE_DEVICE);
+                else if (element.matches[0] === "defAnimation") {
+                    payload.fillCommand(this.FLAGS.DEFINE_ANIMATION);
+                  } else if (element.matches[0] === "defDevice1") {
+                    payload.fillCommand(this.FLAGS.DEFINE_DEVICE_1PORT);
+                  } else if (element.matches[0] === "defDevice2") {
+                    payload.fillCommand(this.FLAGS.DEFINE_DEVICE_2PORT);
+                  } else if (element.matches[0] === "defDevice4") {
+                    payload.fillCommand(this.FLAGS.DEFINE_DEVICE_4PORT);
+                  } else if (element.matches[0] === "defDevice8") {
+                    payload.fillCommand(this.FLAGS.DEFINE_DEVICE_8PORT);
                   } else if (element.matches[0] === "defTangle") {
                     payload.fillCommand(this.FLAGS.DEFINE_TANGLE);
                   } else if (element.matches[0] === "defGroup") {
@@ -280,33 +331,107 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
                         payload.fillCommand(this.FLAGS.TANGLE);
                       } else if (element.matches[0] === "pixels") {
                         payload.fillCommand(this.FLAGS.PIXELS);
-                      } else if (element.matches[0] === "neopixel") {
-                        payload.fillCommand(this.FLAGS.NEOPIXEL);
+                      } else if (element.matches[0] === "port") {
+                        payload.fillCommand(this.FLAGS.PORT);
                       } else if (element.matches[0] === "group") {
                         payload.fillCommand(this.FLAGS.GROUP);
                       } else if (element.matches[0] === "mark") {
                         payload.fillCommand(this.FLAGS.MARK);
-                      } // === other ===
-                      else if (element.matches[0] === "next") ;else {
-                          console.warn("Unknown word >", element.matches[0], "<");
-                        }
+                      } else if (element.matches[0] === "constant") {
+                        payload.fillCommand(this.FLAGS.CONSTANT);
+                      } else if (element.matches[0] === "channel") {
+                        payload.fillCommand(this.FLAGS.CHANNEL);
+                      } else if (element.matches[0] === "event") {
+                        payload.fillCommand(this.FLAGS.EVENT);
+                      } // === modifiers ===
+                      else if (element.matches[0] === "modifyBrightness") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_BRIGHTNESS);
+                        } else if (element.matches[0] === "modifyTimeline") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_TIMELINE);
+                        } else if (element.matches[0] === "modifyFadeIn") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_FADE_IN);
+                        } else if (element.matches[0] === "modifyFadeOut") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_FADE_OUT);
+                        } else if (element.matches[0] === "modifyColorSwitch") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_SWITCH_COLORS);
+                        } else if (element.matches[0] === "modifyTimeLoop") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_TIME_LOOP);
+                        } else if (element.matches[0] === "modifyTimeScale") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_TIME_SCALE);
+                        } else if (element.matches[0] === "modifyTimeChange") {
+                          payload.fillCommand(this.FLAGS.MODIFIER_TIME_CHANGE);
+                        } // === filters ===
+                        else if (element.matches[0] === "filterNone") {
+                            payload.fillCommand(this.FLAGS.FILTER_NONE);
+                          } else if (element.matches[0] === "filterBlur") {
+                            payload.fillCommand(this.FLAGS.FILTER_BLUR);
+                          } else if (element.matches[0] === "filterColorShift") {
+                            payload.fillCommand(this.FLAGS.FILTER_COLOR_SHIFT);
+                          } else if (element.matches[0] === "filterMirror") {
+                            payload.fillCommand(this.FLAGS.FILTER_MIRROR);
+                          } else if (element.matches[0] === "filterScatter") {
+                            payload.fillCommand(this.FLAGS.FILTER_SCATTER);
+                          } // === channels ===
+                          else if (element.matches[0] === "writeChannel") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_WRITE);
+                            } else if (element.matches[0] === "eventParameterValue") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_PARAMETER_VALUE);
+                            } else if (element.matches[0] === "eventParameterValueSmoothed") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_PARAMETER_VALUE_SMOOTHED);
+                            } else if (element.matches[0] === "addValues") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_ADD_VALUES);
+                            } else if (element.matches[0] === "subValues") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_SUB_VALUES);
+                            } else if (element.matches[0] === "mulValues") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_MUL_VALUES);
+                            } else if (element.matches[0] === "divValues") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_DIV_VALUES);
+                            } else if (element.matches[0] === "modValues") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_MOD_VALUES);
+                            } else if (element.matches[0] === "scaValue") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_SCALE_VALUE);
+                            } else if (element.matches[0] === "mapValue") {
+                              payload.fillCommand(this.FLAGS.CHANNEL_MAP_VALUE);
+                            } // === events ===
+                            else if (element.matches[0] === "emitEvent") {
+                                payload.fillCommand(this.FLAGS.EVENT_EMIT);
+                              } else if (element.matches[0] === "onEvent") {
+                                payload.fillCommand(this.FLAGS.EVENT_ON);
+                              } else if (element.matches[0] === "setEventParam") {
+                                payload.fillCommand(this.FLAGS.EVENT_SET_PARAM);
+                              } // === constants ===
+                              else if (element.matches[0] === "MODIFIER_SWITCH_NONE") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_NONE);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_RG") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_RG);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_GR") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_RG);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_GB") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_GB);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_BG") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_GB);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_BR") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_BR);
+                                } else if (element.matches[0] === "MODIFIER_SWITCH_RB") {
+                                  payload.fillByte(this.CONSTANTS.MODIFIER_SWITCH_BR);
+                                } // === unknown ===
+                                else {
+                                    console.warn("Unknown word >", element.matches[0], "<");
+                                  }
     } else if (element.type === "percentage") {
       payload.fillPercentage(element.matches[0]);
     } else if (element.type === "number") {
       payload.fillInt32(element.matches[0]);
-    } // else if (element.type === "float") {
-    //   payload.fillFloat(element.matches[0]);
-    // }
-    else if (element.type === "htmlrgb") {
-        payload.fillRGB(parseInt(element.matches[0], 16), parseInt(element.matches[1], 16), parseInt(element.matches[2], 16));
-      } else {
-        console.warn("Unknown type >", element.type, "<");
-      }
+    } else if (element.type === "htmlrgb") {
+      payload.fillRGB(parseInt(element.matches[0], 16), parseInt(element.matches[1], 16), parseInt(element.matches[2], 16));
+    } else if (element.type === "comment") ;else if (element.type === "arrow") ;else {
+      console.warn("Unknown type >", element.type, "<");
+    }
   }
 
   payload.fillCommand(this.FLAGS.END_OF_TNGL_BYTES);
-  var tngl_bytes = new Uint8Array(buffer, 0, payload.cursor); //console.log(tngl_bytes);
-
+  var tngl_bytes = new Uint8Array(buffer, 0, payload.cursor);
+  console.log(tngl_bytes);
   return tngl_bytes;
 };
 /*
@@ -476,26 +601,8 @@ var TimeTrack = /*#__PURE__*/function () {
   return TimeTrack;
 }();
 
-var timeOffset = new Date().getTime() % 0x7fffffff; // must be positive int32_t (4 bytes)
-
-function getTimestamp() {
-  return new Date().getTime() % 0x7fffffff - timeOffset;
-}
-
-function toBytes(value, byteCount) {
-  var byteArray = [];
-
-  for (var index = 0; index < byteCount; index++) {
-    var _byte = value & 0xff;
-
-    byteArray.push(_byte);
-    value = (value - _byte) / 256;
-  }
-
-  return byteArray;
-} // The MIT License (MIT)
+var timeOffset = new Date().getTime() % 0x7fffffff; // The MIT License (MIT)
 // Copyright 2016 Andrey Sitnik <andrey@sitnik.ru>
-
 
 var createNanoEvents = function createNanoEvents() {
   return {
@@ -520,7 +627,66 @@ var createNanoEvents = function createNanoEvents() {
       };
     }
   };
-}; //////////////////////////////////////////////////////////////////////////
+};
+
+var FLAGS = Object.freeze({
+  /* whole flags */
+  FLAG_TNGL_BYTES: 251,
+  FLAG_SET_TIMELINE: 252,
+  FLAG_EMIT_EVENT: 253,
+
+  /* end of statements with no boundary 255 */
+  END_OF_STATEMENT: 254,
+  END_OF_TNGL_BYTES: 255
+});
+var CONSTANTS = Object.freeze({
+  APP_DEVICE_ID: 255
+});
+
+function toBytes(value, byteCount) {
+  var byteArray = [];
+
+  for (var index = 0; index < byteCount; index++) {
+    var _byte = value & 0xff;
+
+    byteArray.push(_byte);
+    value = value >> 8;
+  }
+
+  return byteArray;
+} // timeline_index [0 - 15]
+// timeline_paused [true/false]
+
+
+function getTimelineFlags(timeline_index, timeline_paused) {
+  // flags bits: [ Reserved,Reserved,Reserved,PausedFLag,IndexBit3,IndexBit2,IndexBit1,IndexBit0]
+  timeline_index = timeline_index & 15;
+  timeline_paused = timeline_paused << 4 & 16;
+  return timeline_paused | timeline_index;
+} // function floatingByteToInt16(value) {
+//   if (value < 0.0) {
+//     value = 0.0;
+//   } else if (value > 255.0) {
+//     value = 255.0;
+//   }
+//   let value_whole = Math.floor(value);
+//   let value_rational = Math.round((value - value_whole) / (1 / 256));
+//   let value_int16 = (value_whole << 8) + value_rational;
+//   // console.log(value_whole);
+//   // console.log(value_rational);
+//   // console.log(value_int16);
+//   return value_int16;
+// }
+// function eventParamToBytes(event_param) {
+//   return toBytes(floatingByteToInt16(event_param), 2);
+// }
+
+
+var timeOffset = new Date().getTime() % 0x7fffffff; // must be positive int32 (4 bytes)
+
+function getClockTimestamp() {
+  return new Date().getTime() % 0x7fffffff - timeOffset;
+} //////////////////////////////////////////////////////////////////////////
 
 
 function Transmitter() {
@@ -740,25 +906,34 @@ Transmitter.prototype._writeSync = /*#__PURE__*/function () {
           case 0:
             return _context4.abrupt("return", new Promise( /*#__PURE__*/function () {
               var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(resolve, reject) {
-                var bytes;
+                var success, bytes;
                 return regeneratorRuntime.wrap(function _callee3$(_context3) {
                   while (1) {
                     switch (_context3.prev = _context3.next) {
                       case 0:
+                        success = true;
                         bytes = _toConsumableArray(toBytes(timestamp, 4));
-                        _context3.next = 3;
-                        return _this5._syncChar.writeValueWithoutResponse(new Uint8Array(bytes))["catch"](function (e) {//console.warn(e);
+                        _context3.next = 4;
+                        return _this5._syncChar.writeValueWithoutResponse(new Uint8Array(bytes))["catch"](function (e) {
+                          console.warn(e);
+                          success = false;
                         });
 
-                      case 3:
-                        _context3.next = 5;
-                        return _this5._syncChar.writeValueWithoutResponse(new Uint8Array([]))["catch"](function (e) {//console.warn(e);
+                      case 4:
+                        _context3.next = 6;
+                        return _this5._syncChar.writeValueWithoutResponse(new Uint8Array([]))["catch"](function (e) {
+                          console.warn(e);
+                          success = false;
                         });
-
-                      case 5:
-                        resolve();
 
                       case 6:
+                        if (success) {
+                          resolve();
+                        } else {
+                          reject();
+                        }
+
+                      case 7:
                       case "end":
                         return _context3.stop();
                     }
@@ -787,20 +962,32 @@ Transmitter.prototype._writeSync = /*#__PURE__*/function () {
 
 Transmitter.prototype.sync = /*#__PURE__*/function () {
   var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(timestamp) {
+    var success;
     return regeneratorRuntime.wrap(function _callee5$(_context5) {
       while (1) {
         switch (_context5.prev = _context5.next) {
           case 0:
-            //console.log("sync(" + timestamp +")");
-            if (!this._writing) {
-              this._writing = true;
-
-              this._writeSync(timestamp);
-
-              this._writing = false;
+            if (this._writing) {
+              _context5.next = 9;
+              break;
             }
 
-          case 1:
+            this._writing = true;
+            success = true;
+            _context5.next = 5;
+            return this._writeSync(timestamp)["catch"](function (e) {
+              console.warn(e);
+              success = false;
+            });
+
+          case 5:
+            this._writing = false;
+            return _context5.abrupt("return", success);
+
+          case 9:
+            return _context5.abrupt("return", false);
+
+          case 10:
           case "end":
             return _context5.stop();
         }
@@ -853,7 +1040,7 @@ TangleBluetoothConnection.prototype.addEventListener = function (event, callback
   return this.eventEmitter.on(event, callback);
 };
 
-TangleBluetoothConnection.prototype.scan = function (params) {
+TangleBluetoothConnection.prototype.scan = function () {
   var _this6 = this;
 
   //console.log("scan()");
@@ -861,13 +1048,17 @@ TangleBluetoothConnection.prototype.scan = function (params) {
     this.disconnect();
   }
 
-  return navigator.bluetooth.requestDevice(params ? params : this.BLE_OPTIONS).then(function (device) {
+  return navigator.bluetooth.requestDevice(this.BLE_OPTIONS).then(function (device) {
     _this6.bluetoothDevice = device;
     _this6.bluetoothDevice.connection = _this6;
 
     _this6.bluetoothDevice.addEventListener("gattserverdisconnected", _this6.onDisconnected);
   });
 };
+/**
+ * TODO - add filter params
+ */
+
 
 TangleBluetoothConnection.prototype.connect = function () {
   var _this7 = this;
@@ -930,7 +1121,8 @@ TangleBluetoothConnection.prototype.onDisconnected = function (e) {
     event.target = self;
     self.eventEmitter.emit("disconnected", event);
   }
-};
+}; //////////////////////////////////////////////////////////////////////////
+
 
 function TangleBluetoothDevice() {
   this.bluetoothConnection = new TangleBluetoothConnection();
@@ -940,9 +1132,9 @@ function TangleBluetoothDevice() {
   var self = this;
   setInterval(function () {
     if (self.isConnected()) {
-      self.syncClock(getTimestamp());
+      self.syncClock(getClockTimestamp());
     }
-  }, 10000);
+  }, 60000);
   window.addEventListener("beforeunload", this.bluetoothConnection.disconnect);
 }
 /**
@@ -966,9 +1158,56 @@ TangleBluetoothDevice.prototype.onDisconnect = function (event) {
   if (event.target.transmitter) {
     setTimeout(function () {
       console.log("Reconnecting device...");
-      return event.target.reconnect().then(function () {
-        event.target.transmitter.sync(getTimestamp());
-      })["catch"](function (error) {
+      return event.target.reconnect().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6() {
+        var success, index;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                success = false;
+                index = 0;
+
+              case 2:
+                if (!(index < 3)) {
+                  _context6.next = 15;
+                  break;
+                }
+
+                _context6.next = 5;
+                return event.target.transmitter.sync(getClockTimestamp());
+
+              case 5:
+                if (!_context6.sent) {
+                  _context6.next = 10;
+                  break;
+                }
+
+                success = true;
+                return _context6.abrupt("break", 15);
+
+              case 10:
+                _context6.next = 12;
+                return sleep(100);
+
+              case 12:
+                index++;
+                _context6.next = 2;
+                break;
+
+              case 15:
+                if (success) {
+                  console.log("Sync time success");
+                } else {
+                  console.error("Sync time on connection failed");
+                }
+
+              case 16:
+              case "end":
+                return _context6.stop();
+            }
+          }
+        }, _callee6);
+      })))["catch"](function (error) {
         console.error(error);
       });
     }, 1000);
@@ -982,12 +1221,58 @@ TangleBluetoothDevice.prototype.onConnect = function (event) {
 TangleBluetoothDevice.prototype.connect = function () {
   var _this8 = this;
 
-  var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-  return this.bluetoothConnection.scan(params).then(function () {
+  return this.bluetoothConnection.scan().then(function () {
     return _this8.bluetoothConnection.connect();
-  }).then(function () {
-    _this8.bluetoothConnection.transmitter.sync(getTimestamp());
-  })["catch"](function (error) {
+  }).then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7() {
+    var success, index;
+    return regeneratorRuntime.wrap(function _callee7$(_context7) {
+      while (1) {
+        switch (_context7.prev = _context7.next) {
+          case 0:
+            success = false;
+            index = 0;
+
+          case 2:
+            if (!(index < 3)) {
+              _context7.next = 15;
+              break;
+            }
+
+            _context7.next = 5;
+            return _this8.bluetoothConnection.transmitter.sync(getClockTimestamp());
+
+          case 5:
+            if (!_context7.sent) {
+              _context7.next = 10;
+              break;
+            }
+
+            success = true;
+            return _context7.abrupt("break", 15);
+
+          case 10:
+            _context7.next = 12;
+            return sleep(100);
+
+          case 12:
+            index++;
+            _context7.next = 2;
+            break;
+
+          case 15:
+            if (success) {
+              console.log("Sync time success");
+            } else {
+              console.error("Sync time on connection failed");
+            }
+
+          case 16:
+          case "end":
+            return _context7.stop();
+        }
+      }
+    }, _callee7);
+  })))["catch"](function (error) {
     console.warn(error);
   });
 };
@@ -995,9 +1280,56 @@ TangleBluetoothDevice.prototype.connect = function () {
 TangleBluetoothDevice.prototype.reconnect = function () {
   var _this9 = this;
 
-  return this.bluetoothConnection.reconnect().then(function () {
-    _this9.bluetoothConnection.transmitter.sync(getTimestamp());
-  })["catch"](function (error) {
+  return this.bluetoothConnection.reconnect().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8() {
+    var success, index;
+    return regeneratorRuntime.wrap(function _callee8$(_context8) {
+      while (1) {
+        switch (_context8.prev = _context8.next) {
+          case 0:
+            success = false;
+            index = 0;
+
+          case 2:
+            if (!(index < 3)) {
+              _context8.next = 15;
+              break;
+            }
+
+            _context8.next = 5;
+            return _this9.bluetoothConnection.transmitter.sync(getClockTimestamp());
+
+          case 5:
+            if (!_context8.sent) {
+              _context8.next = 10;
+              break;
+            }
+
+            success = true;
+            return _context8.abrupt("break", 15);
+
+          case 10:
+            _context8.next = 12;
+            return sleep(100);
+
+          case 12:
+            index++;
+            _context8.next = 2;
+            break;
+
+          case 15:
+            if (success) {
+              console.log("Sync time success");
+            } else {
+              console.error("Sync time on connection failed");
+            }
+
+          case 16:
+          case "end":
+            return _context8.stop();
+        }
+      }
+    }, _callee8);
+  })))["catch"](function (error) {
     console.warn(error);
   });
 };
@@ -1010,53 +1342,123 @@ TangleBluetoothDevice.prototype.isConnected = function () {
   return this.bluetoothConnection.connected;
 };
 
-TangleBluetoothDevice.prototype.uploadTnglBytes = function (tngl_bytes, timeline_timestamp, timeline_paused) {
+TangleBluetoothDevice.prototype.uploadTngl = function (tngl_bytes, timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("uploadTngl()");
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  var FLAG_SYNC_TIMELINE = 242;
-  var payload = [FLAG_SYNC_TIMELINE].concat(_toConsumableArray(toBytes(getTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [timeline_paused ? 1 : 0], _toConsumableArray(tngl_bytes));
+  var flags = getTimelineFlags(timeline_index, timeline_paused);
+  var timeline_bytes = [FLAGS.FLAG_SET_TIMELINE].concat(_toConsumableArray(toBytes(getClockTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [flags]);
+  var payload = [].concat(_toConsumableArray(timeline_bytes), _toConsumableArray(tngl_bytes));
   this.bluetoothConnection.transmitter.deliver(payload);
   return true;
 };
 
-TangleBluetoothDevice.prototype.setTime = function (timeline_timestamp, timeline_paused) {
-  //console.log("setTime()");
+TangleBluetoothDevice.prototype.setTimeline = function (timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("setTimeline()");
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  var FLAG_SYNC_TIMELINE = 242;
-  var payload = [FLAG_SYNC_TIMELINE].concat(_toConsumableArray(toBytes(getTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [timeline_paused ? 1 : 0]);
+  var flags = getTimelineFlags(timeline_index, timeline_paused);
+  var payload = [FLAGS.FLAG_SET_TIMELINE].concat(_toConsumableArray(toBytes(getClockTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [flags]);
   this.bluetoothConnection.transmitter.deliver(payload);
   return true;
 };
+/* 
+function emitEvent(code, parameter, timeline_timestamp, device_id)
 
-TangleBluetoothDevice.prototype.writeTrigger = function (trigger_type, trigger_param, timeline_timestamp) {
-  //console.log("writeTrigger()");
+device_id [0; 255]
+code [0; 255]
+parameter [0; 255]
+timeline_timestamp [-2147483648; 2147483647] 
+
+*/
+
+
+TangleBluetoothDevice.prototype.emitEvent = function (device_id, code, parameter, timeline_timestamp) {
+  //console.log("emitEvent()");
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  var FLAG_TRIGGER = 241;
-  var payload = [FLAG_TRIGGER, 0, trigger_type, trigger_param].concat(_toConsumableArray(toBytes(timeline_timestamp, 4)));
+  var payload = [FLAGS.FLAG_EMIT_EVENT, device_id, code, parameter].concat(_toConsumableArray(toBytes(timeline_timestamp, 4)));
   this.bluetoothConnection.transmitter.deliver(payload);
   return true;
 };
+/* 
+function emitEvents(events)
 
-TangleBluetoothDevice.prototype.syncTime = function (timeline_timestamp, timeline_paused) {
-  //console.log("syncTime()");
+events - array of event objects
+
+event object must have:
+  device_id [0; 255]
+  code [0; 255]
+  parameter [0; 255]
+  timeline_timestamp [-2147483648; 2147483647] 
+
+
+== EXAMPLE ==
+
+  let events = [];
+
+  let e1 = {};
+  e1.code = 0;
+  e1.parameter = 0;
+  e1.timeline_timestamp = 0;
+
+  let e2 = {};
+  e2.code = 0;
+  e2.parameter = 255;
+  e2.timeline_timestamp = 1000;
+
+  events.push(e1);
+  events.push(e2);
+
+  bluetoothdevice.emitEvents(events);
+
+== EXAMPLE ==
+*/
+
+
+TangleBluetoothDevice.prototype.emitEvents = function (events) {
+  //console.log("emitEvents()");
   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
     console.warn("Bluetooth device disconnected");
     return false;
   }
 
-  var FLAG_SYNC_TIMELINE = 242;
-  var payload = [FLAG_SYNC_TIMELINE].concat(_toConsumableArray(toBytes(getTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [timeline_paused ? 1 : 0]);
+  var payload = [];
+
+  for (var i = 0; i < events.length; i++) {
+    var e = events[i];
+    var bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter].concat(_toConsumableArray(toBytes(e.timeline_timestamp, 4)));
+    payload.push.apply(payload, _toConsumableArray(bytes));
+  }
+
+  this.bluetoothConnection.transmitter.deliver(payload);
+  return true;
+};
+/* timeline_index [0 - 15]
+
+
+
+*/
+
+
+TangleBluetoothDevice.prototype.syncTimeline = function (timeline_index, timeline_timestamp, timeline_paused) {
+  //console.log("syncTimeline()");
+  if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+    console.warn("Bluetooth device disconnected");
+    return false;
+  }
+
+  var flags = getTimelineFlags(timeline_index, timeline_paused);
+  var payload = [FLAGS.FLAG_SET_TIMELINE].concat(_toConsumableArray(toBytes(getClockTimestamp(), 4)), _toConsumableArray(toBytes(timeline_timestamp, 4)), [flags]);
   this.bluetoothConnection.transmitter.transmit(payload);
   return true;
 };
@@ -1068,11 +1470,10 @@ TangleBluetoothDevice.prototype.syncClock = function () {
     return false;
   }
 
-  this.bluetoothConnection.transmitter.sync(getTimestamp()); // bluetooth transmittion slack delay 10ms
+  this.bluetoothConnection.transmitter.sync(getClockTimestamp()); // bluetooth transmittion slack delay 10ms
 
   return true;
-}; /////////////////////////////////////////////////////////////////////////
-
+};
 
 function initBluetoothDevice() {
   return new TangleBluetoothDevice();
@@ -1083,12 +1484,12 @@ function initSerialDevice() {}
 function TangleDevice() {
   var _window;
 
-  var _ref6 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
+  var _ref9 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {
     ble: initBluetoothDevice(),
     serial: initSerialDevice()
   },
-      ble = _ref6.ble,
-      serial = _ref6.serial;
+      ble = _ref9.ble,
+      serial = _ref9.serial;
 
   var tnglParser = new TnglCodeParser();
   var timeTrack = new TimeTrack();
@@ -1154,28 +1555,33 @@ function TangleDevice() {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         var tngl_bytes = tnglParser.parseTnglCode(tngl_code);
-        tangleBluetoothDevice.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
         debugLog(".uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
       },
       uploadTnglBytes: function uploadTnglBytes(tngl_bytes) {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-        tangleBluetoothDevice.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
         debugLog(".uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
       },
       setTime: function setTime() {
         var timeline_timestamp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
         var timeline_paused = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-        tangleBluetoothDevice.setTime(timeline_timestamp, timeline_paused);
+        tangleBluetoothDevice.setTime(0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
         debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
-      trigger: function trigger(character) {
+      emitEvent: function emitEvent(character, param) {
+        var device_id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
         var charAsciiCode = character.toUpperCase().charCodeAt(0);
-        tangleBluetoothDevice.writeTrigger(3, charAsciiCode, timeTrack.millis());
-        debugLog(".trigger", 3, charAsciiCode, timeTrack.millis());
+        tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
+        debugLog(".triggeremitEvent", charAsciiCode, param, timeTrack.millis());
+      },
+      emitEvents: function emitEvents(events) {
+        tangleBluetoothDevice.emitEvents(events);
+        debugLog(".emitEvents", events);
       }
     };
     tangleDevice = TangleConnectWEBBLE;
@@ -1183,7 +1589,35 @@ function TangleDevice() {
   } else if (tangleSerialDevice) {
     console.log("tangleSerialDevice is not supported yet.");
   } else {
-    console.error("No supported module found, you need to add atleast one supported connection module.");
+    var PlaceHolderConnection = {
+      connect: function connect() {
+        var filters = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+        debugLog("Placeholder .connect", filters);
+      },
+      uploadTngl: function uploadTngl(tngl_code) {
+        var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+        var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+        debugLog("Placeholder .uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      uploadTnglBytes: function uploadTnglBytes(tngl_bytes) {
+        var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+        var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+        debugLog("Placeholder .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      setTime: function setTime() {
+        var timeline_timestamp = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+        var timeline_paused = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+        debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
+      },
+      emitEvent: function emitEvent(character, param, device_id) {
+        debugLog("Placeholder .triggeremitEvent", 3, charAsciiCode, timeTrack.millis());
+      },
+      emitEvents: function emitEvents(events) {
+        debugLog("Placeholder .emitEvents", events);
+      }
+    };
+    tangleDevice = PlaceHolderConnection;
+    console.error("No supported module found, you need to add atleast one supported connection module.", 'Running in placeholder mode (will be handled in future by Tangle Devtools)');
   }
 
   return tangleDevice;
