@@ -1577,7 +1577,7 @@ function TangleDevice() {
         var device_id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
         var charAsciiCode = character.toUpperCase().charCodeAt(0);
         tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
-        debugLog(".triggeremitEvent", charAsciiCode, param, timeTrack.millis());
+        debugLog(".emitEvent", charAsciiCode, param, timeTrack.millis());
       },
       emitEvents: function emitEvents(events) {
         tangleBluetoothDevice.emitEvents(events);

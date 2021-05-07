@@ -86,7 +86,7 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
 
         tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
 
-        debugLog(".triggeremitEvent", charAsciiCode, param, timeTrack.millis());
+        debugLog(".emitEvent", charAsciiCode, param, timeTrack.millis());
       },
       emitEvents: (events) => {
 

@@ -71,7 +71,7 @@
         // parametr je vzdy 0
 
         // RED pri stisku Q (code = 81)
-        onEvent(0x51)->setEventParam(0xff)->emitEvent(0x00);
+        onEvent(0x51)->emitEvent(0x00);
         // GREEN pri stisku W (code = 87)
         onEvent(0x57)->setEventParam(0xff)->emitEvent(0x01);
         // BLUE pri stisku E (code = 69)
@@ -115,7 +115,7 @@
     const reset = document.querySelector('#reset');
 
     r.onclick = () => {
-      tangleDevice.emitEvent('q', 0)
+      tangleDevice.emitEvent('q', 40)
     }
     g.onclick = () => {
       tangleDevice.emitEvent('w', 0)
