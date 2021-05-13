@@ -1299,14 +1299,15 @@ var TangleDevice = (function () {
         connect: (filters = null) => {
           console.log("Connection is handled by tangleConnect.");
         },
+        // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
         uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
           console.info("posilam TNGL Kod uploadTngl()");
-          tangleConnect.uploadTngl(tngl_code, timeline_timestamp, timeline_paused);
+          tangleConnect.uploadTngl(tngl_code);
           timeTrack.setStatus(timeline_timestamp, timeline_paused);
         },
         uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
           console.info("posilam TNGL bajty uploadTnglBytes()");
-          tangleConnect.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+          tangleConnect.uploadTnglBytes(tngl_bytes);
           timeTrack.setStatus(timeline_timestamp, timeline_paused);
         },
         setTime: (timeline_timestamp = 0, timeline_paused = false) => {
@@ -1314,9 +1315,18 @@ var TangleDevice = (function () {
           tangleConnect.setTime(timeline_timestamp, timeline_paused);
           timeTrack.setStatus(timeline_timestamp, timeline_paused);
         },
-        trigger: (character) => {
-          console.warn("Ignoring, not supported yet on tangleConnect");
+        emitEvent: (character, param, device_id = 0) => {
+          console.info("posilam emitEvent()");
+
+          const charAsciiCode = character.toUpperCase().charCodeAt(0);
+
+          tangleConnect.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
         },
+        emitEvents: (events) => {
+          console.info("posilam emitEvents()");
+
+          tangleConnect.emitEvents(events);
+        }
       };
 
       tangleDevice = TangleConnectANDROID;

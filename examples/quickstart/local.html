@@ -27,9 +27,9 @@
   </div>
 
   <script>
-    function uint8() {
-      return `0x${parseInt(device.brightness).toString(16).padStart(2, "0")}`
-    }
+    // function uint8() {
+    //   return `0x${parseInt(device.brightness).toString(16).padStart(2, "0")}`
+    // }
 
     const tangleBluetoothDevice = new TangleBluetoothDevice();
     const tangleDevice = TangleDevice({ ble: tangleBluetoothDevice });
@@ -52,7 +52,7 @@
     };
 
     document.querySelector("#upload").onclick = () => {
-      if (tangleBluetoothDevice.bluetoothConnection.connected) {
+      if (window.tangleConnect ?? tangleBluetoothDevice.bluetoothConnection.connected) {
         // Tangle run this effect for 15s
         const time = 1000 * 15;
 
@@ -62,7 +62,7 @@
         // Code we generated via Tangle Blockly
         // const code = `defDevice4("device1", 0x00, 0x40, 0x01, 10, 0, 0, 0);addDrawing(0, ${time}, animFill(${time}, ${selectedColor}););`;
         const code = `
-        defDevice4("device1", 0x00, 0x40, 0x01, 10, 0, 0, 0);
+        defDevice4("device1", 0x00, 0x40, 0x01, 15, 0, 0, 0);
 
         // Blockly vysila eventy pri keypressu klaves
         // Q,W,E,R,A,S,D,F,Y,X,C,V,Z
@@ -115,7 +115,7 @@
     const reset = document.querySelector('#reset');
 
     r.onclick = () => {
-      tangleDevice.emitEvent('q', 40)
+      tangleDevice.emitEvent('q', Math.floor(Math.random() * 50))
     }
     g.onclick = () => {
       tangleDevice.emitEvent('w', 0)

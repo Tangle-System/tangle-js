@@ -1517,18 +1517,19 @@ function TangleDevice() {
         var filters = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
         console.log("Connection is handled by tangleConnect.");
       },
+      // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
       uploadTngl: function uploadTngl(tngl_code) {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         console.info("posilam TNGL Kod uploadTngl()");
-        tangleConnect.uploadTngl(tngl_code, timeline_timestamp, timeline_paused);
+        tangleConnect.uploadTngl(tngl_code);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       uploadTnglBytes: function uploadTnglBytes(tngl_bytes) {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         console.info("posilam TNGL bajty uploadTnglBytes()");
-        tangleConnect.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
+        tangleConnect.uploadTnglBytes(tngl_bytes);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       setTime: function setTime() {
@@ -1538,8 +1539,15 @@ function TangleDevice() {
         tangleConnect.setTime(timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
-      trigger: function trigger(character) {
-        console.warn("Ignoring, not supported yet on tangleConnect");
+      emitEvent: function emitEvent(character, param) {
+        var device_id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+        console.info("posilam emitEvent()");
+        var charAsciiCode = character.toUpperCase().charCodeAt(0);
+        tangleConnect.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
+      },
+      emitEvents: function emitEvents(events) {
+        console.info("posilam emitEvents()");
+        tangleConnect.emitEvents(events);
       }
     };
     tangleDevice = TangleConnectANDROID;
