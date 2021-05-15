@@ -46,12 +46,10 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
         tangleConnect.setTime(timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
-      emitEvent: (character, param, device_id = 0) => {
+      emitEvent: (event_code, param, device_id = 0) => {
         console.info("posilam emitEvent()");
 
-        const charAsciiCode = character.toUpperCase().charCodeAt(0);
-
-        tangleConnect.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
+        tangleConnect.emitEvent(device_id, event_code, param, timeTrack.millis());
       },
       emitEvents: (events) => {
         console.info("posilam emitEvents()");
@@ -91,10 +89,9 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
 
         debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
-      emitEvent: (character, param, device_id = 0) => {
-        const charAsciiCode = character.toUpperCase().charCodeAt(0);
+      emitEvent: (event_code, param, device_id = 0) => {
 
-        tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
+        tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
 
         debugLog(".emitEvent", charAsciiCode, param, timeTrack.millis());
       },
@@ -129,9 +126,9 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
 
         debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
       },
-      emitEvent: (character, param, device_id) => {
+      emitEvent: (event_code, param, device_id) => {
 
-        debugLog("Placeholder .triggeremitEvent", 3, charAsciiCode, timeTrack.millis());
+        debugLog("Placeholder .triggeremitEvent", 3, event_code, timeTrack.millis());
       },
       emitEvents: (events) => {
 
