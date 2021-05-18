@@ -1522,14 +1522,14 @@ function TangleDevice() {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         console.info("posilam TNGL Kod uploadTngl()");
-        tangleConnect.uploadTngl(tngl_code);
+        tangleConnect.uploadTngl(tngl_code, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       uploadTnglBytes: function uploadTnglBytes(tngl_bytes) {
         var timeline_timestamp = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var timeline_paused = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         console.info("posilam TNGL bajty uploadTnglBytes()");
-        tangleConnect.uploadTnglBytes(tngl_bytes);
+        tangleConnect.uploadTnglBytes(tngl_bytes, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       setTime: function setTime() {
@@ -1539,11 +1539,10 @@ function TangleDevice() {
         tangleConnect.setTime(timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
-      emitEvent: function emitEvent(character, param) {
+      emitEvent: function emitEvent(event_code, param) {
         var device_id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
         console.info("posilam emitEvent()");
-        var charAsciiCode = character.toUpperCase().charCodeAt(0);
-        tangleConnect.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
+        tangleConnect.emitEvent(device_id, event_code, param, timeTrack.millis());
       },
       emitEvents: function emitEvents(events) {
         console.info("posilam emitEvents()");
@@ -1581,14 +1580,14 @@ function TangleDevice() {
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
         debugLog(".setTime", timeline_timestamp, timeline_paused);
       },
-      emitEvent: function emitEvent(character, param) {
+      emitEvent: function emitEvent(event_code, param) {
         var device_id = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-        var charAsciiCode = character.toUpperCase().charCodeAt(0);
-        tangleBluetoothDevice.emitEvent(device_id, charAsciiCode, param, timeTrack.millis());
-        debugLog(".emitEvent", charAsciiCode, param, timeTrack.millis());
+        tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+        debugLog(".emitEvent", event_code, param, timeTrack.millis());
       },
       emitEvents: function emitEvents(events) {
-        tangleBluetoothDevice.emitEvents(events);
+        tangleBluetoothDevice.emitEvents(events); // TODO - timestamps autofill current time if not present
+
         debugLog(".emitEvents", events);
       }
     };
@@ -1617,8 +1616,8 @@ function TangleDevice() {
         var timeline_paused = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
         debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
       },
-      emitEvent: function emitEvent(character, param, device_id) {
-        debugLog("Placeholder .triggeremitEvent", 3, charAsciiCode, timeTrack.millis());
+      emitEvent: function emitEvent(event_code, param, device_id) {
+        debugLog("Placeholder .triggeremitEvent", 3, event_code, timeTrack.millis());
       },
       emitEvents: function emitEvents(events) {
         debugLog("Placeholder .emitEvents", events);

@@ -33,12 +33,12 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
       // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
       uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
         console.info("posilam TNGL Kod uploadTngl()");
-        tangleConnect.uploadTngl(tngl_code);
+        tangleConnect.uploadTngl(tngl_code, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
         console.info("posilam TNGL bajty uploadTnglBytes()");
-        tangleConnect.uploadTnglBytes(tngl_bytes);
+        tangleConnect.uploadTnglBytes(tngl_bytes, 0, timeline_timestamp, timeline_paused);
         timeTrack.setStatus(timeline_timestamp, timeline_paused);
       },
       setTime: (timeline_timestamp = 0, timeline_paused = false) => {
@@ -93,11 +93,12 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
 
         tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
 
-        debugLog(".emitEvent", charAsciiCode, param, timeTrack.millis());
+        debugLog(".emitEvent", event_code, param, timeTrack.millis());
       },
       emitEvents: (events) => {
 
         tangleBluetoothDevice.emitEvents(events);
+        // TODO - timestamps autofill current time if not present
 
         debugLog(".emitEvents", events);
       }
