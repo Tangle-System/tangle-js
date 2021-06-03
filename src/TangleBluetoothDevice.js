@@ -90,9 +90,10 @@ TangleBluetoothDevice.prototype.uploadTnglBytes = function (tngl_bytes, timeline
     console.warn("Bluetooth device disconnected");
     return false;
   }
+  const clock_timestamp = getTimestamp();
 
   const FLAG_SYNC_TIMELINE = 242;
-  const payload = [FLAG_SYNC_TIMELINE, ...toBytes(getTimestamp(), 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0, ...tngl_bytes];
+  const payload = [...tngl_bytes, FLAG_SYNC_TIMELINE, ...toBytes(clock_timestamp, 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0];
   this.bluetoothConnection.transmitter.deliver(payload);
 
   return true;

@@ -216,13 +216,71 @@ var TangleBluetoothDevice = (function () {
   	this.TRANSMITTER_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
 
   	this.BLE_OPTIONS = {
-  		acceptAllDevices: true,
+  		// acceptAllDevices: true,
   		//   filters: [
   		//     { services: [TRANSMITTER_SERVICE_UUID] }
   		//     // {services: [0xffe0, 0x1803]},
   		//     // {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
   		//     // {name: 'ExampleName'},
   		//   ]
+  		filters: [
+  			// { services: [TRANSMITTER_SERVICE_UUID] }
+  			// {services: [0xffe0, 0x1803]},
+  			// {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
+  			// {name: 'ExampleName'},
+  			{ namePrefix: "A" },
+  			{ namePrefix: "a" },
+  			{ namePrefix: "B" },
+  			{ namePrefix: "b" },
+  			{ namePrefix: "C" },
+  			{ namePrefix: "c" },
+  			{ namePrefix: "D" },
+  			{ namePrefix: "d" },
+  			{ namePrefix: "E" },
+  			{ namePrefix: "e" },
+  			{ namePrefix: "F" },
+  			{ namePrefix: "f" },
+  			{ namePrefix: "G" },
+  			{ namePrefix: "g" },
+  			{ namePrefix: "H" },
+  			{ namePrefix: "h" },
+  			{ namePrefix: "I" },
+  			{ namePrefix: "i" },
+  			{ namePrefix: "J" },
+  			{ namePrefix: "j" },
+  			{ namePrefix: "K" },
+  			{ namePrefix: "k" },
+  			{ namePrefix: "L" },
+  			{ namePrefix: "l" },
+  			{ namePrefix: "M" },
+  			{ namePrefix: "m" },
+  			{ namePrefix: "N" },
+  			{ namePrefix: "n" },
+  			{ namePrefix: "O" },
+  			{ namePrefix: "o" },
+  			{ namePrefix: "P" },
+  			{ namePrefix: "p" },
+  			{ namePrefix: "Q" },
+  			{ namePrefix: "q" },
+  			{ namePrefix: "R" },
+  			{ namePrefix: "r" },
+  			{ namePrefix: "S" },
+  			{ namePrefix: "s" },
+  			{ namePrefix: "T" },
+  			{ namePrefix: "t" },
+  			{ namePrefix: "U" },
+  			{ namePrefix: "u" },
+  			{ namePrefix: "V" },
+  			{ namePrefix: "v" },
+  			{ namePrefix: "W" },
+  			{ namePrefix: "w" },
+  			{ namePrefix: "X" },
+  			{ namePrefix: "x" },
+  			{ namePrefix: "Y" },
+  			{ namePrefix: "y" },
+  			{ namePrefix: "Z" },
+  			{ namePrefix: "z" },
+  		],
   		optionalServices: [this.TRANSMITTER_SERVICE_UUID],
   	};
 
@@ -419,9 +477,10 @@ var TangleBluetoothDevice = (function () {
       console.warn("Bluetooth device disconnected");
       return false;
     }
+    const clock_timestamp = getTimestamp();
 
     const FLAG_SYNC_TIMELINE = 242;
-    const payload = [FLAG_SYNC_TIMELINE, ...toBytes(getTimestamp(), 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0, ...tngl_bytes];
+    const payload = [...tngl_bytes, FLAG_SYNC_TIMELINE, ...toBytes(clock_timestamp, 4), ...toBytes(timeline_timestamp, 4), timeline_paused ? 1 : 0];
     this.bluetoothConnection.transmitter.deliver(payload);
 
     return true;
