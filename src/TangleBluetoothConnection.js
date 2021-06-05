@@ -103,6 +103,7 @@ Transmitter.prototype.deliver = function (data) {
 				let item = this._queue.shift();
 
 				try {
+					console.log('awaiting ._writeTerminal', { item })
 					await this._writeTerminal(item.payload, item.reliable);
 				} catch (error) {
 					console.warn(error);
