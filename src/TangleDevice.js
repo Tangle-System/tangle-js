@@ -1,21 +1,24 @@
 import TimeTrack from "./TimeTrack.js";
 import TangleBluetoothDevice from "./TangleBluetoothDevice.js";
 import TnglCodeParser from "./TangleCodeParser.js";
+import TangleSerialDevice from "./TangleSerialDevice.js";
 
 function initBluetoothDevice() {
   return new TangleBluetoothDevice();
 }
 
-function initSerialDevice() { }
+function initSerialDevice() {
+  return new TangleSerialDevice();
+}
 
 export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevice(), serial: initSerialDevice() }) {
   const tnglParser = new TnglCodeParser();
   const timeTrack = new TimeTrack();
 
   function debugLog(...args) {
-    if (window.debug === true) {
-      console.log(`TangleDevice`, ...args);
-    }
+    // if (window.localStorage.getItem('debug') === 'true') {
+    console.log(`TangleDevice`, ...args);
+    // }
   }
 
   let tangleDevice;
@@ -61,7 +64,8 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
     tangleDevice = TangleConnectANDROID;
 
     console.info("Running in Android Bluetooth mode");
-  } else if ("bluetooth" in window?.navigator) {
+  }
+  /*else if ("bluetooth" in window?.navigator) {
     const TangleConnectWEBBLE = {
       connect: (filters = null) => {
         tangleBluetoothDevice.connect();
@@ -107,8 +111,54 @@ export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevic
     tangleDevice = TangleConnectWEBBLE;
 
     console.info("Running in WebBluetooth mode");
-  } else if (tangleSerialDevice) {
-    console.log("tangleSerialDevice is not supported yet.");
+  } */
+  else if (tangleSerialDevice && "serial" in window.navigator) {
+
+    const TangleConnectWEBSerial = {
+      connect: (filters = null) => {
+        tangleSerialDevice.connect();
+        debugLog(".connect", filters);
+      },
+      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
+        const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
+        tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
+
+        timeTrack.setStatus(timeline_timestamp, timeline_paused);
+
+        debugLog(".uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
+        tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
+
+        timeTrack.setStatus(timeline_timestamp, timeline_paused);
+
+        debugLog(".uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
+      },
+      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
+        tangleSerialDevice.setTime(0, timeline_timestamp, timeline_paused);
+
+        timeTrack.setStatus(timeline_timestamp, timeline_paused);
+
+        debugLog(".setTime", timeline_timestamp, timeline_paused);
+      },
+      emitEvent: (event_code, param, device_id = 0) => {
+
+        tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+
+        debugLog(".emitEvent", event_code, param, timeTrack.millis());
+      },
+      emitEvents: (events) => {
+
+        tangleSerialDevice.emitEvents(events);
+        // TODO - timestamps autofill current time if not present
+
+        debugLog(".emitEvents", events);
+      }
+    };
+
+    tangleDevice = TangleConnectWEBSerial;
+
+    console.log("Running in TangleSerialDevice mode.");
   } else {
 
     const PlaceHolderConnection = {
