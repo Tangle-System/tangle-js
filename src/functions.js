@@ -107,4 +107,11 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export { createNanoEvents, getTimestamp, timeOffset, toBytes, replaceConstants, getHexColor, CONSTANTS, FLAGS, getClockTimestamp, getTimelineFlags, sleep, };
+
+function debugLog(...args) {
+  // if (window.localStorage.getItem('debug') === 'true') {
+  console.log(`TangleDevice`, ...args);
+  // }
+}
+
+export { createNanoEvents, getTimestamp, timeOffset, toBytes, replaceConstants, getHexColor, CONSTANTS, FLAGS, getClockTimestamp, getTimelineFlags, sleep, debugLog };

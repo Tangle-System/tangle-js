@@ -1,194 +1,91 @@
-import TimeTrack from "./TimeTrack.js";
-import TangleBluetoothDevice from "./TangleBluetoothDevice.js";
-import TnglCodeParser from "./TangleCodeParser.js";
-import TangleSerialDevice from "./TangleSerialDevice.js";
+import { nanoevents, tangleBluetoothDevice, tangleConnect, tangleSerialDevice, timeTrack, tnglParser } from './initialize.js'
+import { debugLog } from './functions.js'
+import connectors from "./connectors.js";
 
-function initBluetoothDevice() {
-  return new TangleBluetoothDevice();
-}
 
-function initSerialDevice() {
-  return new TangleSerialDevice();
-}
+export default function TangleDevice() {
+  let connectionType = "none";
+  let connector = connectors.none;
 
-export default function TangleDevice({ ble, serial } = { ble: initBluetoothDevice(), serial: initSerialDevice() }) {
-  const tnglParser = new TnglCodeParser();
-  const timeTrack = new TimeTrack();
-
-  function debugLog(...args) {
-    // if (window.localStorage.getItem('debug') === 'true') {
-    console.log(`TangleDevice`, ...args);
-    // }
-  }
-
-  let tangleDevice;
-
-  const tangleBluetoothDevice = ble;
-  const tangleSerialDevice = serial;
 
   if ("tangleConnect" in window) {
-    const tangleConnect = window.tangleConnect;
-
-    const TangleConnectANDROID = {
-      connect: (filters = null) => {
-        console.log("Connection is handled by tangleConnect.");
-      },
-      // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
-      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-        console.info("posilam TNGL Kod uploadTngl()");
-        tangleConnect.uploadTngl(tngl_code, 0, timeline_timestamp, timeline_paused);
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-      },
-      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-        console.info("posilam TNGL bajty uploadTnglBytes()");
-        tangleConnect.uploadTnglBytes(tngl_bytes, 0, timeline_timestamp, timeline_paused);
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-      },
-      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-        console.info("posilam setTime setTime()");
-        tangleConnect.setTime(timeline_timestamp, timeline_paused);
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-      },
-      emitEvent: (event_code, param, device_id = 0) => {
-        console.info("posilam emitEvent()");
-
-        tangleConnect.emitEvent(device_id, event_code, param, timeTrack.millis());
-      },
-      emitEvents: (events) => {
-        console.info("posilam emitEvents()");
-
-        tangleConnect.emitEvents(events);
-      }
-    };
-
-    tangleDevice = TangleConnectANDROID;
+    connectionType = "android";
 
     console.info("Running in Android Bluetooth mode");
   }
-  /*else if ("bluetooth" in window?.navigator) {
-    const TangleConnectWEBBLE = {
-      connect: (filters = null) => {
-        tangleBluetoothDevice.connect();
-        debugLog(".connect", filters);
-      },
-      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-        const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
-        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-        tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-        tangleBluetoothDevice.setTime(0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".setTime", timeline_timestamp, timeline_paused);
-      },
-      emitEvent: (event_code, param, device_id = 0) => {
-
-        tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
-
-        debugLog(".emitEvent", event_code, param, timeTrack.millis());
-      },
-      emitEvents: (events) => {
-
-        tangleBluetoothDevice.emitEvents(events);
-        // TODO - timestamps autofill current time if not present
-
-        debugLog(".emitEvents", events);
-      }
-    };
-
-    tangleDevice = TangleConnectWEBBLE;
+  else if ("bluetooth" in window?.navigator) {
+    connectionType = "bluetooth";
 
     console.info("Running in WebBluetooth mode");
-  } */
-  else if (tangleSerialDevice && "serial" in window.navigator) {
-
-    const TangleConnectWEBSerial = {
-      connect: (filters = null) => {
-        tangleSerialDevice.connect();
-        debugLog(".connect", filters);
-      },
-      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-        const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
-        tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-        tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-        tangleSerialDevice.setTime(0, timeline_timestamp, timeline_paused);
-
-        timeTrack.setStatus(timeline_timestamp, timeline_paused);
-
-        debugLog(".setTime", timeline_timestamp, timeline_paused);
-      },
-      emitEvent: (event_code, param, device_id = 0) => {
-
-        tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
-
-        debugLog(".emitEvent", event_code, param, timeTrack.millis());
-      },
-      emitEvents: (events) => {
-
-        tangleSerialDevice.emitEvents(events);
-        // TODO - timestamps autofill current time if not present
-
-        debugLog(".emitEvents", events);
-      }
-    };
-
-    tangleDevice = TangleConnectWEBSerial;
+  }
+  else if ("serial" in window.navigator) {
+    connectionType = "serial";
 
     console.log("Running in TangleSerialDevice mode.");
   } else {
-
-    const PlaceHolderConnection = {
-      connect: (filters = null) => {
-        debugLog("Placeholder .connect", filters);
-      },
-      uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-
-        debugLog("Placeholder .uploadTngl", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-
-        debugLog("Placeholder .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
-      },
-      setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-
-        debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
-      },
-      emitEvent: (event_code, param, device_id) => {
-
-        debugLog("Placeholder .triggeremitEvent", 3, event_code, timeTrack.millis());
-      },
-      emitEvents: (events) => {
-
-        debugLog("Placeholder .emitEvents", events);
-      }
-    };
-    tangleDevice = PlaceHolderConnection;
+    connectionType = "none";
 
     console.error("No supported module found, you need to add atleast one supported connection module.", 'Running in placeholder mode (will be handled in future by Tangle Devtools)');
   }
-  return tangleDevice;
+  connector = connectors[connectionType];
+  window.connector = connectors[connectionType];
+
+
+  const connectionHandler = {
+    connect: ({ filters, type } = {}) => {
+      if (Object.keys(connectors).includes(type)) {
+        connector = connectors[type];
+        window.connector = connector
+        // not implemented in TangleConnectors !!!
+        // connectors[connectionType].destroyEvents();
+        connectionType = type;
+        connectors[connectionType].initEvents();
+        return connector.connect(filters);
+      } else if (connectionType !== 'none') {
+        connector = connectors[connectionType];
+        // connectors[connectionType].destroyEvents();
+        connectionType = type;
+        connector.initEvents();
+        return connector.connect(filters);
+      }
+      else {
+        console.error(`Connector ${type} does not exist, or not initialized`)
+      }
+      debugLog("Placeholder .connect", filters);
+    },
+    uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
+      debugLog("Placeholder .uploadTngl", tngl_code, timeline_timestamp, timeline_paused);
+      return connector.uploadTngl(tngl_code, timeline_timestamp = 0, timeline_paused = false);
+    },
+    uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
+      debugLog("Placeholder .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
+      return connector.uploadTnglBytes(tngl_bytes, timeline_timestamp = 0, timeline_paused = false);
+    },
+    setTime: (timeline_timestamp = 0, timeline_paused = false) => {
+      debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
+      return connector.setTime(timeline_timestamp = 0, timeline_paused = false);
+    },
+    emitEvent: (event_code, param, device_id) => {
+      debugLog("Placeholder .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
+      return connector.emitEvent(event_code, param, device_id);
+    },
+    emitEvents: (events) => {
+      debugLog("Placeholder .emitEvents", events);
+      return connector.emitEvents(events);
+    },
+    // for connection events
+    initEvents: () => {
+      return connector.initEvents();
+    },
+    destroyEvents: () => {
+      return connector.destroyEvents();
+    },
+    getConnectionType: () => {
+      return connectionType;
+    },
+    ...nanoevents
+
+  };
+  window.tangleDevice = connectionHandler
+  return connectionHandler;
 }
