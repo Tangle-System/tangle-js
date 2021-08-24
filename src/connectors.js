@@ -16,9 +16,9 @@ const TangleConnectANDROID = {
     tangleConnect.uploadTnglBytes(tngl_bytes, 0, timeline_timestamp, timeline_paused);
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
   },
-  setTime: (timeline_timestamp = 0, timeline_paused = false) => {
+  setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
     console.info("posilam setTime setTime()");
-    tangleConnect.setTime(timeline_timestamp, timeline_paused);
+    tangleConnect.setTimeline(timeline_timestamp, timeline_paused);
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
   },
   emitEvent: (event_code, param, device_id = 0) => {
@@ -83,19 +83,19 @@ const TangleConnectWEBBLE = {
   },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
     const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
-    tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
+    tangleBluetoothDevice.uploadTngl(tngl_bytes, 0x00, timeline_timestamp, timeline_paused);
 
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
     console.log('uploaded')
   },
   uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-    tangleBluetoothDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
+    tangleBluetoothDevice.uploadTngl(tngl_bytes, 0x00, timeline_timestamp, timeline_paused);
 
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
   },
-  setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-    tangleBluetoothDevice.setTime(0, timeline_timestamp, timeline_paused);
+  setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
+    tangleBluetoothDevice.setTimeline(0, timeline_timestamp, timeline_paused);
 
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
@@ -162,8 +162,8 @@ const TangleConnectWEBSerial = {
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
   },
-  setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-    tangleSerialDevice.setTime(0, timeline_timestamp, timeline_paused);
+  setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
+    tangleSerialDevice.setTimeline(0, timeline_timestamp, timeline_paused);
 
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
@@ -224,7 +224,7 @@ const PlaceHolderConnection = {
   uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
 
   },
-  setTime: (timeline_timestamp = 0, timeline_paused = false) => {
+  setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
 
   },
   emitEvent: (event_code, param, device_id) => {

@@ -51,26 +51,26 @@ export default function TangleDevice() {
       else {
         console.error(`Connector ${type} does not exist, or not initialized`)
       }
-      debugLog("Placeholder .connect", filters);
+      debugLog(" .connect", filters);
     },
     uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-      debugLog("Placeholder .uploadTngl", tngl_code, timeline_timestamp, timeline_paused);
+      debugLog(" .uploadTngl", tngl_code, timeline_timestamp, timeline_paused);
       return connector.uploadTngl(tngl_code, timeline_timestamp = 0, timeline_paused = false);
     },
     uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-      debugLog("Placeholder .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
+      debugLog(" .uploadTnglBytes", tngl_bytes, timeline_timestamp, timeline_paused);
       return connector.uploadTnglBytes(tngl_bytes, timeline_timestamp = 0, timeline_paused = false);
     },
-    setTime: (timeline_timestamp = 0, timeline_paused = false) => {
-      debugLog("Placeholder .setTime", timeline_timestamp, timeline_paused);
-      return connector.setTime(timeline_timestamp = 0, timeline_paused = false);
+    setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
+      debugLog(" .setTime", timeline_timestamp, timeline_paused);
+      return connector.setTimeline(timeline_timestamp, timeline_paused);
     },
     emitEvent: (event_code, param, device_id) => {
-      debugLog("Placeholder .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
+      debugLog(" .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
       return connector.emitEvent(event_code, param, device_id);
     },
     emitEvents: (events) => {
-      debugLog("Placeholder .emitEvents", events);
+      debugLog(" .emitEvents", events);
       return connector.emitEvents(events);
     },
     // for connection events

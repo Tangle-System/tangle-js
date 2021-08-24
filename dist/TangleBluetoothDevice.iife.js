@@ -17,7 +17,6 @@ var TangleBluetoothDevice = (function () {
   });
 
 
-
   var FLAGS = Object.freeze({
     /* whole flags */
     FLAG_TNGL_BYTES: 251,
@@ -80,16 +79,82 @@ var TangleBluetoothDevice = (function () {
     return (new Date().getTime() % 0x7fffffff) - timeOffset;
   }
 
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+
+  function mapValue(x, in_min, in_max, out_min, out_max) {
+    if (in_max == in_min) {
+      return out_min / 2 + out_max / 2;
+    }
+
+    let minimum = Math.min(in_min, in_max);
+    let maximum = Math.max(in_min, in_max);
+
+    if (x < minimum) {
+      x = minimum;
+    } else if (x > maximum) {
+      x = maximum;
+    }
+
+    let result = ((x - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+
+    minimum = Math.min(out_min, out_max);
+    maximum = Math.max(out_min, out_max);
+
+    if (result < minimum) {
+      result = minimum;
+    } else if (result > maximum) {
+      result = maximum;
+    }
+
+    return result;
+  }
+
+
+  // takes "label" and outputs ascii characters in a list of bytes
+  function labelToBytes(label_string) {
+    var byteArray = [];
+
+    for (let index = 0; index < 5; index++) {
+      byteArray.push(label_string.charCodeAt(index));
+    }
+    return byteArray;
+  }
+
+  function colorToBytes(color_hex_code) {
+    let reg = color_hex_code.match(/#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i);
+    if (!reg) {
+      console.error('Wrong color code: "' + color_hex_code + '"');
+      return [0, 0, 0];
+    }
+
+    let r = parseInt(reg[1], 16);
+    let g = parseInt(reg[2], 16);
+    let b = parseInt(reg[3], 16);
+
+    return [r, g, b];
+  }
+
+  function percentageToBytes(percentage_float) {
+    const value = mapValue(percentage_float, -100.0, 100.0, -2147483647, 2147483647);
+    return toBytes(Math.floor(value), 4);
+  }
+
   //////////////////////////////////////////////////////////////////////////
 
+  //////////////////////////////////////////////////////////////////////////
 
   function Transmitter() {
-  	this.TERMINAL_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
-  	this.SYNC_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
+  	this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
+  	this.SYNC_CHAR_UUID = "bec2539d-4535-48da-8e2f-3caa88813f55";
+  	this.UPDATE_CHAR_UUID = "9ebe2e4b-10c7-4a81-ac83-49540d1135a5";
 
   	this._service = null;
   	this._terminalChar = null;
   	this._syncChar = null;
+  	this._updateChar = null;
   	this._writing = false;
   	this._queue = [];
   }
@@ -99,13 +164,29 @@ var TangleBluetoothDevice = (function () {
 
   	return this._service
   		.getCharacteristic(this.TERMINAL_CHAR_UUID)
+  		.catch((e) => {
+  			console.warn(e);
+  		})
   		.then((characteristic) => {
   			this._terminalChar = characteristic;
   			return this._service.getCharacteristic(this.SYNC_CHAR_UUID);
   		})
+  		.catch((e) => {
+  			console.warn(e);
+  		})
   		.then((characteristic) => {
   			this._syncChar = characteristic;
+  			return this._service.getCharacteristic(this.UPDATE_CHAR_UUID);
+  		})
+  		.catch((e) => {
+  			console.warn(e);
+  		})
+  		.then((characteristic) => {
+  			this._updateChar = characteristic;
   			this.deliver(); // kick off transfering thread if there are item in queue
+  		})
+  		.catch((e) => {
+  			console.warn(e);
   		});
   };
 
@@ -226,19 +307,24 @@ var TangleBluetoothDevice = (function () {
   	return new Promise(async (resolve, reject) => {
   		let success = true;
 
-  		const bytes = [...toBytes(timestamp, 4)];
-  		await this._syncChar.writeValueWithoutResponse(new Uint8Array(bytes)).catch((e) => {
-  			console.warn(e);
-  			success = false;
-  		});
-  		await this._syncChar.writeValueWithoutResponse(new Uint8Array([])).catch((e) => {
-  			console.warn(e);
-  			success = false;
-  		});
+  		try {
+  			const bytes = [...toBytes(timestamp, 4)];
+  			await this._syncChar.writeValueWithoutResponse(new Uint8Array(bytes)).catch((e) => {
+  				console.warn(e);
+  				success = false;
+  			});
+  			await this._syncChar.writeValueWithoutResponse(new Uint8Array([])).catch((e) => {
+  				console.warn(e);
+  				success = false;
+  			});
 
-  		if (success) {
-  			resolve();
-  		} else {
+  			if (success) {
+  				resolve();
+  			} else {
+  				reject();
+  			}
+  		} catch (e) {
+  			console.error(e);
   			reject();
   		}
   	});
@@ -247,6 +333,10 @@ var TangleBluetoothDevice = (function () {
   // sync() synchronizes the device clock
   Transmitter.prototype.sync = async function (timestamp) {
   	//console.log("sync(" + timestamp +")");
+
+  	if (!this._syncChar) {
+  		return false;
+  	}
 
   	if (!this._writing) {
   		this._writing = true;
@@ -266,6 +356,265 @@ var TangleBluetoothDevice = (function () {
   	}
   };
 
+
+  Transmitter.prototype._writeFirmware = function (firmware) {
+  	return new Promise(async (resolve, reject) => {
+  		const FLAG_OTA_BEGIN = 255;
+  		const FLAG_OTA_WRITE = 0;
+  		const FLAG_OTA_END = 254;
+  		const FLAG_OTA_RESET = 253;
+
+  		let data_size = 496;
+
+  		let index_from = 0;
+  		let index_to = data_size;
+
+  		let written = 0;
+
+  		console.log("OTA UPDATE");
+
+  		console.log(firmware);
+
+  		{
+  			//===========// RESET //===========//
+  			console.log("OTA RESET");
+
+  			const bytes = [FLAG_OTA_RESET, 0x00, ...toBytes(0x00000000, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		await sleep(100);
+
+  		{
+  			//===========// BEGIN //===========//
+  			console.log("OTA BEGIN");
+
+  			const bytes = [FLAG_OTA_BEGIN, 0x00, ...toBytes(firmware.length, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		await sleep(100);
+
+  		const start_timestamp = new Date().getTime();
+
+  		{
+  			//===========// WRITE //===========//
+  			console.log("OTA WRITE");
+
+  			while (written < firmware.length) {
+  				if (index_to > firmware.length) {
+  					index_to = firmware.length;
+  				}
+
+  				const bytes = [FLAG_OTA_WRITE, 0x00, ...toBytes(written, 4), ...firmware.slice(index_from, index_to)];
+
+  				try {
+  					await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+
+  					written += index_to - index_from;
+  				} catch (error) {
+  					console.error(error);
+  					reject(error);
+  					return;
+  				}
+
+  				console.log(Math.floor((written * 10000) / firmware.length) / 100 + "%");
+
+  				index_from += data_size;
+  				index_to = index_from + data_size;
+  			}
+  		}
+
+  		const end_timestamp = new Date().getTime();
+
+  		console.log("Firmware written in " + ((end_timestamp - start_timestamp) / 1000) + " seconds");
+
+  		await sleep(100);
+
+  		{
+  			//===========// END //===========//
+  			console.log("OTA END");
+
+  			const bytes = [FLAG_OTA_END, 0x00, ...toBytes(written, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		resolve();
+  	});
+  };
+
+  Transmitter.prototype._writeConfig = function (config) {
+  	return new Promise(async (resolve, reject) => {
+  		const FLAG_CONFIG_BEGIN = 1;
+  		const FLAG_CONFIG_WRITE = 2;
+  		const FLAG_CONFIG_END = 3;
+  		const FLAG_CONFIG_RESET = 4;
+
+  		const data_size = 496;
+
+  		let index_from = 0;
+  		let index_to = data_size;
+
+  		let written = 0;
+
+  		console.log("CONFIG UPDATE");
+
+  		console.log(config);
+
+  		{
+  			//===========// RESET //===========//
+  			console.log("CONFIG RESET");
+
+  			const bytes = [FLAG_CONFIG_RESET, 0x00, ...toBytes(0x00000000, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		await sleep(100);
+
+  		{
+  			//===========// BEGIN //===========//
+  			console.log("CONFIG BEGIN");
+
+  			const bytes = [FLAG_CONFIG_BEGIN, 0x00, ...toBytes(config.length, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		await sleep(100);
+
+  		const start_timestamp = new Date().getTime();
+
+  		{
+  			//===========// WRITE //===========//
+  			console.log("CONFIG WRITE");
+
+  			while (written < config.length) {
+  				if (index_to > config.length) {
+  					index_to = config.length;
+  				}
+
+  				const bytes = [FLAG_CONFIG_WRITE, 0x00, ...toBytes(written, 4), ...config.slice(index_from, index_to)];
+
+  				try {
+  					await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  					written += index_to - index_from;
+  				} catch (error) {
+  					console.error(error);
+  					reject(error);
+  					return;
+  				}
+
+  				console.log(Math.floor((written * 10000) / config.length) / 100 + "%");
+
+  				index_from += data_size;
+  				index_to = index_from + data_size;
+  			}
+  		}
+
+  		const end_timestamp = new Date().getTime();
+
+  		console.log("Config written in " + ((end_timestamp - start_timestamp) / 1000) + " seconds");
+
+  		await sleep(100);
+
+  		{
+  			//===========// END //===========//
+  			console.log("CONFIG END");
+
+  			const bytes = [FLAG_CONFIG_END, 0x00, ...toBytes(written, 4)];
+
+  			try {
+  				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+  			} catch (error) {
+  				console.error(error);
+  				reject(error);
+  				return;
+  			}
+  		}
+
+  		resolve();
+  	});
+  };
+
+
+  // sync() synchronizes the device clock
+  Transmitter.prototype.updateFirmware = async function (firmware) {
+
+  	if (this._writing) {
+  		console.error("Write currently in progress");
+  		return false;
+  	}
+
+  	this._writing = true;
+
+  	let success = true;
+
+  	await this._writeFirmware(firmware).catch((e) => {
+  		console.warn(e);
+  		success = false;
+  	});
+
+  	this._writing = false;
+
+  	return success;
+  };
+
+  // sync() synchronizes the device clock
+  Transmitter.prototype.updateConfig = async function (config) {
+
+  	if (this._writing) {
+  		console.error("Write currently in progress");
+  		return false;
+  	}
+
+  	this._writing = true;
+
+  	let success = true;
+
+  	await this._writeConfig(config).catch((e) => {
+  		console.warn(e);
+  		success = false;
+  	});
+
+  	this._writing = false;
+
+  	return success;
+  };
+
   // clears the queue of items to send
   Transmitter.prototype.reset = function () {
   	this._writing = false;
@@ -277,17 +626,17 @@ var TangleBluetoothDevice = (function () {
   // Tangle Bluetooth Device
 
   function TangleBluetoothConnection() {
-  	this.TRANSMITTER_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
+  	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0000-5ad20c574c10";
 
   	this.BLE_OPTIONS = {
-  		acceptAllDevices: true,
-  		//   filters: [
-  		//     { services: [TRANSMITTER_SERVICE_UUID] }
-  		//     // {services: [0xffe0, 0x1803]},
-  		//     // {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
-  		//     // {name: 'ExampleName'},
-  		//   ]
-  		optionalServices: [this.TRANSMITTER_SERVICE_UUID],
+  		//acceptAllDevices: true,
+  		filters: [
+  			{ services: [this.TRANSMITTER_SERVICE_UUID] },
+  			// {services: [0xffe0, 0x1803]},
+  			// {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
+  			// {name: 'ExampleName'},
+  		],
+  		//optionalServices: [this.TRANSMITTER_SERVICE_UUID],
   	};
 
   	this.bluetoothDevice = null;
@@ -324,9 +673,6 @@ var TangleBluetoothDevice = (function () {
   	});
   };
 
-  /**
-   * TODO - add filter params
-   */
   TangleBluetoothConnection.prototype.connect = function () {
   	//console.log("connect()");
 
@@ -396,7 +742,6 @@ var TangleBluetoothDevice = (function () {
   		self.eventEmitter.emit("disconnected", event);
   	}
   };
-  //////////////////////////////////////////////////////////////////////////
 
   function TangleBluetoothDevice() {
     this.bluetoothConnection = new TangleBluetoothConnection();
@@ -439,11 +784,10 @@ var TangleBluetoothDevice = (function () {
             let success = false;
 
             for (let index = 0; index < 3; index++) {
+              await sleep(100);
               if (await event.target.transmitter.sync(getClockTimestamp())) {
                 success = true;
                 break;
-              } else {
-                await sleep(100);
               }
             }
 
@@ -474,11 +818,10 @@ var TangleBluetoothDevice = (function () {
         let success = false;
 
         for (let index = 0; index < 3; index++) {
+          await sleep(100);
           if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
             success = true;
             break;
-          } else {
-            await sleep(100);
           }
         }
 
@@ -500,11 +843,10 @@ var TangleBluetoothDevice = (function () {
         let success = false;
 
         for (let index = 0; index < 3; index++) {
+          await sleep(100);
           if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
             success = true;
             break;
-          } else {
-            await sleep(100);
           }
         }
 
@@ -560,30 +902,61 @@ var TangleBluetoothDevice = (function () {
     return true;
   };
 
-  /* 
-  function emitEvent(code, parameter, timeline_timestamp, device_id)
-
-  device_id [0; 255]
-  code [0; 255]
-  parameter [0; 255]
-  timeline_timestamp [-2147483648; 2147483647] 
-
-  */
-
-  TangleBluetoothDevice.prototype.emitEvent = function (device_id, code, parameter, timeline_timestamp) {
-    //console.log("emitEvent()");
-
+  // event_label example: "evt1"
+  // event_value example: 1000
+  TangleBluetoothDevice.prototype.emitTimestampEvent = function (event_label, event_value_timestamp, event_timestamp, device_id) {
     if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
       console.warn("Bluetooth device disconnected");
       return false;
     }
 
-    const payload = [FLAGS.FLAG_EMIT_EVENT, device_id, code, parameter, ...toBytes(timeline_timestamp, 4)];
+    const payload = [FLAGS.FLAG_EMIT_TIMESTAMP_EVENT, ...toBytes(event_value_timestamp, 4), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
     this.bluetoothConnection.transmitter.deliver(payload);
 
     return true;
   };
 
+  // event_label example: "evt1"
+  // event_value example: "#00aaff"
+  TangleBluetoothDevice.prototype.emitColorEvent = function (event_label, event_value, event_timestamp, device_id) {
+    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+      console.warn("Bluetooth device disconnected");
+      return false;
+    }
+
+    const payload = [FLAGS.FLAG_EMIT_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+    this.bluetoothConnection.transmitter.deliver(payload);
+
+    return true;
+  };
+
+  // event_label example: "evt1"
+  // event_value example: 100.0
+  TangleBluetoothDevice.prototype.emitPercentageEvent = function (event_label, event_value, event_timestamp, device_id) {
+    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+      console.warn("Bluetooth device disconnected");
+      return false;
+    }
+
+    const payload = [FLAGS.FLAG_EMIT_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+    this.bluetoothConnection.transmitter.deliver(payload);
+
+    return true;
+  };
+
+  // event_label example: "evt1"
+  // event_value example: "label"
+  TangleBluetoothDevice.prototype.emitLabelEvent = function (event_label, event_value, event_timestamp, device_id) {
+    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+      console.warn("Bluetooth device disconnected");
+      return false;
+    }
+
+    const payload = [FLAGS.FLAG_EMIT_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+    this.bluetoothConnection.transmitter.deliver(payload);
+
+    return true;
+  };
   /* 
   function emitEvents(events)
 
@@ -618,26 +991,26 @@ var TangleBluetoothDevice = (function () {
   == EXAMPLE ==
   */
 
-  TangleBluetoothDevice.prototype.emitEvents = function (events) {
-    //console.log("emitEvents()");
+  // TangleBluetoothDevice.prototype.emitEvents = function (events) {
+  //   //console.log("emitEvents()");
 
-    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
-      console.warn("Bluetooth device disconnected");
-      return false;
-    }
+  //   if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+  //     console.warn("Bluetooth device disconnected");
+  //     return false;
+  //   }
 
-    let payload = [];
+  //   let payload = [];
 
-    for (let i = 0; i < events.length; i++) {
-      const e = events[i];
-      const bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter, ...toBytes(e.timeline_timestamp, 4)];
-      payload.push(...bytes);
-    }
+  //   for (let i = 0; i < events.length; i++) {
+  //     const e = events[i];
+  //     const bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter, ...toBytes(e.timeline_timestamp, 4)];
+  //     payload.push(...bytes);
+  //   }
 
-    this.bluetoothConnection.transmitter.deliver(payload);
+  //   this.bluetoothConnection.transmitter.deliver(payload);
 
-    return true;
-  };
+  //   return true;
+  // };
 
   /* timeline_index [0 - 15]
 
@@ -669,6 +1042,30 @@ var TangleBluetoothDevice = (function () {
     }
 
     this.bluetoothConnection.transmitter.sync(getClockTimestamp()); // bluetooth transmittion slack delay 10ms
+    return true;
+  };
+
+  TangleBluetoothDevice.prototype.updateFirmware = function (firmware) {
+    //console.log("syncClock()");
+
+    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+      console.warn("Bluetooth device disconnected");
+      return false;
+    }
+
+    this.bluetoothConnection.transmitter.updateFirmware(firmware); // bluetooth transmittion slack delay 10ms
+    return true;
+  };
+
+  TangleBluetoothDevice.prototype.updateConfig = function (config) {
+    //console.log("syncClock()");
+
+    if (!this.bluetoothConnection || !this.bluetoothConnection.transmitter) {
+      console.warn("Bluetooth device disconnected");
+      return false;
+    }
+
+    this.bluetoothConnection.transmitter.updateConfig(config); // bluetooth transmittion slack delay 10ms
     return true;
   };
 

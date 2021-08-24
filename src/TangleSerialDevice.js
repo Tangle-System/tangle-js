@@ -1,4 +1,4 @@
-import { getClockTimestamp, getTimelineFlags, toBytes, FLAGS, CONSTANTS } from "./functions.js";
+import { getClockTimestamp, getTimelineFlags, toBytes, FLAGS, CONSTANTS, labelToBytes, colorToBytes, percentageToBytes } from "./functions.js";
 import TangleSerialConnection from './TangleSerialConnection.js'
 
 /** Example TangleDevice implementation
@@ -130,29 +130,71 @@ TangleSerialDevice.prototype.setTimeline = function (timeline_index, timeline_ti
   return true;
 };
 
-/* 
-function emitEvent(code, parameter, timeline_timestamp, device_id)
+// event_label example: "evt1"
+// event_value example: 1000
+TangleSerialDevice.prototype.emitTimestampEvent = function (event_label, event_value_timestamp, event_timestamp, device_id) {
 
-device_id [0; 255]
-code [0; 255]
-parameter [0; 255]
-timeline_timestamp [-2147483648; 2147483647] 
-
-*/
-
-TangleSerialDevice.prototype.emitEvent = function (device_id, code, parameter, timeline_timestamp) {
-  //console.log("emitEvent()");
 
   if (!this.serialConnection || !this.serialConnection.transmitter) {
     console.warn("Serial device disconnected");
     return false;
   }
 
-  const payload = [FLAGS.FLAG_EMIT_EVENT, device_id, code, parameter, ...toBytes(timeline_timestamp, 4)];
+  const payload = [FLAGS.FLAG_EMIT_TIMESTAMP_EVENT, ...toBytes(event_value_timestamp, 4), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
   this.serialConnection.transmitter.deliver(payload);
 
   return true;
 };
+
+// event_label example: "evt1"
+// event_value example: "#00aaff"
+TangleSerialDevice.prototype.emitColorEvent = function (event_label, event_value, event_timestamp, device_id) {
+
+
+  if (!this.serialConnection || !this.serialConnection.transmitter) {
+    console.warn("Serial device disconnected");
+    return false;
+  }
+
+  const payload = [FLAGS.FLAG_EMIT_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+  this.serialConnection.transmitter.deliver(payload);
+
+  return true;
+};
+
+// event_label example: "evt1"
+// event_value example: 100.0
+TangleSerialDevice.prototype.emitPercentageEvent = function (event_label, event_value, event_timestamp, device_id) {
+
+
+  if (!this.serialConnection || !this.serialConnection.transmitter) {
+    console.warn("Serial device disconnected");
+    return false;
+  }
+
+  const payload = [FLAGS.FLAG_EMIT_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+  this.serialConnection.transmitter.deliver(payload);
+
+  return true;
+};
+
+// event_label example: "evt1"
+// event_value example: "label"
+TangleSerialDevice.prototype.emitLabelEvent = function (event_label, event_value, event_timestamp, device_id) {
+
+
+  if (!this.serialConnection || !this.serialConnection.transmitter) {
+    console.warn("Serial device disconnected");
+    return false;
+  }
+
+  const payload = [FLAGS.FLAG_EMIT_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+  this.serialConnection.transmitter.deliver(payload);
+
+  return true;
+};
+
+
 
 /* 
 function emitEvents(events)
@@ -188,26 +230,26 @@ event object must have:
 == EXAMPLE ==
 */
 
-TangleSerialDevice.prototype.emitEvents = function (events) {
-  //console.log("emitEvents()");
+// TangleSerialDevice.prototype.emitEvents = function (events) {
+//   //console.log("emitEvents()");
 
-  if (!this.serialConnection || !this.serialConnection.transmitter) {
-    console.warn("Serial device disconnected");
-    return false;
-  }
+//   if (!this.serialConnection || !this.serialConnection.transmitter) {
+//     console.warn("Serial device disconnected");
+//     return false;
+//   }
 
-  let payload = [];
+//   let payload = [];
 
-  for (let i = 0; i < events.length; i++) {
-    const e = events[i];
-    const bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter, ...toBytes(e.timeline_timestamp, 4)];
-    payload.push(...bytes);
-  }
+//   for (let i = 0; i < events.length; i++) {
+//     const e = events[i];
+//     const bytes = [FLAGS.FLAG_EMIT_EVENT, e.device_id, e.code, e.parameter, ...toBytes(e.timeline_timestamp, 4)];
+//     payload.push(...bytes);
+//   }
 
-  this.serialConnection.transmitter.deliver(payload);
+//   this.serialConnection.transmitter.deliver(payload);
 
-  return true;
-};
+//   return true;
+// };
 
 TangleSerialDevice.prototype.syncTimeline = function (timeline_index, timeline_timestamp, timeline_paused) {
   //console.log("syncTimeline()");

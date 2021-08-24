@@ -1,24 +1,12 @@
 import { timeTrack } from './initialize.js';
 import { TangleDevice } from './main.js';
 
+// build your own TnglCode logic on https://blockly.tangle.cz/0.7.0/
 const tnglCode = `
-defDevice4("device1", 0x00, 0xff, 0x01, 15, 50, 0, 100);
-
-addWindow(0, 2147483647, {
-  addDrawing(0, 2147483647, animFill(2147483647, #ff0000));
-}).modifyBrightness(channel(0x0a));
-
-eventHandler(0, 3600000, 0x64, 0x00, {
-  addDrawing(0, 300, animRainbow(300, constant(100%)));
-});
-
-writeChannel(0x0a, eventParameterValueSmoothed(0x0a, 500));
-
+defDevice($dev, 0x00, 0xff, 0x01, 15px);
+addDrawing(-100s, 1000s, animRainbow(5s, 100%));
 `
-
 const tangleDevice = TangleDevice();
-
-// const connectBtn = document.getElementById('connect');
 
 document.querySelector('#connectBluetooth').addEventListener('click', () => {
   tangleDevice.connect({ type: "bluetooth" });
@@ -47,6 +35,13 @@ uploadBtn.addEventListener('click', () => {
   tangleDevice.uploadTngl(tnglCode);
 })
 
+const resetTimeBtn = document.querySelector('#resetTime')
+
+resetTimeBtn.addEventListener('click', () => {
+  timeTrack.setMillis(0);
+  tangleDevice.setTimeline(0, false);
+})
+
 tangleDevice.on("connection", (event) => {
   console.log('Tangle:' + event);
 
@@ -56,22 +51,12 @@ tangleDevice.on("connection", (event) => {
     } else if (tangleDevice.getConnectionType() === "serial") {
       document.querySelector('#connectSerial').textContent = "Connected"
     }
-
-    setTimeout(_ => {
-      // timeSyncing = setInterval(() => {
-      //   tangleDevice.setTime(timeTrack.millis(), false)
-      // }, 5000)
-      console.log("Sending TANGLE_CODE");
-      tangleDevice.uploadTngl(tnglCode)
-    }, 300)
   } else {
     if (tangleDevice.getConnectionType() === "bluetooth") {
       document.querySelector('#connectBluetooth').textContent = "Disconnected"
     } else if (tangleDevice.getConnectionType() === "serial") {
       document.querySelector('#connectSerial').textContent = "Disconnected"
     }
-
-
     clearInterval(timeSyncing)
   }
 });

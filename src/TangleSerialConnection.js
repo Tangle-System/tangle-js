@@ -1,4 +1,5 @@
 import { createNanoEvents, toBytes } from "./functions.js";
+//////////////
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -191,9 +192,9 @@ TangleSerialReceiver.prototype.attach = function (readableStream) {
 
   this._receiveStream = readableStream;
 
-  let textDecoder = new TextDecoderStream();
+  let textDecoder = new window.TextDecoderStream();
   this._receiveTextDecoderDone = this._receiveStream.pipeTo(textDecoder.writable);
-  this._receiveStream = textDecoder.readable.pipeThrough(new TransformStream(new LineBreakTransformer()));
+  this._receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
   //.pipeThrough(new TransformStream(new JSONTransformer()));
 
   this._receiveStreamReader = this._receiveStream.getReader();

@@ -1,15 +1,18 @@
-import { createNanoEvents, toBytes } from "./functions.js";
+import { createNanoEvents, toBytes, sleep } from "./functions.js";
 
 //////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////
 
 function Transmitter() {
-	this.TERMINAL_CHAR_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
-	this.SYNC_CHAR_UUID = "0000ffe2-0000-1000-8000-00805f9b34fb";
+	this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
+	this.SYNC_CHAR_UUID = "bec2539d-4535-48da-8e2f-3caa88813f55";
+	this.UPDATE_CHAR_UUID = "9ebe2e4b-10c7-4a81-ac83-49540d1135a5";
 
 	this._service = null;
 	this._terminalChar = null;
 	this._syncChar = null;
+	this._updateChar = null;
 	this._writing = false;
 	this._queue = [];
 }
@@ -19,13 +22,29 @@ Transmitter.prototype.attach = function (service) {
 
 	return this._service
 		.getCharacteristic(this.TERMINAL_CHAR_UUID)
+		.catch((e) => {
+			console.warn(e);
+		})
 		.then((characteristic) => {
 			this._terminalChar = characteristic;
 			return this._service.getCharacteristic(this.SYNC_CHAR_UUID);
 		})
+		.catch((e) => {
+			console.warn(e);
+		})
 		.then((characteristic) => {
 			this._syncChar = characteristic;
+			return this._service.getCharacteristic(this.UPDATE_CHAR_UUID);
+		})
+		.catch((e) => {
+			console.warn(e);
+		})
+		.then((characteristic) => {
+			this._updateChar = characteristic;
 			this.deliver(); // kick off transfering thread if there are item in queue
+		})
+		.catch((e) => {
+			console.warn(e);
 		});
 };
 
@@ -146,19 +165,24 @@ Transmitter.prototype._writeSync = async function (timestamp) {
 	return new Promise(async (resolve, reject) => {
 		let success = true;
 
-		const bytes = [...toBytes(timestamp, 4)];
-		await this._syncChar.writeValueWithoutResponse(new Uint8Array(bytes)).catch((e) => {
-			console.warn(e);
-			success = false;
-		});
-		await this._syncChar.writeValueWithoutResponse(new Uint8Array([])).catch((e) => {
-			console.warn(e);
-			success = false;
-		});
+		try {
+			const bytes = [...toBytes(timestamp, 4)];
+			await this._syncChar.writeValueWithoutResponse(new Uint8Array(bytes)).catch((e) => {
+				console.warn(e);
+				success = false;
+			});
+			await this._syncChar.writeValueWithoutResponse(new Uint8Array([])).catch((e) => {
+				console.warn(e);
+				success = false;
+			});
 
-		if (success) {
-			resolve();
-		} else {
+			if (success) {
+				resolve();
+			} else {
+				reject();
+			}
+		} catch (e) {
+			console.error(e);
 			reject();
 		}
 	});
@@ -167,6 +191,10 @@ Transmitter.prototype._writeSync = async function (timestamp) {
 // sync() synchronizes the device clock
 Transmitter.prototype.sync = async function (timestamp) {
 	//console.log("sync(" + timestamp +")");
+
+	if (!this._syncChar) {
+		return false;
+	}
 
 	if (!this._writing) {
 		this._writing = true;
@@ -186,6 +214,265 @@ Transmitter.prototype.sync = async function (timestamp) {
 	}
 };
 
+
+Transmitter.prototype._writeFirmware = function (firmware) {
+	return new Promise(async (resolve, reject) => {
+		const FLAG_OTA_BEGIN = 255;
+		const FLAG_OTA_WRITE = 0;
+		const FLAG_OTA_END = 254;
+		const FLAG_OTA_RESET = 253;
+
+		let data_size = 496;
+
+		let index_from = 0;
+		let index_to = data_size;
+
+		let written = 0;
+
+		console.log("OTA UPDATE");
+
+		console.log(firmware);
+
+		{
+			//===========// RESET //===========//
+			console.log("OTA RESET");
+
+			const bytes = [FLAG_OTA_RESET, 0x00, ...toBytes(0x00000000, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		await sleep(100);
+
+		{
+			//===========// BEGIN //===========//
+			console.log("OTA BEGIN");
+
+			const bytes = [FLAG_OTA_BEGIN, 0x00, ...toBytes(firmware.length, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		await sleep(100);
+
+		const start_timestamp = new Date().getTime();
+
+		{
+			//===========// WRITE //===========//
+			console.log("OTA WRITE");
+
+			while (written < firmware.length) {
+				if (index_to > firmware.length) {
+					index_to = firmware.length;
+				}
+
+				const bytes = [FLAG_OTA_WRITE, 0x00, ...toBytes(written, 4), ...firmware.slice(index_from, index_to)];
+
+				try {
+					await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+
+					written += index_to - index_from;
+				} catch (error) {
+					console.error(error);
+					reject(error);
+					return;
+				}
+
+				console.log(Math.floor((written * 10000) / firmware.length) / 100 + "%");
+
+				index_from += data_size;
+				index_to = index_from + data_size;
+			}
+		}
+
+		const end_timestamp = new Date().getTime();
+
+		console.log("Firmware written in " + ((end_timestamp - start_timestamp) / 1000) + " seconds");
+
+		await sleep(100);
+
+		{
+			//===========// END //===========//
+			console.log("OTA END");
+
+			const bytes = [FLAG_OTA_END, 0x00, ...toBytes(written, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		resolve();
+	});
+};
+
+Transmitter.prototype._writeConfig = function (config) {
+	return new Promise(async (resolve, reject) => {
+		const FLAG_CONFIG_BEGIN = 1;
+		const FLAG_CONFIG_WRITE = 2;
+		const FLAG_CONFIG_END = 3;
+		const FLAG_CONFIG_RESET = 4;
+
+		const data_size = 496;
+
+		let index_from = 0;
+		let index_to = data_size;
+
+		let written = 0;
+
+		console.log("CONFIG UPDATE");
+
+		console.log(config);
+
+		{
+			//===========// RESET //===========//
+			console.log("CONFIG RESET");
+
+			const bytes = [FLAG_CONFIG_RESET, 0x00, ...toBytes(0x00000000, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		await sleep(100);
+
+		{
+			//===========// BEGIN //===========//
+			console.log("CONFIG BEGIN");
+
+			const bytes = [FLAG_CONFIG_BEGIN, 0x00, ...toBytes(config.length, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		await sleep(100);
+
+		const start_timestamp = new Date().getTime();
+
+		{
+			//===========// WRITE //===========//
+			console.log("CONFIG WRITE");
+
+			while (written < config.length) {
+				if (index_to > config.length) {
+					index_to = config.length;
+				}
+
+				const bytes = [FLAG_CONFIG_WRITE, 0x00, ...toBytes(written, 4), ...config.slice(index_from, index_to)];
+
+				try {
+					await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+					written += index_to - index_from;
+				} catch (error) {
+					console.error(error);
+					reject(error);
+					return;
+				}
+
+				console.log(Math.floor((written * 10000) / config.length) / 100 + "%");
+
+				index_from += data_size;
+				index_to = index_from + data_size;
+			}
+		}
+
+		const end_timestamp = new Date().getTime();
+
+		console.log("Config written in " + ((end_timestamp - start_timestamp) / 1000) + " seconds");
+
+		await sleep(100);
+
+		{
+			//===========// END //===========//
+			console.log("CONFIG END");
+
+			const bytes = [FLAG_CONFIG_END, 0x00, ...toBytes(written, 4)];
+
+			try {
+				await this._updateChar.writeValueWithResponse(new Uint8Array(bytes));
+			} catch (error) {
+				console.error(error);
+				reject(error);
+				return;
+			}
+		}
+
+		resolve();
+	});
+};
+
+
+// sync() synchronizes the device clock
+Transmitter.prototype.updateFirmware = async function (firmware) {
+
+	if (this._writing) {
+		console.error("Write currently in progress");
+		return false;
+	}
+
+	this._writing = true;
+
+	let success = true;
+
+	await this._writeFirmware(firmware).catch((e) => {
+		console.warn(e);
+		success = false;
+	});
+
+	this._writing = false;
+
+	return success;
+};
+
+// sync() synchronizes the device clock
+Transmitter.prototype.updateConfig = async function (config) {
+
+	if (this._writing) {
+		console.error("Write currently in progress");
+		return false;
+	}
+
+	this._writing = true;
+
+	let success = true;
+
+	await this._writeConfig(config).catch((e) => {
+		console.warn(e);
+		success = false;
+	});
+
+	this._writing = false;
+
+	return success;
+};
+
 // clears the queue of items to send
 Transmitter.prototype.reset = function () {
 	this._writing = false;
@@ -197,17 +484,17 @@ Transmitter.prototype.reset = function () {
 // Tangle Bluetooth Device
 
 export default function TangleBluetoothConnection() {
-	this.TRANSMITTER_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
+	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0000-5ad20c574c10";
 
 	this.BLE_OPTIONS = {
-		acceptAllDevices: true,
-		//   filters: [
-		//     { services: [TRANSMITTER_SERVICE_UUID] }
-		//     // {services: [0xffe0, 0x1803]},
-		//     // {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
-		//     // {name: 'ExampleName'},
-		//   ]
-		optionalServices: [this.TRANSMITTER_SERVICE_UUID],
+		//acceptAllDevices: true,
+		filters: [
+			{ services: [this.TRANSMITTER_SERVICE_UUID] },
+			// {services: [0xffe0, 0x1803]},
+			// {services: ['c48e6067-5295-48d3-8d5c-0395f61792b1']},
+			// {name: 'ExampleName'},
+		],
+		//optionalServices: [this.TRANSMITTER_SERVICE_UUID],
 	};
 
 	this.bluetoothDevice = null;
@@ -244,9 +531,6 @@ TangleBluetoothConnection.prototype.scan = function () {
 	});
 };
 
-/**
- * TODO - add filter params
- */
 TangleBluetoothConnection.prototype.connect = function () {
 	//console.log("connect()");
 
@@ -318,4 +602,3 @@ TangleBluetoothConnection.prototype.onDisconnected = function (e) {
 		self.eventEmitter.emit("disconnected", event);
 	}
 };
-//////////////////////////////////////////////////////////////////////////
