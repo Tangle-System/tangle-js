@@ -105,7 +105,7 @@ var FLAGS = Object.freeze({
 
 	/* events */
 	GENERATOR_LAST_EVENT_VALUE: 144,
-	GENERATOR_SMOOTH_TIMED: 145,
+	GENERATOR_SMOOTHOUT: 145,
 	GENERATOR_SINE: 146,
 	GENERATOR_SAW: 147,
 	GENERATOR_TRIANGLE: 148,
@@ -609,13 +609,16 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
 			case "genPerlinNoise":
 				payload.fillFlag(FLAGS.GENERATOR_PERLIN_NOISE);
 				break;
+			case "genSmoothOut":
+				payload.fillFlag(FLAGS.GENERATOR_SMOOTHOUT);
+				break;
 
 			/* === variable operations === */
 
 			case "variable":
 				payload.fillFlag(FLAGS.VARIABLE_READ);
 				break;
-			case "smoothValue":
+			case "genSmoothOut":
 				payload.fillFlag(FLAGS.VARIABLE_SMOOTH_TIMED);
 				break;
 			case "addValues":

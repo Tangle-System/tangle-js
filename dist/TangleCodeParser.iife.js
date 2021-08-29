@@ -176,7 +176,7 @@ var TnglCodeParser = (function () {
 
   	/* events */
   	GENERATOR_LAST_EVENT_VALUE: 144,
-  	GENERATOR_SMOOTH_TIMED: 145,
+  	GENERATOR_SMOOTHOUT: 145,
   	GENERATOR_SINE: 146,
   	GENERATOR_SAW: 147,
   	GENERATOR_TRIANGLE: 148,
@@ -680,13 +680,16 @@ var TnglCodeParser = (function () {
   			case "genPerlinNoise":
   				payload.fillFlag(FLAGS$1.GENERATOR_PERLIN_NOISE);
   				break;
+  			case "genSmoothOut":
+  				payload.fillFlag(FLAGS$1.GENERATOR_SMOOTHOUT);
+  				break;
 
   			/* === variable operations === */
 
   			case "variable":
   				payload.fillFlag(FLAGS$1.VARIABLE_READ);
   				break;
-  			case "smoothValue":
+  			case "genSmoothOut":
   				payload.fillFlag(FLAGS$1.VARIABLE_SMOOTH_TIMED);
   				break;
   			case "addValues":

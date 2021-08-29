@@ -863,10 +863,14 @@ var TangleDevice = (function () {
             let success = false;
 
             for (let index = 0; index < 3; index++) {
-              await sleep(100);
-              if (await event.target.transmitter.sync(getClockTimestamp())) {
-                success = true;
-                break;
+              await sleep(500);
+              try {
+                if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+                  success = true;
+                  break;
+                }
+              } catch (e) {
+                console.error("time sync failed");
               }
             }
 
@@ -897,10 +901,14 @@ var TangleDevice = (function () {
         let success = false;
 
         for (let index = 0; index < 3; index++) {
-          await sleep(100);
-          if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
-            success = true;
-            break;
+          await sleep(500);
+          try {
+            if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+              success = true;
+              break;
+            }
+          } catch (e) {
+            console.error("time sync failed");
           }
         }
 
@@ -922,10 +930,14 @@ var TangleDevice = (function () {
         let success = false;
 
         for (let index = 0; index < 3; index++) {
-          await sleep(100);
-          if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
-            success = true;
-            break;
+          await sleep(500);
+          try {
+            if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+              success = true;
+              break;
+            }
+          } catch (e) {
+            console.error("time sync failed");
           }
         }
 
@@ -1252,7 +1264,7 @@ var TangleDevice = (function () {
 
   	/* events */
   	GENERATOR_LAST_EVENT_VALUE: 144,
-  	GENERATOR_SMOOTH_TIMED: 145,
+  	GENERATOR_SMOOTHOUT: 145,
   	GENERATOR_SINE: 146,
   	GENERATOR_SAW: 147,
   	GENERATOR_TRIANGLE: 148,
@@ -1756,13 +1768,16 @@ var TangleDevice = (function () {
   			case "genPerlinNoise":
   				payload.fillFlag(FLAGS$1.GENERATOR_PERLIN_NOISE);
   				break;
+  			case "genSmoothOut":
+  				payload.fillFlag(FLAGS$1.GENERATOR_SMOOTHOUT);
+  				break;
 
   			/* === variable operations === */
 
   			case "variable":
   				payload.fillFlag(FLAGS$1.VARIABLE_READ);
   				break;
-  			case "smoothValue":
+  			case "genSmoothOut":
   				payload.fillFlag(FLAGS$1.VARIABLE_SMOOTH_TIMED);
   				break;
   			case "addValues":

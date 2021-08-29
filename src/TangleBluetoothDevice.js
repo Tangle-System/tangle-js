@@ -44,10 +44,14 @@ TangleBluetoothDevice.prototype.onDisconnect = function (event) {
           let success = false;
 
           for (let index = 0; index < 3; index++) {
-            await sleep(100);
-            if (await event.target.transmitter.sync(getClockTimestamp())) {
-              success = true;
-              break;
+            await sleep(500);
+            try {
+              if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+                success = true;
+                break;
+              }
+            } catch (e) {
+              console.error("time sync failed");
             }
           }
 
@@ -78,10 +82,14 @@ TangleBluetoothDevice.prototype.connect = function () {
       let success = false;
 
       for (let index = 0; index < 3; index++) {
-        await sleep(100);
-        if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
-          success = true;
-          break;
+        await sleep(500);
+        try {
+          if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+            success = true;
+            break;
+          }
+        } catch (e) {
+          console.error("time sync failed");
         }
       }
 
@@ -103,10 +111,14 @@ TangleBluetoothDevice.prototype.reconnect = function () {
       let success = false;
 
       for (let index = 0; index < 3; index++) {
-        await sleep(100);
-        if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
-          success = true;
-          break;
+        await sleep(500);
+        try {
+          if (await this.bluetoothConnection.transmitter.sync(getClockTimestamp())) {
+            success = true;
+            break;
+          }
+        } catch (e) {
+          console.error("time sync failed");
         }
       }
 

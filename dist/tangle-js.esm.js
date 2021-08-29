@@ -297,7 +297,7 @@ var FLAGS$1 = Object.freeze({
 
   /* events */
   GENERATOR_LAST_EVENT_VALUE: 144,
-  GENERATOR_SMOOTH_TIMED: 145,
+  GENERATOR_SMOOTHOUT: 145,
   GENERATOR_SINE: 146,
   GENERATOR_SAW: 147,
   GENERATOR_TRIANGLE: 148,
@@ -844,13 +844,17 @@ TnglCodeParser.prototype.parseTnglCode = function (tngl_code) {
         payload.fillFlag(FLAGS$1.GENERATOR_PERLIN_NOISE);
         break;
 
+      case "genSmoothOut":
+        payload.fillFlag(FLAGS$1.GENERATOR_SMOOTHOUT);
+        break;
+
       /* === variable operations === */
 
       case "variable":
         payload.fillFlag(FLAGS$1.VARIABLE_READ);
         break;
 
-      case "smoothValue":
+      case "genSmoothOut":
         payload.fillFlag(FLAGS$1.VARIABLE_SMOOTH_TIMED);
         break;
 
@@ -2240,6 +2244,8 @@ TangleBluetoothDevice.prototype.addEventListener = function (event, callback) {
 };
 
 TangleBluetoothDevice.prototype.onDisconnect = function (event) {
+  var _this10 = this;
+
   console.log("Bluetooth Device disconnected");
 
   if (event.target.transmitter) {
@@ -2256,44 +2262,54 @@ TangleBluetoothDevice.prototype.onDisconnect = function (event) {
 
               case 2:
                 if (!(index < 3)) {
-                  _context10.next = 13;
+                  _context10.next = 19;
                   break;
                 }
 
                 _context10.next = 5;
-                return sleep(100);
+                return sleep(500);
 
               case 5:
-                _context10.next = 7;
-                return event.target.transmitter.sync(getClockTimestamp());
+                _context10.prev = 5;
+                _context10.next = 8;
+                return _this10.bluetoothConnection.transmitter.sync(getClockTimestamp());
 
-              case 7:
+              case 8:
                 if (!_context10.sent) {
-                  _context10.next = 10;
+                  _context10.next = 11;
                   break;
                 }
 
                 success = true;
-                return _context10.abrupt("break", 13);
+                return _context10.abrupt("break", 19);
 
-              case 10:
+              case 11:
+                _context10.next = 16;
+                break;
+
+              case 13:
+                _context10.prev = 13;
+                _context10.t0 = _context10["catch"](5);
+                console.error("time sync failed");
+
+              case 16:
                 index++;
                 _context10.next = 2;
                 break;
 
-              case 13:
+              case 19:
                 if (success) {
                   console.log("Sync time success");
                 } else {
                   console.error("Sync time on connection failed");
                 }
 
-              case 14:
+              case 20:
               case "end":
                 return _context10.stop();
             }
           }
-        }, _callee10);
+        }, _callee10, null, [[5, 13]]);
       })))["catch"](function (error) {
         console.error(error);
       });
@@ -2306,10 +2322,10 @@ TangleBluetoothDevice.prototype.onConnect = function (event) {
 };
 
 TangleBluetoothDevice.prototype.connect = function () {
-  var _this10 = this;
+  var _this11 = this;
 
   return this.bluetoothConnection.scan().then(function () {
-    return _this10.bluetoothConnection.connect();
+    return _this11.bluetoothConnection.connect();
   }).then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11() {
     var success, index;
     return regeneratorRuntime.wrap(function _callee11$(_context11) {
@@ -2321,51 +2337,61 @@ TangleBluetoothDevice.prototype.connect = function () {
 
           case 2:
             if (!(index < 3)) {
-              _context11.next = 13;
+              _context11.next = 19;
               break;
             }
 
             _context11.next = 5;
-            return sleep(100);
+            return sleep(500);
 
           case 5:
-            _context11.next = 7;
-            return _this10.bluetoothConnection.transmitter.sync(getClockTimestamp());
+            _context11.prev = 5;
+            _context11.next = 8;
+            return _this11.bluetoothConnection.transmitter.sync(getClockTimestamp());
 
-          case 7:
+          case 8:
             if (!_context11.sent) {
-              _context11.next = 10;
+              _context11.next = 11;
               break;
             }
 
             success = true;
-            return _context11.abrupt("break", 13);
+            return _context11.abrupt("break", 19);
 
-          case 10:
+          case 11:
+            _context11.next = 16;
+            break;
+
+          case 13:
+            _context11.prev = 13;
+            _context11.t0 = _context11["catch"](5);
+            console.error("time sync failed");
+
+          case 16:
             index++;
             _context11.next = 2;
             break;
 
-          case 13:
+          case 19:
             if (success) {
               console.log("Sync time success");
             } else {
               console.error("Sync time on connection failed");
             }
 
-          case 14:
+          case 20:
           case "end":
             return _context11.stop();
         }
       }
-    }, _callee11);
+    }, _callee11, null, [[5, 13]]);
   })))["catch"](function (error) {
     console.warn(error);
   });
 };
 
 TangleBluetoothDevice.prototype.reconnect = function () {
-  var _this11 = this;
+  var _this12 = this;
 
   return this.bluetoothConnection.reconnect().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12() {
     var success, index;
@@ -2378,44 +2404,54 @@ TangleBluetoothDevice.prototype.reconnect = function () {
 
           case 2:
             if (!(index < 3)) {
-              _context12.next = 13;
+              _context12.next = 19;
               break;
             }
 
             _context12.next = 5;
-            return sleep(100);
+            return sleep(500);
 
           case 5:
-            _context12.next = 7;
-            return _this11.bluetoothConnection.transmitter.sync(getClockTimestamp());
+            _context12.prev = 5;
+            _context12.next = 8;
+            return _this12.bluetoothConnection.transmitter.sync(getClockTimestamp());
 
-          case 7:
+          case 8:
             if (!_context12.sent) {
-              _context12.next = 10;
+              _context12.next = 11;
               break;
             }
 
             success = true;
-            return _context12.abrupt("break", 13);
+            return _context12.abrupt("break", 19);
 
-          case 10:
+          case 11:
+            _context12.next = 16;
+            break;
+
+          case 13:
+            _context12.prev = 13;
+            _context12.t0 = _context12["catch"](5);
+            console.error("time sync failed");
+
+          case 16:
             index++;
             _context12.next = 2;
             break;
 
-          case 13:
+          case 19:
             if (success) {
               console.log("Sync time success");
             } else {
               console.error("Sync time on connection failed");
             }
 
-          case 14:
+          case 20:
           case "end":
             return _context12.stop();
         }
       }
-    }, _callee12);
+    }, _callee12, null, [[5, 13]]);
   })))["catch"](function (error) {
     console.warn(error);
   });
@@ -2683,7 +2719,7 @@ TangleSerialTransmitter.prototype.detach = /*#__PURE__*/_asyncToGenerator( /*#__
 }));
 
 TangleSerialTransmitter.prototype._writeTerminal = function (payload) {
-  var _this12 = this;
+  var _this13 = this;
 
   //console.log("_writeTerminal()");
   return new Promise( /*#__PURE__*/function () {
@@ -2697,7 +2733,7 @@ TangleSerialTransmitter.prototype._writeTerminal = function (payload) {
               timeout = 25;
 
               try {
-                writer = _this12._transmitStream.getWriter();
+                writer = _this13._transmitStream.getWriter();
                 writer.write(new Uint8Array(bytes)).then(function () {
                   setTimeout(function () {
                     writer.releaseLock();
@@ -2725,7 +2761,7 @@ TangleSerialTransmitter.prototype._writeTerminal = function (payload) {
 
 
 TangleSerialTransmitter.prototype.deliver = function (data) {
-  var _this13 = this;
+  var _this14 = this;
 
   //console.log("deliver()");
   if (data) {
@@ -2744,16 +2780,16 @@ TangleSerialTransmitter.prototype.deliver = function (data) {
         while (1) {
           switch (_context15.prev = _context15.next) {
             case 0:
-              if (!(_this13._queue.length > 0)) {
+              if (!(_this14._queue.length > 0)) {
                 _context15.next = 15;
                 break;
               }
 
               //let timestamp = Date.now();
-              item = _this13._queue.shift();
+              item = _this14._queue.shift();
               _context15.prev = 2;
               _context15.next = 5;
-              return _this13._writeTerminal(item.payload);
+              return _this14._writeTerminal(item.payload);
 
             case 5:
               _context15.next = 13;
@@ -2766,8 +2802,8 @@ TangleSerialTransmitter.prototype.deliver = function (data) {
               // if writing characteristic fail, then stop transmitting
               // but keep data to transmit in queue
 
-              if (item.reliable) _this13._queue.unshift(item);
-              _this13._writing = false;
+              if (item.reliable) _this14._queue.unshift(item);
+              _this14._writing = false;
               return _context15.abrupt("return");
 
             case 13:
@@ -2775,7 +2811,7 @@ TangleSerialTransmitter.prototype.deliver = function (data) {
               break;
 
             case 15:
-              _this13._writing = false;
+              _this14._writing = false;
 
             case 16:
             case "end":
@@ -2812,7 +2848,7 @@ TangleSerialTransmitter.prototype.transmit = function (data) {
 };
 
 TangleSerialTransmitter.prototype._writeSync = function (timestamp) {
-  var _this14 = this;
+  var _this15 = this;
 
   //console.log("_writeSync()");
   return new Promise( /*#__PURE__*/function () {
@@ -2826,7 +2862,7 @@ TangleSerialTransmitter.prototype._writeSync = function (timestamp) {
               bytes = [].concat(_toConsumableArray(toBytes(987654321, 4)), _toConsumableArray(toBytes(payload.length, 4)), _toConsumableArray(payload));
 
               try {
-                writer = _this14._transmitStream.getWriter();
+                writer = _this15._transmitStream.getWriter();
                 timeout = 25;
                 writer.write(new Uint8Array(bytes)).then(function () {
                   setTimeout(function () {
@@ -3007,7 +3043,7 @@ function TangleSerialConnection() {
 TangleSerialConnection.prototype.connected = false;
 
 TangleSerialConnection.prototype.scan = function () {
-  var _this15 = this;
+  var _this16 = this;
 
   //console.log("scan()");
   if (this.serialPort) {
@@ -3015,22 +3051,22 @@ TangleSerialConnection.prototype.scan = function () {
   }
 
   return navigator.serial.requestPort().then(function (port) {
-    _this15.serialPort = port;
+    _this16.serialPort = port;
   });
 };
 
 TangleSerialConnection.prototype.connect = function () {
-  var _this16 = this;
+  var _this17 = this;
 
   //console.log("connect()");
   return this.serialPort.open(this.PORT_OPTIONS).then(function () {
-    _this16.transmitter.attach(_this16.serialPort.writable);
+    _this17.transmitter.attach(_this17.serialPort.writable);
 
-    _this16.receiver.attach(_this16.serialPort.readable);
+    _this17.receiver.attach(_this17.serialPort.readable);
 
-    _this16.run();
+    _this17.run();
   })["catch"](function (error) {
-    return _this16.disconnect().then(function () {
+    return _this17.disconnect().then(function () {
       throw error;
     });
   });
@@ -3121,23 +3157,23 @@ TangleSerialConnection.prototype._close = /*#__PURE__*/_asyncToGenerator( /*#__P
 }));
 
 TangleSerialConnection.prototype.reconnect = function () {
-  var _this17 = this;
+  var _this18 = this;
 
   //console.log("reconnect()");
   if (this.serialPort) {
     //console.log("Reconnecting serial port...");
     return this._close().then(function () {
-      return _this17.connect();
+      return _this18.connect();
     });
   } else {
     return this.scan().then(function () {
-      return _this17.connect();
+      return _this18.connect();
     });
   }
 };
 
 TangleSerialConnection.prototype.disconnect = function () {
-  var _this18 = this;
+  var _this19 = this;
 
   //console.log("disconnect()");
   if (!this.serialPort) {
@@ -3148,7 +3184,7 @@ TangleSerialConnection.prototype.disconnect = function () {
   if (this.serialPort) {
     //console.log("Disconnecting serial port...");
     return this._close().then(function () {
-      _this18.serialPort = null;
+      _this19.serialPort = null;
     });
   }
 };
@@ -3209,22 +3245,22 @@ TangleSerialDevice.prototype.onReceive = function (event) {//console.log(">", ev
 };
 
 TangleSerialDevice.prototype.connect = function () {
-  var _this19 = this;
+  var _this20 = this;
 
   return this.serialConnection.scan().then(function () {
-    return _this19.serialConnection.connect();
+    return _this20.serialConnection.connect();
   }).then(function () {
-    _this19.serialConnection.transmitter.sync(getClockTimestamp());
+    _this20.serialConnection.transmitter.sync(getClockTimestamp());
   })["catch"](function (error) {
     console.warn(error);
   });
 };
 
 TangleSerialDevice.prototype.reconnect = function () {
-  var _this20 = this;
+  var _this21 = this;
 
   return this.serialConnection.reconnect().then(function () {
-    _this20.serialConnection.transmitter.sync(getClockTimestamp());
+    _this21.serialConnection.transmitter.sync(getClockTimestamp());
   })["catch"](function (error) {
     console.warn(error);
   });
