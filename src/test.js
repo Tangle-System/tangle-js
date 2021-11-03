@@ -1,12 +1,20 @@
 import { timeTrack } from './initialize.js';
 import { TangleDevice } from './main.js';
 
-// build your own TnglCode logic on https://blockly.tangle.cz/0.7.0/
+
 const tnglCode = `
+// defDevice($dev, 0x00, 0xff, 0x01, 15px);
+// defVariable($var1, #ff00ff);
+// addDrawing(0s, Infinity, animPlasmaShot(5s, $var1, 25%));
+
 defDevice($dev, 0x00, 0xff, 0x01, 15px);
+
 addDrawing(-100s, 1000s, animRainbow(5s, 100%));
+
 `
+
 const tangleDevice = TangleDevice();
+
 
 document.querySelector('#connectBluetooth').addEventListener('click', () => {
   tangleDevice.connect({ type: "bluetooth" });
@@ -51,12 +59,23 @@ tangleDevice.on("connection", (event) => {
     } else if (tangleDevice.getConnectionType() === "serial") {
       document.querySelector('#connectSerial').textContent = "Connected"
     }
+
+    setTimeout(_ => {
+      // timeSyncing = setInterval(() => {
+      //   tangleDevice.setTime(timeTrack.millis(), false)
+      // }, 5000)
+      // console.log("Sending TANGLE_CODE");
+      // tangleDevice.uploadTngl(tnglCode)
+
+    }, 300)
   } else {
     if (tangleDevice.getConnectionType() === "bluetooth") {
       document.querySelector('#connectBluetooth').textContent = "Disconnected"
     } else if (tangleDevice.getConnectionType() === "serial") {
       document.querySelector('#connectSerial').textContent = "Disconnected"
     }
+
+
     clearInterval(timeSyncing)
   }
 });

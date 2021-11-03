@@ -100,16 +100,22 @@ const TangleConnectWEBBLE = {
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
   },
-  emitEvent: (event_code, param, device_id = 0) => {
-    tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
-
+  emitColorEvent: (event_name, event_data, event_timestamp,device_id) => {
+    tangleBluetoothDevice.emitColorEvent(event_name, event_data,event_timestamp,device_id);
   },
-  emitEvents: (events) => {
-
-    tangleBluetoothDevice.emitEvents(events);
-    // TODO - timestamps autofill current time if not present
-
+  emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {
+    tangleBluetoothDevice.emitPercentageEvent(event_name, event_data,event_timestamp,device_id);
   },
+  // emitEvent: (event_code, param, device_id = 0) => {
+  //   tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+
+  // },
+  // emitEvents: (events) => {
+
+  //   tangleBluetoothDevice.emitEvents(events);
+  //   // TODO - timestamps autofill current time if not present
+
+  // },
   // for connection events
   initEvents: () => {
     tangleBluetoothDevice.bluetoothConnection.addEventListener(
@@ -168,18 +174,18 @@ const TangleConnectWEBSerial = {
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
   },
-  emitEvent: (event_code, param, device_id = 0) => {
-    console.log()
+  // emitEvent: (event_code, param, device_id = 0) => {
+  //   console.log()
 
-    tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+  //   tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
 
-  },
-  emitEvents: (events) => {
+  // },
+  // emitEvents: (events) => {
 
-    tangleSerialDevice.emitEvents(events);
-    // TODO - timestamps autofill current time if not present
+  //   tangleSerialDevice.emitEvents(events);
+  //   // TODO - timestamps autofill current time if not present
 
-  },
+  // },
   // for connection events
   initEvents: () => {
 
@@ -233,6 +239,8 @@ const PlaceHolderConnection = {
   emitEvents: (events) => {
 
   },
+  emitColorEvent: (event_name, event_data,event_timestamp,device_id) => {},
+  emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {},
   // for connection events
   initEvents: () => {
 

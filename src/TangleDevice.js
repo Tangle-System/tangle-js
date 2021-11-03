@@ -65,14 +65,22 @@ export default function TangleDevice() {
       debugLog(" .setTime", timeline_timestamp, timeline_paused);
       return connector.setTimeline(timeline_timestamp, timeline_paused);
     },
-    emitEvent: (event_code, param, device_id) => {
-      debugLog(" .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
-      return connector.emitEvent(event_code, param, device_id);
+    emitColorEvent: (event_name, event_data,device_id = 255,event_timestamp = timeTrack.millis()) => {
+      debugLog(" .emitColorEvent", event_name, event_data,device_id,event_timestamp );
+      return connector.emitColorEvent(event_name, event_data,event_timestamp,device_id);
     },
-    emitEvents: (events) => {
-      debugLog(" .emitEvents", events);
-      return connector.emitEvents(events);
+    emitPercentageEvent: (event_name, event_data,device_id = 255,event_timestamp = timeTrack.millis()) => {
+      debugLog(" .emitPercentageEvent", event_name, event_data,device_id,event_timestamp );
+      return connector.emitPercentageEvent(event_name, event_data,event_timestamp,device_id);
     },
+    // emitEvent: (event_code, param, device_id) => {
+    //   debugLog(" .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
+    //   return connector.emitEvent(event_code, param, device_id);
+    // },
+    // emitEvents: (events) => {
+    //   debugLog(" .emitEvents", events);
+    //   return connector.emitEvents(events);
+    // },
     // for connection events
     initEvents: () => {
       return connector.initEvents();

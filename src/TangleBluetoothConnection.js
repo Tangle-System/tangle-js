@@ -484,7 +484,7 @@ Transmitter.prototype.reset = function () {
 // Tangle Bluetooth Device
 
 export default function TangleBluetoothConnection() {
-	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0000-5ad20c574c10";
+	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0001-5ad20c574c10";
 
 	this.BLE_OPTIONS = {
 		//acceptAllDevices: true,

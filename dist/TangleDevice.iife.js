@@ -96,19 +96,161 @@ var TangleDevice = (function () {
   }
 
 
-  var FLAGS = Object.freeze({
-    /* whole flags */
-    FLAG_TNGL_BYTES: 251,
-    FLAG_SET_TIMELINE: 252,
-    FLAG_EMIT_EVENT: 253,
-
-    /* end of statements with no boundary 255 */
-    END_OF_STATEMENT: 254,
-    END_OF_TNGL_BYTES: 255,
-  });
 
   var CONSTANTS = Object.freeze({
-    APP_DEVICE_ID: 255,
+    MODIFIER_SWITCH_NONE: 0,
+    MODIFIER_SWITCH_RG: 1,
+    MODIFIER_SWITCH_GB: 2,
+    MODIFIER_SWITCH_BR: 3,
+  });
+
+  var FLAGS = Object.freeze({
+    /* no code or command used by decoder as a validation */
+    NONE: 0,
+
+    // ======================
+
+    /* drawings */
+    DRAWING_SET: 1,
+    DRAWING_ADD: 2,
+    DRAWING_SUB: 3,
+    DRAWING_SCALE: 4,
+    DRAWING_FILTER: 5,
+
+
+    /* windows */
+    WINDOW_SET: 6,
+    WINDOW_ADD: 7,
+    WINDOW_SUB: 8,
+    WINDOW_SCALE: 9,
+    WINDOW_FILTER: 10,
+
+
+    /* frame */
+    FRAME: 11,
+
+    /* clip */
+    CLIP: 12,
+
+    /* sifters */
+    SIFTER_DEVICE: 13,
+    SIFTER_TANGLE: 14,
+    SIFTER_GROUP: 15,
+
+
+    /* event handlers */
+    INTERACTIVE: 16,
+    EVENT_HANDLE: 17,
+
+    /* definitions scoped */
+    DEFINE_VARIABLE: 18,
+
+
+    // ======================
+
+    /* definitions global */
+    DEFINE_DEVICE: 24,
+    DEFINE_TANGLE: 25,
+    DEFINE_GROUP: 26,
+    DEFINE_MARKS: 27,
+    DEFINE_ANIMATION: 28,
+    DEFINE_EMITTER: 28,
+
+    // ======================
+
+    /* animations */
+    ANIMATION_NONE: 32,
+    ANIMATION_FILL: 33,
+    ANIMATION_RAINBOW: 34,
+    ANIMATION_FADE: 35,
+    ANIMATION_PROJECTILE: 36,
+    ANIMATION_LOADING: 37,
+    ANIMATION_COLOR_ROLL: 38,
+    ANIMATION_PALLETTE_ROLL: 39,
+    ANIMATION_INL_ANI: 40,
+    ANIMATION_DEFINED: 41,
+
+    /* modifiers */
+    MODIFIER_BRIGHTNESS: 128,
+    MODIFIER_TIMELINE: 129,
+    MODIFIER_FADE_IN: 130,
+    MODIFIER_FADE_OUT: 131,
+    MODIFIER_SWITCH_COLORS: 132,
+    MODIFIER_TIME_LOOP: 133,
+    MODIFIER_TIME_SCALE: 134,
+    MODIFIER_TIME_SCALE_SMOOTHED: 135,
+    MODIFIER_TIME_CHANGE: 136,
+
+
+    /* events */
+    GENERATOR_LAST_EVENT_VALUE: 144,
+    GENERATOR_SMOOTH_TIMED: 145,
+    GENERATOR_SINE: 146,
+    GENERATOR_SAW: 147,
+    GENERATOR_TRIANGLE: 148,
+    GENERATOR_SQUARE: 149,
+    GENERATOR_PERLIN_NOISE: 150,
+
+
+    /* variable operations gates */
+    VARIABLE_READ: 160,
+    VARIABLE_ADD: 161,
+    VARIABLE_SUB: 162,
+    VARIABLE_MUL: 163,
+    VARIABLE_DIV: 164,
+    VARIABLE_MOD: 165,
+    VARIABLE_SCALE: 166,
+    VARIABLE_MAP: 167,
+
+
+    /* objects */
+    DEVICE: 176,
+    TANGLE: 177,
+    SLICE: 178,
+    PORT: 179,
+    GROUP: 180,
+    MARKS: 181,
+
+    /* events */
+    EVENT_SET_VALUE: 184,
+    EVENT_EMIT_LOCAL: 185,
+
+
+    // ======================
+
+    /* values */
+    TIMESTAMP: 188,
+    COLOR: 189,
+    PERCENTAGE: 190,
+    LABEL: 191,
+    PIXELS: 192,
+    TUPLE: 193,
+
+
+    // ======================
+
+    /* most used constants */
+    TIMESTAMP_ZERO: 194,
+    TIMESTAMP_MAX: 195,
+    TIMESTAMP_MIN: 196,
+    COLOR_WHITE: 197,
+    COLOR_BLACK: 198,
+
+
+    // ======================
+
+    /* command flags */
+    FLAG_TNGL_BYTES: 248,
+    FLAG_SET_TIMELINE: 249,
+    FLAG_EMIT_TIMESTAMP_EVENT: 250,
+    FLAG_EMIT_COLOR_EVENT: 251,
+    FLAG_EMIT_PERCENTAGE_EVENT: 252,
+    FLAG_EMIT_LABEL_EVENT: 253,
+
+    /* command ends */
+    END_OF_STATEMENT: 254,
+    END_OF_TNGL_BYTES: 255,
+
   });
 
   function toBytes(value, byteCount) {
@@ -705,7 +847,7 @@ var TangleDevice = (function () {
   // Tangle Bluetooth Device
 
   function TangleBluetoothConnection() {
-  	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0000-5ad20c574c10";
+  	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0001-5ad20c574c10";
 
   	this.BLE_OPTIONS = {
   		//acceptAllDevices: true,
@@ -2892,6 +3034,7 @@ var TangleDevice = (function () {
   const nanoevents = createNanoEvents();
 
   window.nanoevents = nanoevents;
+  window.timeTrack = timeTrack;
 
   const TangleConnectANDROID = {
     connect: (filters = null) => {
@@ -2992,16 +3135,22 @@ var TangleDevice = (function () {
       timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
     },
-    emitEvent: (event_code, param, device_id = 0) => {
-      tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
-
+    emitColorEvent: (event_name, event_data, event_timestamp,device_id) => {
+      tangleBluetoothDevice.emitColorEvent(event_name, event_data,event_timestamp,device_id);
     },
-    emitEvents: (events) => {
-
-      tangleBluetoothDevice.emitEvents(events);
-      // TODO - timestamps autofill current time if not present
-
+    emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {
+      tangleBluetoothDevice.emitPercentageEvent(event_name, event_data,event_timestamp,device_id);
     },
+    // emitEvent: (event_code, param, device_id = 0) => {
+    //   tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+
+    // },
+    // emitEvents: (events) => {
+
+    //   tangleBluetoothDevice.emitEvents(events);
+    //   // TODO - timestamps autofill current time if not present
+
+    // },
     // for connection events
     initEvents: () => {
       tangleBluetoothDevice.bluetoothConnection.addEventListener(
@@ -3060,18 +3209,18 @@ var TangleDevice = (function () {
       timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
     },
-    emitEvent: (event_code, param, device_id = 0) => {
-      console.log();
+    // emitEvent: (event_code, param, device_id = 0) => {
+    //   console.log()
 
-      tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
+    //   tangleSerialDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
 
-    },
-    emitEvents: (events) => {
+    // },
+    // emitEvents: (events) => {
 
-      tangleSerialDevice.emitEvents(events);
-      // TODO - timestamps autofill current time if not present
+    //   tangleSerialDevice.emitEvents(events);
+    //   // TODO - timestamps autofill current time if not present
 
-    },
+    // },
     // for connection events
     initEvents: () => {
 
@@ -3125,6 +3274,8 @@ var TangleDevice = (function () {
     emitEvents: (events) => {
 
     },
+    emitColorEvent: (event_name, event_data,event_timestamp,device_id) => {},
+    emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {},
     // for connection events
     initEvents: () => {
 
@@ -3205,14 +3356,22 @@ var TangleDevice = (function () {
         debugLog(" .setTime", timeline_timestamp, timeline_paused);
         return connector.setTimeline(timeline_timestamp, timeline_paused);
       },
-      emitEvent: (event_code, param, device_id) => {
-        debugLog(" .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
-        return connector.emitEvent(event_code, param, device_id);
+      emitColorEvent: (event_name, event_data,device_id = 255,event_timestamp = timeTrack.millis()) => {
+        debugLog(" .emitColorEvent", event_name, event_data,device_id,event_timestamp );
+        return connector.emitColorEvent(event_name, event_data,event_timestamp,device_id);
       },
-      emitEvents: (events) => {
-        debugLog(" .emitEvents", events);
-        return connector.emitEvents(events);
+      emitPercentageEvent: (event_name, event_data,device_id = 255,event_timestamp = timeTrack.millis()) => {
+        debugLog(" .emitPercentageEvent", event_name, event_data,device_id,event_timestamp );
+        return connector.emitPercentageEvent(event_name, event_data,event_timestamp,device_id);
       },
+      // emitEvent: (event_code, param, device_id) => {
+      //   debugLog(" .triggeremitEvent", 3, event_code, param, device_id, timeTrack.millis());
+      //   return connector.emitEvent(event_code, param, device_id);
+      // },
+      // emitEvents: (events) => {
+      //   debugLog(" .emitEvents", events);
+      //   return connector.emitEvents(events);
+      // },
       // for connection events
       initEvents: () => {
         return connector.initEvents();

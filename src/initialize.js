@@ -12,3 +12,4 @@ export const tangleSerialDevice = new TangleSerialDevice();
 export const nanoevents = createNanoEvents();
 
 window.nanoevents = nanoevents;
+window.timeTrack = timeTrack
