@@ -1,5 +1,5 @@
 import { debugLog } from "./functions.js";
-import { timeTrack, tangleConnect, tnglParser, tangleBluetoothDevice, tangleSerialDevice, nanoevents } from "./initialize.js";
+import { timeTrack, tangleConnect, tnglParser, tangleBluetoothDevice, tangleSerialDevice, tangleEvents } from "./initialize.js";
 
 const TangleConnectANDROID = {
   connect: (filters = null) => {
@@ -35,13 +35,13 @@ const TangleConnectANDROID = {
         e = e.detail;
         if (e.type === "connection") {
           if (e.status === "connected") {
-            nanoevents.emit("connection", "connected");
+            tangleEvents.emit("connection", "connected");
           }
           if (e.status === "disconnected") {
-            nanoevents.emit("connection", "disconnected");
+            tangleEvents.emit("connection", "disconnected");
           }
           if (e.status === "reconnecting") {
-            nanoevents.emit("connection", "reconnecting");
+            tangleEvents.emit("connection", "reconnecting");
           }
         }
       },
@@ -55,21 +55,19 @@ const TangleConnectANDROID = {
         e = e.detail;
         if (e.type === "connection") {
           if (e.status === "connected") {
-            nanoevents.emit("connection", "connected");
+            tangleEvents.emit("connection", "connected");
           }
           if (e.status === "disconnected") {
-            nanoevents.emit("connection", "disconnected");
+            tangleEvents.emit("connection", "disconnected");
           }
           if (e.status === "reconnecting") {
-            nanoevents.emit("connection", "reconnecting");
+            tangleEvents.emit("connection", "reconnecting");
           }
         }
       },
       false
     );
   },
-  ...nanoevents
-
 };
 
 const TangleConnectWEBBLE = {
@@ -122,13 +120,13 @@ const TangleConnectWEBBLE = {
     tangleBluetoothDevice.bluetoothConnection.addEventListener(
       "connected",
       () => {
-        nanoevents.emit("connection", "connected");
+        tangleEvents.emit("connection", "connected");
       }
     );
     tangleBluetoothDevice.bluetoothConnection.addEventListener(
       "disconnected",
       () => {
-        nanoevents.emit("connection", "disconnected");
+        tangleEvents.emit("connection", "disconnected");
       }
     );
   },
@@ -136,17 +134,16 @@ const TangleConnectWEBBLE = {
     tangleBluetoothDevice.bluetoothConnection.removeEventListener(
       "connected",
       () => {
-        nanoevents.emit("connection", "connected");
+        tangleEvents.emit("connection", "connected");
       }
     );
     tangleBluetoothDevice.bluetoothConnection.removeEventListener(
       "disconnected",
       () => {
-        nanoevents.emit("connection", "disconnected");
+        tangleEvents.emit("connection", "disconnected");
       }
     );
   },
-  ...nanoevents
 };
 
 
@@ -206,13 +203,13 @@ const TangleConnectWEBSerial = {
     tangleSerialDevice.serialConnection.addEventListener(
       "connected",
       () => {
-        nanoevents.emit("connection", "connected");
+        tangleEvents.emit("connection", "connected");
       }
     );
     tangleSerialDevice.serialConnection.addEventListener(
       "disconnected",
       () => {
-        nanoevents.emit("connection", "disconnected");
+        tangleEvents.emit("connection", "disconnected");
       }
     );
   },
@@ -220,17 +217,16 @@ const TangleConnectWEBSerial = {
     tangleSerialDevice.serialConnection.removeEventListener(
       "connected",
       () => {
-        nanoevents.emit("connection", "connected");
+        tangleEvents.emit("connection", "connected");
       }
     );
     tangleSerialDevice.serialConnection.removeEventListener(
       "disconnected",
       () => {
-        nanoevents.emit("connection", "disconnected");
+        tangleEvents.emit("connection", "disconnected");
       }
     );
   },
-  ...nanoevents
 };
 
 
@@ -264,7 +260,6 @@ const PlaceHolderConnection = {
   destroyEvents: () => {
 
   },
-  ...nanoevents
 };
 
 

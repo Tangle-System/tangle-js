@@ -22,11 +22,6 @@ export default class TimeTrack {
     this.memory_ = this.paused_ ? current : Date.now() - current;
   }
 
-  setStatus(timestamp, paused) {
-    this.paused_ = paused ?? this.paused_;
-    this.memory_ = this.paused_ ? timestamp : Date.now() - timestamp;
-  }
-
   pause() {
     if (!this.paused_) {
       this.paused_ = true;

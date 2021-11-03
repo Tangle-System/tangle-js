@@ -1,4 +1,4 @@
-import { nanoevents, tangleBluetoothDevice, tangleConnect, tangleSerialDevice, timeTrack, tnglParser } from './initialize.js'
+import { tangleEvents, tangleBluetoothDevice, tangleConnect, tangleSerialDevice, timeTrack, tnglParser } from './initialize.js'
 import { debugLog } from './functions.js'
 import connectors from "./connectors.js";
 
@@ -119,8 +119,7 @@ export default function TangleDevice() {
     getConnectionType: () => {
       return connectionType;
     },
-    ...nanoevents
-
+    ...tangleEvents
   };
   window.tangleDevice = connectionHandler
   return connectionHandler;

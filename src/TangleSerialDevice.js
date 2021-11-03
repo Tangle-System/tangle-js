@@ -1,4 +1,4 @@
-import { getClockTimestamp, getTimelineFlags, toBytes, FLAGS, CONSTANTS, labelToBytes, colorToBytes, percentageToBytes } from "./functions.js";
+import { getClockTimestamp, getTimelineFlags, toBytes, labelToBytes, colorToBytes, percentageToBytes } from "./functions.js";
 import TangleSerialConnection from './TangleSerialConnection.js'
 
 /** Example TangleDevice implementation
@@ -132,7 +132,7 @@ TangleSerialDevice.prototype.setTimeline = function (timeline_index, timeline_ti
 
 // event_label example: "evt1"
 // event_value example: 1000
-TangleSerialDevice.prototype.emitTimestampEvent = function (event_label, event_value_timestamp, event_timestamp, device_id) {
+TangleSerialDevice.prototype.emitTimestampEvent = function (event_label, event_value, event_timestamp, device_id) {
 
 
   if (!this.serialConnection || !this.serialConnection.transmitter) {
