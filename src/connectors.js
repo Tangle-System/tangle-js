@@ -7,33 +7,28 @@ const TangleConnectANDROID = {
   },
   // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
-    console.info("posilam TNGL Kod uploadTngl()");
-    tangleConnect.uploadTngl(tngl_code, 0, timeline_timestamp, timeline_paused);
+    tangleConnect.uploadTngl(tngl_code, timeline_timestamp, timeline_paused);
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
   },
   uploadTnglBytes: (tngl_bytes, timeline_timestamp = 0, timeline_paused = false) => {
-    console.info("posilam TNGL bajty uploadTnglBytes()");
-    tangleConnect.uploadTnglBytes(tngl_bytes, 0, timeline_timestamp, timeline_paused);
+    tangleConnect.uploadTnglBytes(tngl_bytes, timeline_timestamp, timeline_paused);
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
   },
   setTimeline: (timeline_timestamp = 0, timeline_paused = false) => {
-    console.info("posilam setTime setTime()");
     tangleConnect.setTimeline(timeline_timestamp, timeline_paused);
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
   },
-  emitEvent: (event_code, param, device_id = 0) => {
-    console.info("posilam emitEvent()");
-
-    tangleConnect.emitEvent(device_id, event_code, param, timeTrack.millis());
+  emitColorEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleConnect.emitColorEvent(event_name, event_data, event_timestamp, device_id);
   },
-  emitEvents: (events) => {
-    console.info("posilam emitEvents()");
-
-    tangleConnect.emitEvents(events);
+  emitPercentageEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleConnect.emitPercentageEvent(event_name, event_data, event_timestamp, device_id);
+  },
+  emitTimeEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleConnect.emitTimeEvent(event_name, event_data, event_timestamp, device_id);
   },
   // for connection events
   initEvents: () => {
-
     document.addEventListener(
       "tangle-state",
       (e) => {
@@ -81,6 +76,9 @@ const TangleConnectWEBBLE = {
   connect: (filters = null) => {
     tangleBluetoothDevice.connect();
   },
+  disconnect: () => {
+    tangleBluetoothDevice.disconnect();
+  },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
     const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
     tangleBluetoothDevice.uploadTngl(tngl_bytes, 0x00, timeline_timestamp, timeline_paused);
@@ -100,11 +98,14 @@ const TangleConnectWEBBLE = {
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
   },
-  emitColorEvent: (event_name, event_data, event_timestamp,device_id) => {
-    tangleBluetoothDevice.emitColorEvent(event_name, event_data,event_timestamp,device_id);
+  emitColorEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleBluetoothDevice.emitColorEvent(event_name, event_data, event_timestamp, device_id);
   },
-  emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {
-    tangleBluetoothDevice.emitPercentageEvent(event_name, event_data,event_timestamp,device_id);
+  emitPercentageEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleBluetoothDevice.emitPercentageEvent(event_name, event_data, event_timestamp, device_id);
+  },
+  emitTimeEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleBluetoothDevice.emitTimestampEvent(event_name, event_data, event_timestamp, device_id);
   },
   // emitEvent: (event_code, param, device_id = 0) => {
   //   tangleBluetoothDevice.emitEvent(device_id, event_code, param, timeTrack.millis());
@@ -155,6 +156,9 @@ const TangleConnectWEBSerial = {
   connect: (filters = null) => {
     tangleSerialDevice.connect();
   },
+  disconnect: () => {
+    tangleSerialDevice.disconnect();
+  },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
     const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
     tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
@@ -173,6 +177,16 @@ const TangleConnectWEBSerial = {
 
     timeTrack.setStatus(timeline_timestamp, timeline_paused);
 
+  },
+
+  emitColorEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleSerialDevice.emitColorEvent(event_name, event_data, event_timestamp, device_id);
+  },
+  emitPercentageEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleSerialDevice.emitPercentageEvent(event_name, event_data, event_timestamp, device_id);
+  },
+  emitTimeEvent: (event_name, event_data, event_timestamp, device_id) => {
+    tangleSerialDevice.emitTimeEvent(event_name, event_data, event_timestamp, device_id);
   },
   // emitEvent: (event_code, param, device_id = 0) => {
   //   console.log()
@@ -224,6 +238,7 @@ const TangleConnectWEBSerial = {
 const PlaceHolderConnection = {
   connect: (filters = null) => {
   },
+  disconnect: () => { },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
 
   },
@@ -239,8 +254,9 @@ const PlaceHolderConnection = {
   emitEvents: (events) => {
 
   },
-  emitColorEvent: (event_name, event_data,event_timestamp,device_id) => {},
-  emitPercentageEvent: (event_name, event_data,event_timestamp,device_id) => {},
+  emitColorEvent: (event_name, event_data, event_timestamp, device_id) => { },
+  emitPercentageEvent: (event_name, event_data, event_timestamp, device_id) => { },
+  emitTimeEvent: (event_name, event_data, event_timestamp, device_id) => { },
   // for connection events
   initEvents: () => {
 

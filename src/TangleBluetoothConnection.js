@@ -1,4 +1,5 @@
 import { createNanoEvents, toBytes, sleep } from "./functions.js";
+import { nanoevents } from './initialize.js'
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -60,8 +61,8 @@ Transmitter.prototype._writeTerminal = function (payload, response) {
 	return new Promise(async (resolve, reject) => {
 		const payload_uuid = parseInt(Math.random() * 0xffffffff);
 		const packet_header_size = 12; // 3x 4byte integers: payload_uuid, index_from, payload.length
-		const packet_size = 512; // min size packet_header_size + 1
-		//const packet_size = 128;
+		//const packet_size = 512; // min size packet_header_size + 1
+		const packet_size = 196;
 		const bytes_size = packet_size - packet_header_size;
 
 		let index_from = 0;
@@ -233,6 +234,8 @@ Transmitter.prototype._writeFirmware = function (firmware) {
 
 		console.log(firmware);
 
+		nanoevents.emit('ota_progress', 0.01)
+
 		{
 			//===========// RESET //===========//
 			console.log("OTA RESET");
@@ -290,6 +293,8 @@ Transmitter.prototype._writeFirmware = function (firmware) {
 					return;
 				}
 
+				nanoevents.emit('ota_progress', Math.floor((written * 10000) / firmware.length) / 100)
+
 				console.log(Math.floor((written * 10000) / firmware.length) / 100 + "%");
 
 				index_from += data_size;
@@ -300,6 +305,7 @@ Transmitter.prototype._writeFirmware = function (firmware) {
 		const end_timestamp = new Date().getTime();
 
 		console.log("Firmware written in " + ((end_timestamp - start_timestamp) / 1000) + " seconds");
+		nanoevents.emit('ota_progress', 100)
 
 		await sleep(100);
 
@@ -337,6 +343,7 @@ Transmitter.prototype._writeConfig = function (config) {
 		let written = 0;
 
 		console.log("CONFIG UPDATE");
+
 
 		console.log(config);
 
@@ -397,6 +404,7 @@ Transmitter.prototype._writeConfig = function (config) {
 				}
 
 				console.log(Math.floor((written * 10000) / config.length) / 100 + "%");
+				nanoevents.emit('ota_progress', Math.floor((written * 10000) / config.length) / 100);
 
 				index_from += data_size;
 				index_to = index_from + data_size;
@@ -442,6 +450,7 @@ Transmitter.prototype.updateFirmware = async function (firmware) {
 	let success = true;
 
 	await this._writeFirmware(firmware).catch((e) => {
+		nanoevents.emit('ota_progress', -1)
 		console.warn(e);
 		success = false;
 	});
@@ -484,7 +493,7 @@ Transmitter.prototype.reset = function () {
 // Tangle Bluetooth Device
 
 export default function TangleBluetoothConnection() {
-	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0001-5ad20c574c10";
+	this.TRANSMITTER_SERVICE_UUID = "60cb125a-0000-0007-0002-5ad20c574c10";
 
 	this.BLE_OPTIONS = {
 		//acceptAllDevices: true,

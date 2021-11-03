@@ -13,12 +13,90 @@
   <button id="connectSerial">Disconnected</button>
   Bluetooth
   <button id="connectBluetooth">Disconnected</button>
-  <button id="shoot">Shoot</button>
+  Tangle Connect
+  <button id="connectTangleConnect">Disconnected</button>
+  <!-- <button id="shoot">Shoot</button> -->
   <button id="upload">Upload</button>
   <button id="resetTime">Time to 0</button>
+<br>
+<div id="content_control" class="content">
+  <div style="display: flex; justify-content: space-around; flex-direction: column;max-width: 800px;margin:auto">
 
+    <!-- <div>
+
+      <button id="rebootButton">
+        Device Reboot
+      </button>
+
+      <button id="simplifyButton">
+        Remove Shadow Blocks
+      </button>
+
+      <div>
+      <span>
+        <input type="file" id="otaFirmware">
+        <button id="otaUpdateFirmware">
+          Write OTA
+        </button>
+      </span>
+
+      <span>
+        <input type="file" id="otaConfig">
+        <button id="otaUpdateConfig">
+          Write Config
+        </button>
+      </span>
+    </div>
+    </div> -->
+
+    <br>
+
+    <div>
+      🕹️ LABEL <input style="width: 10%;" type="text" id="control_label" value="evt1">
+      Event Type 
+      <select id="control_type" style="width: 30%;">
+          <option value="percentage_control">Percentage</option>
+          <option value="color_control">Color</option>
+          <option value="timestamp_control">Timestamp</option>
+      </select>
+    </div>
+
+    <div id="percentage_control">
+      🕹️ PERCENTAGE <input style="width: 10%;" type="number" id="control_percentage_value" min="0" max="100" value="0"> %
+      -100% <input style="width: 55%;" type="range" id="control_percentage_range" min="-100" max="100" value="0" step="10"> 100%
+    </div>
+
+    <div id="color_control" style="display: none;">
+      🕹️ COLOR <input style="width: 10%;" type="text" id="control_color_value" value="#ff0000">
+       <input style="border:0" type="color" id="control_color_picker" value="#ff0000">
+    </div>
+
+    <div id="timestamp_control" style="display: none;">
+      🕹️ TIMESTAMP <input style="width: 10%;" type="number" id="control_timestamp_value" min="0" max="2147483647" value="1000"> ms
+    </div>
+
+    <div>
+      🕹️ DESTI <input style="width: 10%;" type="number" id="control_destination" value="255">
+    </div>
+
+    <br>
+
+    <button id="control_send">Send</button>
+
+
+  </div>
+
+  <ul
+    style="list-style: none;max-height: 50vh;overflow: auto; display: flex; flex-direction: column-reverse;max-width: 500px;margin:auto;margin-top: 40px;"
+    id="event_logs">
+  </ul>
+
+</div>
   <br>
   <input id="control_value_range" min="0" max="255" step="5" type="range">
+
+  <a href="/">Refresh</a>
+
   <script type="module" src="test.js"></script>
 </body>
 
