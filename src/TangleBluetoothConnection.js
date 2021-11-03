@@ -156,7 +156,6 @@ Transmitter.prototype.sync = async function (timestamp) {
   //console.log("sync(" + timestamp +")");
 
   if (!this._syncChar) {
-    log.warn("Sync characteristics is Null");
     return false;
   }
 
@@ -566,7 +565,7 @@ Transmitter.prototype._writeBytes = function (characteristic, bytes, response) {
   }
 
   if (!response) {
-    return characteristic.writeValueWithoutResponse(new Uint8Array(payload));
+    return characteristic.writeValueWithoutResponse(new Uint8Array([]));
   } else {
     return new Promise(async (resolve, reject) => {
       let index_from = 0;
@@ -600,7 +599,7 @@ TangleBluetoothConnection.prototype.reset = function () {
   this.disconnect();
 
   if (this.transmitter) {
-    this.transmitter.reset((clear_queue = true));
+    this.transmitter.reset((true));
   }
 
   this.bluetoothDevice = null;

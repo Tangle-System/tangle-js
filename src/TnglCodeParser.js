@@ -7,7 +7,7 @@ const CONSTANTS = Object.freeze({
   MODIFIER_SWITCH_BR: 3,
 });
 
-const FLAGS = Object.freeze({
+export const FLAGS = Object.freeze({
   /* no code or command used by decoder as a validation */
   NONE: 0,
 

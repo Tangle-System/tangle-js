@@ -1,5 +1,6 @@
 import { getClockTimestamp, getTimelineFlags, toBytes, labelToBytes, colorToBytes, percentageToBytes } from "./functions.js";
 import TangleSerialConnection from './TangleSerialConnection.js'
+import { FLAGS } from "./TnglCodeParser.js";
 
 /** Example TangleDevice implementation
  */
@@ -140,7 +141,7 @@ TangleSerialDevice.prototype.emitTimestampEvent = function (event_label, event_v
     return false;
   }
 
-  const payload = [FLAGS.FLAG_EMIT_TIMESTAMP_EVENT, ...toBytes(event_value_timestamp, 4), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
+  const payload = [FLAGS.FLAG_EMIT_TIMESTAMP_EVENT, ...toBytes(event_value, 4), ...labelToBytes(event_label), ...toBytes(event_timestamp, 4), device_id];
   this.serialConnection.transmitter.deliver(payload);
 
   return true;

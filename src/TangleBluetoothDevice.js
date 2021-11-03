@@ -1,5 +1,6 @@
 import { getClockTimestamp, getTimelineFlags, toBytes, sleep, labelToBytes, colorToBytes, percentageToBytes } from "./functions.js";
 import TangleBluetoothConnection from "./TangleBluetoothConnection.js";
+import { FLAGS } from "./TnglCodeParser.js";
 
 /////////////////////////////////////////////////////////////////////////
 
