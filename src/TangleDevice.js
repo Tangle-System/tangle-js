@@ -77,6 +77,10 @@ export default function TangleDevice() {
       debugLog(" .disconnect");
       return connector.disconnect();
     },
+    updateFirmware: (fw) => {
+      debugLog(" .updateFirmware", fw);
+      return connector.updateFirmware(fw);
+    },
     uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
       debugLog(" .uploadTngl", tngl_code, timeline_timestamp, timeline_paused);
       return connector.uploadTngl(tngl_code, timeline_timestamp = 0, timeline_paused = false);

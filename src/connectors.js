@@ -1,9 +1,14 @@
 import { debugLog } from "./functions.js";
 import { timeTrack, tangleConnect, tnglParser, tangleBluetoothDevice, tangleSerialDevice, tangleEvents } from "./initialize.js";
 
+let tangleEventsAndroid = () => { };
+
 const TangleConnectANDROID = {
   connect: (filters = null) => {
     console.log("Connection is handled by tangleConnect.");
+  },
+  updateFirmware: (fw) => {
+    tangleConnect.updateFirmware(fw);
   },
   // TODO - add  0, timeline_timestamp, timeline_paused) to required function, currently not supported on Java part
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
@@ -29,7 +34,7 @@ const TangleConnectANDROID = {
   },
   // for connection events
   initEvents: () => {
-    document.addEventListener(
+    tangleEventsAndroid = tangleEvents.on(
       "tangle-state",
       (e) => {
         e = e.detail;
@@ -43,30 +48,16 @@ const TangleConnectANDROID = {
           if (e.status === "reconnecting") {
             tangleEvents.emit("connection", "reconnecting");
           }
+        }
+        if (e.type === "ota_progress") {
+          tangleEvents.emit('ota_progress', e.progress)
         }
       },
       false
     );
   },
   destroyEvents: () => {
-    document.removeEventListener(
-      "tangle-state",
-      (e) => {
-        e = e.detail;
-        if (e.type === "connection") {
-          if (e.status === "connected") {
-            tangleEvents.emit("connection", "connected");
-          }
-          if (e.status === "disconnected") {
-            tangleEvents.emit("connection", "disconnected");
-          }
-          if (e.status === "reconnecting") {
-            tangleEvents.emit("connection", "reconnecting");
-          }
-        }
-      },
-      false
-    );
+    tangleEventsAndroid()
   },
 };
 
@@ -76,6 +67,9 @@ const TangleConnectWEBBLE = {
   },
   disconnect: () => {
     tangleBluetoothDevice.disconnect();
+  },
+  updateFirmware: (fw) => {
+    tangleBluetoothDevice.updateFirmware(fw);
   },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
     const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
@@ -156,6 +150,10 @@ const TangleConnectWEBSerial = {
   disconnect: () => {
     tangleSerialDevice.disconnect();
   },
+  updateFirmware: (fw) => {
+    alert('update firmware not supported on web serial')
+    tangleSerialDevice.updateFirmware(fw);
+  },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
     const tngl_bytes = tnglParser.parseTnglCode(tngl_code);
     tangleSerialDevice.uploadTngl(tngl_bytes, 0, timeline_timestamp, timeline_paused);
@@ -233,8 +231,17 @@ const TangleConnectWEBSerial = {
 
 const PlaceHolderConnection = {
   connect: (filters = null) => {
+    setTimeout(_ => {
+      tangleEvents.emit("connection", "connected");
+    }, 200)
   },
-  disconnect: () => { },
+  disconnect: () => {
+    setTimeout(_ => {
+      tangleEvents.emit("connection", "disconnected");
+    }, 200)
+  },
+  updateFirmware: (fw) => {
+  },
   uploadTngl: (tngl_code, timeline_timestamp = 0, timeline_paused = false) => {
 
   },

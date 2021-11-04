@@ -179,7 +179,7 @@ Transmitter.prototype.sync = async function (timestamp) {
 
 Transmitter.prototype._writeFirmware = function (firmware) {
   return new Promise(async (resolve, reject) => {
-    const data_size = detectAndroid() ? 1000 : 4992;
+    const data_size = detectAndroid() ? 992 : 4992;
 
     let index_from = 0;
     let index_to = data_size;
@@ -189,6 +189,8 @@ Transmitter.prototype._writeFirmware = function (firmware) {
     console.log("OTA UPDATE");
 
     console.log(firmware);
+    tangleEvents.emit('ota_progress', 0.01)
+
 
     {
       //===========// RESET //===========//
@@ -239,12 +241,13 @@ Transmitter.prototype._writeFirmware = function (firmware) {
 
         written += index_to - index_from;
 
+        tangleEvents.emit('ota_progress', Math.floor((written * 10000) / firmware.length) / 100)
         console.log(Math.floor((written * 10000) / firmware.length) / 100 + "%");
 
         index_from += data_size;
         index_to = index_from + data_size;
       }
-
+      tangleEvents.emit('ota_progress', 100)
       console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
     }
 
@@ -604,5 +607,4 @@ TangleBluetoothConnection.prototype.reset = function () {
 
   this.bluetoothDevice = null;
   this.transmitter = null;
-  // this.eventEmitter = createNanoEvents();
 };

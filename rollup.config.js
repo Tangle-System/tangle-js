@@ -19,10 +19,10 @@ export default [
     ],
   },
   {
-    input: "src/TangleCodeParser.js",
+    input: "src/TnglCodeParser.js",
     output: {
       name: "TnglCodeParser",
-      file: "dist/TangleCodeParser.iife.js",
+      file: "dist/TnglCodeParser.iife.js",
       format: "iife",
     },
     plugins: [
