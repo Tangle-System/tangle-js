@@ -426,6 +426,7 @@ export default function TangleBluetoothConnection() {
   this.bluetoothDevice = null;
   this.transmitter = null;
   this.eventEmitter = tangleEvents;
+
 }
 
 TangleBluetoothConnection.prototype.connected = false;

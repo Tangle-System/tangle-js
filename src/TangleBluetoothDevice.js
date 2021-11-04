@@ -175,6 +175,7 @@ TangleBluetoothDevice.prototype.setTimeline = function (timeline_index, timeline
     console.warn("Bluetooth device disconnected");
     return false;
   }
+  const clock_timestamp = getTimestamp();
 
   const flags = getTimelineFlags(timeline_index, timeline_paused);
 
