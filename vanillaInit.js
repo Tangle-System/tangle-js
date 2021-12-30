@@ -1,4 +1,4 @@
-import { TangleDevice } from "./tangleDevice.js";
+import { TangleDevice } from "./TangleDevice.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { uint8ArrayToHexString } from "./functions.js";
 
