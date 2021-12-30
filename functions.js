@@ -75,15 +75,7 @@ export function sleep(ms) {
 export const createNanoEvents = () => ({
   events: {},
   emit(event, ...args) {
-    return new Promise(async (resolve, reject) => {
-      for (let i = 0; i < (this.events[event] || []).length; i++) {
-        await this.events[event][i](...args);
-      }
-
-      resolve();
-
-      //(this.events[event] || []).forEach((i) => {let res = i(...args)});
-    });
+     (this.events[event] || []).forEach((i) => {let res = i(...args)});
   },
   on(event, cb) {
     (this.events[event] = this.events[event] || []).push(cb);
