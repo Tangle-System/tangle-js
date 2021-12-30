@@ -175,7 +175,7 @@ export function colorToBytes(color_hex_code) {
 }
 
 export function percentageToBytes(percentage_float) {
-  const value = mapValue(percentage_float, -100.0, 100.0, -2147483648, 2147483647);
+  const value = mapValue(percentage_float, -100.0, 100.0, -2147483647, 2147483647);
   return toBytes(Math.floor(value), 4);
 }
 
