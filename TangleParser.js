@@ -1,4 +1,4 @@
-"use strict";
+
 
 import { mapValue } from "./functions.js";
 import { TnglWriter } from "./TnglWriter.js";
@@ -7,7 +7,7 @@ const CONSTANTS = Object.freeze({
   MODIFIER_SWITCH_NONE: 0,
   MODIFIER_SWITCH_RG: 1,
   MODIFIER_SWITCH_GB: 2,
-  MODIFIER_SWITCH_BR: 3
+  MODIFIER_SWITCH_BR: 3,
 });
 
 const TNGL_FLAGS = Object.freeze({
@@ -138,7 +138,7 @@ const TNGL_FLAGS = Object.freeze({
 
   /* command ends */
   END_OF_STATEMENT: 254,
-  END_OF_TNGL_BYTES: 255
+  END_OF_TNGL_BYTES: 255,
 });
 
 export class TnglCompiler {
@@ -607,7 +607,7 @@ export class TnglCompiler {
 }
 
 export class TnglCodeParser {
-  constructor() {}
+  constructor() { }
 
   parseTnglCode(tngl_code) {
     console.log(tngl_code);
@@ -719,7 +719,7 @@ export class TnglCodeParser {
     arrow: /->/,
     word: /[a-z_][\w]*/i,
     whitespace: /\s+/,
-    punctuation: /[^\w\s]/
+    punctuation: /[^\w\s]/,
   };
 
   /*
@@ -751,7 +751,7 @@ export class TnglCodeParser {
           t = {
             token: r[0],
             type: key,
-            matches: r.slice(1)
+            matches: r.slice(1),
           };
           m = r.index;
         }
@@ -761,7 +761,7 @@ export class TnglCodeParser {
         // matched token - push that out as default or "unknown"
         tokens.push({
           token: s.substr(0, m),
-          type: deftok || "unknown"
+          type: deftok || "unknown",
         });
       }
       if (t) {

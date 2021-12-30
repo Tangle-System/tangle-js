@@ -4,7 +4,7 @@
 /// <reference path="TangleInterface.js" />
 /// <reference path="TnglReader.js" />
 
-"use strict";
+
 
 // Čus Viktore, tohle ber jenom jako nástřel. Pokud něco nebude dávat smysl, ozvi se. Díky
 

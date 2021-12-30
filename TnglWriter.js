@@ -1,4 +1,4 @@
-"use strict";
+
 
 export class TnglWriter {
   constructor(buffer_size = 65535) {

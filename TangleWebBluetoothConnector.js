@@ -263,15 +263,17 @@ export class WebBLEConnection {
 
     this.#writing = true;
 
-    return this.#writeBytes(this.#deviceChar, payload, true).then(() => {
-      if (read_response) {
-        return this.#readBytes(this.#deviceChar);
-      } else {
-        return Promise.resolve([]);
-      }
-    }).finally(() => {
-      this.#writing = false;
-    });;
+    return this.#writeBytes(this.#deviceChar, payload, true)
+      .then(() => {
+        if (read_response) {
+          return this.#readBytes(this.#deviceChar);
+        } else {
+          return Promise.resolve([]);
+        }
+      })
+      .finally(() => {
+        this.#writing = false;
+      });
   }
 
   // write timestamp to clock characteristics as fast as possible
@@ -404,7 +406,7 @@ export class WebBLEConnection {
       } catch (e) {
         this.#eventEmitter.emit("ota_status", "fail");
         reject(e);
-      } 
+      }
     }).finally(() => {
       this.#writing = false;
     });

@@ -22,7 +22,7 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONNECT_REQUEST: 238,
   FLAG_CONNECT_RESPONSE: 239,
   FLAG_ADOPT_REQUEST: 240,
-  FLAG_ADOPT_RESPONSE: 241
+  FLAG_ADOPT_RESPONSE: 241,
 });
 
 export const NETWORK_FLAGS = Object.freeze({
@@ -42,7 +42,7 @@ export const NETWORK_FLAGS = Object.freeze({
   FLAG_EMIT_TIMESTAMP_EVENT: 250,
   FLAG_EMIT_COLOR_EVENT: 251,
   FLAG_EMIT_PERCENTAGE_EVENT: 252,
-  FLAG_EMIT_LABEL_EVENT: 253
+  FLAG_EMIT_LABEL_EVENT: 253,
 });
 
 // TangleDevice.js -> TangleInterface.js -> | TangleXXXConnector.js ->
@@ -312,7 +312,7 @@ export class TangleInterface {
   #process() {
     if (!this.#processing) {
       this.#processing = true;
-     
+
       // spawn async function to handle the transmittion one item at the time
       (async () => {
         await sleep(0.001); // short delay to let fill up the queue to merge the execure items if possible

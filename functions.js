@@ -1,4 +1,4 @@
-"use strict";
+
 
 export function toBytes(value, byteCount) {
   var byteArray = [];
@@ -75,12 +75,14 @@ export function sleep(ms) {
 export const createNanoEvents = () => ({
   events: {},
   emit(event, ...args) {
-     (this.events[event] || []).forEach((i) => {let res = i(...args)});
+    (this.events[event] || []).forEach(i => {
+      let res = i(...args);
+    });
   },
   on(event, cb) {
     (this.events[event] = this.events[event] || []).push(cb);
     return () => (this.events[event] = (this.events[event] || []).filter(i => i !== cb));
-  }
+  },
 });
 
 /////////////////////////////////////////////// == 0.7 == ///////////////////////////////////////////////////
