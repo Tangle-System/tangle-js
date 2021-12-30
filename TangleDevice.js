@@ -1,5 +1,5 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy } from "./functions.js";
-import { TangleInterface, DEVICE_FLAGS, NETWORK_FLAGS } from "./TangleInterface.js";
+import { colorToBytes, createNanoEvents, detectBluefy, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
@@ -88,6 +88,12 @@ export class TangleDevice {
    */
 
   addEventListener(event, callback) {
+    return this.#eventEmitter.on(event, callback);
+  }
+  /**
+   * @alias this.addEventListener
+   */
+  on(event, callback) {
     return this.#eventEmitter.on(event, callback);
   }
 
