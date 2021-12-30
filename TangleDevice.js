@@ -21,16 +21,26 @@ export class TangleDevice {
     this.clock = new TimeTrack();
     this.timeline = new TimeTrack();
 
-    this.#eventEmitter = createNanoEvents();
     this.#uuidCounter = 0;
 
+    this.#eventEmitter = createNanoEvents();
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
     this.interface = new TangleInterface();
 
-    this.interface.addEventListener("disconnected", this.#onDisconnected);
-    this.interface.addEventListener("connected", this.#onConnected);
+    this.interface.addEventListener("ota_status", e => {
+      this.#eventEmitter.emit("ota_status", e);
+    });
+    this.interface.addEventListener("ota_progress", e => {
+      this.#eventEmitter.emit("ota_progress", e);
+    });
+    this.interface.addEventListener("disconnected", e => {
+      this.#onDisconnected(e);
+    });
+    this.interface.addEventListener("connected", e => {
+      this.#onConnected(e);
+    });
 
     // auto clock sync loop
     // how to get rid of it on TangleDevice object destruction ????
@@ -221,7 +231,7 @@ export class TangleDevice {
 
     const payload = [...timeline_payload, ...tngl_payload];
     return this.interface.execute(payload, "TNGL").then(() => {
-      console.log("Written");
+      // console.log("Written");
     });
   }
 
@@ -300,79 +310,87 @@ export class TangleDevice {
       let written = 0;
 
       console.log("OTA UPDATE");
-
       console.log(firmware);
 
-      {
-        //===========// RESET //===========//
-        console.log("OTA RESET");
+      try {
+        this.#eventEmitter.emit("ota_status", "begin");
 
-        const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-        const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-        await this.interface.execute(network_bytes, null);
-      }
+        {
+          //===========// RESET //===========//
+          console.log("OTA RESET");
 
-      await sleep(100);
-
-      {
-        //===========// BEGIN //===========//
-        console.log("OTA BEGIN");
-
-        const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-        const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-        await this.interface.execute(network_bytes, null);
-      }
-
-      await sleep(10000);
-
-      {
-        //===========// WRITE //===========//
-        console.log("OTA WRITE");
-
-        const start_timestamp = new Date().getTime();
-
-        while (written < firmware.length) {
-          if (index_to > firmware.length) {
-            index_to = firmware.length;
-          }
-
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
           const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
           await this.interface.execute(network_bytes, null);
-
-          written += index_to - index_from;
-
-          const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-          console.log(percentage + "%");
-          //this.#eventEmitter.emit("ota_status", percentage);
-
-          index_from += chunk_size;
-          index_to = index_from + chunk_size;
         }
 
-        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        await sleep(100);
+
+        {
+          //===========// BEGIN //===========//
+          console.log("OTA BEGIN");
+
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          await this.interface.execute(network_bytes, null);
+        }
+
+        await sleep(10000);
+
+        {
+          //===========// WRITE //===========//
+          console.log("OTA WRITE");
+
+          const start_timestamp = new Date().getTime();
+
+          while (written < firmware.length) {
+            if (index_to > firmware.length) {
+              index_to = firmware.length;
+            }
+
+            const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+            const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+            await this.interface.execute(network_bytes, null);
+
+            written += index_to - index_from;
+
+            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            console.log(percentage + "%");
+            this.#eventEmitter.emit("ota_progress", percentage);
+
+            index_from += chunk_size;
+            index_to = index_from + chunk_size;
+          }
+
+          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        }
+
+        await sleep(100);
+
+        {
+          //===========// END //===========//
+          console.log("OTA END");
+
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          await this.interface.execute(network_bytes, null);
+        }
+
+        await sleep(1000);
+
+        console.log("Rebooting whole network...");
+
+        const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
+        await this.interface.execute(payload, false);
+
+        this.#eventEmitter.emit("ota_status", "success");
+        resolve();
+        return;
+      } catch (e) {
+        this.#eventEmitter.emit("ota_status", "fail");
+        reject(e);
+        return;
       }
-
-      await sleep(100);
-
-      {
-        //===========// END //===========//
-        console.log("OTA END");
-
-        const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-        const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-        await this.interface.execute(network_bytes, null);
-      }
-
-      await sleep(1000);
-
-      console.log("Rebooting whole network...");
-
-      const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
-      await this.interface.execute(payload, false);
-
-      resolve();
-      return;
     });
   }
 

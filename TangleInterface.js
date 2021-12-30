@@ -121,6 +121,7 @@ export class TangleInterface {
     if (this.#reconection) {
       console.log("Reconnecting in 1s...");
       setTimeout(() => {
+        console.log("Reconnecting device");
         return this.connect().catch(() => {
           console.log("Reconnection failed.");
         });
@@ -207,7 +208,6 @@ export class TangleInterface {
 
     return this.connector.connect(attempts).finally(() => {
       this.#connecting = false;
-      this.#process();
     });
   }
 
@@ -312,105 +312,110 @@ export class TangleInterface {
   #process() {
     if (!this.#processing) {
       this.#processing = true;
-
+     
       // spawn async function to handle the transmittion one item at the time
       (async () => {
         await sleep(0.001); // short delay to let fill up the queue to merge the execure items if possible
 
-        while (this.#queue.length > 0) {
-          const item = this.#queue.shift();
+        try {
+          while (this.#queue.length > 0) {
+            const item = this.#queue.shift();
 
-          switch (item.type) {
-            case QueueItem.TYPE_EXECUTE:
-              let payload = new Uint8Array(this.#chunkSize);
-              let index = 0;
+            switch (item.type) {
+              case QueueItem.TYPE_EXECUTE:
+                let payload = new Uint8Array(this.#chunkSize);
+                let index = 0;
 
-              payload.set(item.a, index);
-              index += item.a.length;
+                payload.set(item.a, index);
+                index += item.a.length;
 
-              // while there are items in the queue, and the next item is also TYPE_EXECUTE
-              while (this.#queue.length && this.#queue[0].type == QueueItem.TYPE_EXECUTE) {
-                const next_item = this.#queue.shift();
+                // while there are items in the queue, and the next item is also TYPE_EXECUTE
+                while (this.#queue.length && this.#queue[0].type == QueueItem.TYPE_EXECUTE) {
+                  const next_item = this.#queue.shift();
 
-                // then check if I have toom to merge the payload bytes
-                if (index + next_item.a.length <= payload.length) {
-                  payload.set(next_item.a, index);
-                  index += next_item.a.length;
+                  // then check if I have toom to merge the payload bytes
+                  if (index + next_item.a.length <= payload.length) {
+                    payload.set(next_item.a, index);
+                    index += next_item.a.length;
+                  }
+                  // if not, then return the item back into the queue
+                  else {
+                    this.#queue.unshift(next_item);
+                  }
                 }
-                // if not, then return the item back into the queue
-                else {
-                  this.#queue.unshift(next_item);
-                }
-              }
 
-              await this.connector
-                .deliver(payload.slice(0, index))
-                .then(() => {
-                  item.resolve();
-                })
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
-              break;
+                await this.connector
+                  .deliver(payload.slice(0, index))
+                  .then(() => {
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
 
-            case QueueItem.TYPE_REQUEST:
-              await this.connector
-                .request(item.a, item.b)
-                .then(response => {
-                  item.resolve(response);
-                })
+              case QueueItem.TYPE_REQUEST:
+                await this.connector
+                  .request(item.a, item.b)
+                  .then(response => {
+                    item.resolve(response);
+                  })
 
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
-              break;
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
 
-            case QueueItem.TYPE_SET_CLOCK:
-              await this.connector
-                .setClock(item.a)
-                .then(response => {
-                  item.resolve(response);
-                })
+              case QueueItem.TYPE_SET_CLOCK:
+                await this.connector
+                  .setClock(item.a)
+                  .then(response => {
+                    item.resolve(response);
+                  })
 
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
-              break;
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
 
-            case QueueItem.TYPE_GET_CLOCK:
-              await this.connector
-                .getClock()
-                .then(response => {
-                  item.resolve(response);
-                })
+              case QueueItem.TYPE_GET_CLOCK:
+                await this.connector
+                  .getClock()
+                  .then(response => {
+                    item.resolve(response);
+                  })
 
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
-              break;
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
 
-            case QueueItem.TYPE_FIRMWARE_UPDATE:
-              await this.connector
-                .updateFW(item.a)
-                .then(response => {
-                  item.resolve(response);
-                })
+              case QueueItem.TYPE_FIRMWARE_UPDATE:
+                await this.connector
+                  .updateFW(item.a)
+                  .then(response => {
+                    item.resolve(response);
+                  })
 
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
-              break;
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
 
-            default:
-              break;
+              default:
+                break;
+            }
           }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.#processing = false;
         }
-        this.#processing = false;
       })();
     }
   }

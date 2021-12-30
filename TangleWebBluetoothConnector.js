@@ -103,11 +103,14 @@ export class WebBLEConnection {
           }
 
           const payload = [...numberToBytes(write_uuid, 4), ...numberToBytes(index_from, 4), ...numberToBytes(bytes.length, 4), ...bytes.slice(index_from, index_to)];
-          await characteristic.writeValueWithResponse(new Uint8Array(payload)).catch(e => {
+
+          try {
+            await characteristic.writeValueWithResponse(new Uint8Array(payload));
+          } catch (e) {
             console.warn(e);
             reject(e);
             return;
-          });
+          }
 
           index_from += bytes_size;
           index_to = index_from + bytes_size;
@@ -149,6 +152,14 @@ export class WebBLEConnection {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
     // console.log("> " + a.join(" "));
+  }
+
+  addEventListener(event, callback) {
+    this.#eventEmitter.on(event, callback);
+  }
+
+  emit(event, ...args) {
+    this.#eventEmitter.emit(event, ...args);
   }
 
   attach(service, networkUUID, clockUUID, deviceUUID) {
@@ -213,6 +224,8 @@ export class WebBLEConnection {
       return Promise.reject("Communication in proccess");
     }
 
+    this.#writing = true;
+
     return this.#writeBytes(this.#networkChar, payload, true).finally(() => {
       this.#writing = false;
     });
@@ -230,6 +243,8 @@ export class WebBLEConnection {
       return Promise.reject("Communication in proccess");
     }
 
+    this.#writing = true;
+
     return this.#writeBytes(this.#networkChar, payload, false).finally(() => {
       this.#writing = false;
     });
@@ -246,13 +261,17 @@ export class WebBLEConnection {
       return Promise.reject("Communication in proccess");
     }
 
+    this.#writing = true;
+
     return this.#writeBytes(this.#deviceChar, payload, true).then(() => {
       if (read_response) {
         return this.#readBytes(this.#deviceChar);
       } else {
         return Promise.resolve([]);
       }
-    });
+    }).finally(() => {
+      this.#writing = false;
+    });;
   }
 
   // write timestamp to clock characteristics as fast as possible
@@ -298,15 +317,15 @@ export class WebBLEConnection {
   }
 
   updateFirmware(firmware) {
+    if (!this.#deviceChar) {
+      return Promise.reject("Device characteristics is null");
+    }
+
     if (this.#writing) {
       return Promise.reject("Communication in proccess");
     }
 
     this.#writing = true;
-
-    if (!this.#deviceChar) {
-      return Promise.reject("Device characteristics is null");
-    }
 
     return new Promise(async (resolve, reject) => {
       const chunk_size = detectAndroid() ? 1008 : 4992; // must be modulo 16
@@ -317,73 +336,75 @@ export class WebBLEConnection {
       let written = 0;
 
       console.log("OTA UPDATE");
-
       console.log(firmware);
 
-      {
-        //===========// RESET //===========//
-        console.log("OTA RESET");
+      try {
+        this.#eventEmitter.emit("ota_status", "begin");
 
-        const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-        await this.#writeBytes(this.#deviceChar, bytes, true);
-      }
+        {
+          //===========// RESET //===========//
+          console.log("OTA RESET");
 
-      await sleep(100);
-
-      {
-        //===========// BEGIN //===========//
-        console.log("OTA BEGIN");
-
-        const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-        await this.#writeBytes(this.#deviceChar, bytes, true);
-      }
-
-      this.#eventEmitter.emit("ota", true);
-
-      await sleep(10000); // need to wait 10 seconds to let the ESP erase the flash.
-
-      {
-        //===========// WRITE //===========//
-        console.log("OTA WRITE");
-
-        const start_timestamp = new Date().getTime();
-
-        while (written < firmware.length) {
-          if (index_to > firmware.length) {
-            index_to = firmware.length;
-          }
-
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
-
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
           await this.#writeBytes(this.#deviceChar, bytes, true);
-          written += index_to - index_from;
-
-          const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-          console.log(percentage + "%");
-
-          this.#eventEmitter.emit("ota_status", percentage);
-
-          index_from += chunk_size;
-          index_to = index_from + chunk_size;
         }
 
-        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
-      }
+        await sleep(100);
 
-      await sleep(100);
+        {
+          //===========// BEGIN //===========//
+          console.log("OTA BEGIN");
 
-      {
-        //===========// END //===========//
-        console.log("OTA END");
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+          await this.#writeBytes(this.#deviceChar, bytes, true);
+        }
 
-        const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-        await this.#writeBytes(this.#deviceChar, bytes, true);
-      }
+        await sleep(10000); // need to wait 10 seconds to let the ESP erase the flash.
 
-      this.#eventEmitter.emit("ota", false);
+        {
+          //===========// WRITE //===========//
+          console.log("OTA WRITE");
 
-      resolve();
-      return;
+          const start_timestamp = new Date().getTime();
+
+          while (written < firmware.length) {
+            if (index_to > firmware.length) {
+              index_to = firmware.length;
+            }
+
+            const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+
+            await this.#writeBytes(this.#deviceChar, bytes, true);
+            written += index_to - index_from;
+
+            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            console.log(percentage + "%");
+
+            this.#eventEmitter.emit("ota_progress", percentage);
+
+            index_from += chunk_size;
+            index_to = index_from + chunk_size;
+          }
+
+          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        }
+
+        await sleep(100);
+
+        {
+          //===========// END //===========//
+          console.log("OTA END");
+
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          await this.#writeBytes(this.#deviceChar, bytes, true);
+        }
+
+        this.#eventEmitter.emit("ota_status", "success");
+        resolve();
+      } catch (e) {
+        this.#eventEmitter.emit("ota_status", "fail");
+        reject(e);
+      } 
     }).finally(() => {
       this.#writing = false;
     });
@@ -407,7 +428,6 @@ export class TangleWebBluetoothConnector {
   #webBTDevice;
   #webBTDeviceFwVersion;
   #connection;
-  #eventEmitter;
   #reconection;
   #criteria;
 
@@ -421,7 +441,6 @@ export class TangleWebBluetoothConnector {
     this.#webBTDevice = null;
     this.#webBTDeviceFwVersion = "";
     this.#connection = new WebBLEConnection();
-    this.#eventEmitter = createNanoEvents();
     this.#reconection = false;
     this.#criteria = {};
   }
@@ -436,7 +455,7 @@ export class TangleWebBluetoothConnector {
    * @returns unbind function
    */
   addEventListener(event, callback) {
-    return this.#eventEmitter.on(event, callback);
+    return this.#connection.addEventListener(event, callback);
   }
 
   /*
@@ -684,6 +703,7 @@ criteria example:
   unselect() {
     if (!this.connected()) {
       this.#webBTDevice = null;
+      this.#connection.reset();
       return Promise.resolve();
     }
 
@@ -729,7 +749,7 @@ criteria example:
       })
       .then(() => {
         console.log("> Bluetooth Device Connected");
-        return this.#eventEmitter.emit("connected", { target: this });
+        return this.#connection.emit("connected", { target: this });
       })
       .catch(error => {
         console.warn(error.name);
@@ -757,19 +777,19 @@ criteria example:
   disconnect() {
     this.#reconection = false;
 
+    console.log("> Disconnecting from Bluetooth Device...");
+
+    this.#connection.reset();
+
     if (!this.#webBTDevice) {
       return Promise.reject("SelectionError");
     }
-
-    console.log("> Disconnecting from Bluetooth Device...");
 
     if (this.#webBTDevice.gatt.connected) {
       this.#webBTDevice.gatt.disconnect();
     } else {
       console.log("Bluetooth Device is already disconnected");
     }
-
-    this.#connection.reset();
 
     return Promise.resolve();
   }
@@ -782,14 +802,14 @@ criteria example:
   #onDisconnected = event => {
     console.log("> Bluetooth Device disconnected");
     this.#connection.reset();
-    return this.#eventEmitter.emit("disconnected", { target: this });
+    return this.#connection.emit("disconnected", { target: this });
   };
 
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return this.#connection.deliver(payload);
@@ -799,7 +819,7 @@ criteria example:
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return this.#connection.transmit(payload);
@@ -809,7 +829,7 @@ criteria example:
   // is guaranteed to get a response
   request(payload, read_response = true) {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return this.#connection.request(payload, read_response);
@@ -819,7 +839,7 @@ criteria example:
   // of the application as precisely as possible
   setClock(clock) {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return new Promise(async (resolve, reject) => {
@@ -844,7 +864,7 @@ criteria example:
   // of the device as precisely as possible
   getClock() {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return new Promise(async (resolve, reject) => {
@@ -869,7 +889,7 @@ criteria example:
   // to all handlers
   updateFW(firmware) {
     if (!this.connected()) {
-      return Promise.reject("Bluetooth device disconnected");
+      return Promise.reject("Disconnected");
     }
 
     return this.#connection.updateFirmware(firmware);
