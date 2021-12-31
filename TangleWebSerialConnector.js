@@ -1,33 +1,20 @@
-// npm install --save-dev @types/web-bluetooth
-/// <reference types="web-bluetooth" />
-
-/// <reference path="TangleInterface.js" />
-/// <reference path="TnglReader.js" />
-
-
+import { sleep } from "./functions.js";
+import { TimeTrack } from "./TimeTrack.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
 // Connector connects the application with one Tangle Device, that is then in a
 // position of a controller for other Tangle Devices
-class TangleWebSerialConnector {
-  #eventEmitter;
+export class TangleWebSerialConnector {
+  #interfaceReference;
+  #selected;
+  #connected;
 
-  constructor() {
-    this.#eventEmitter = createNanoEvents();
-  }
+  constructor(interfaceReference) {
+    this.#interfaceReference = interfaceReference;
 
-  /**
-   * @name addEventListener
-   * events: "connected", "disconnected", "ota_status", "event"
-   *
-   * all events: event.target === the sender object (this)
-   * event "disconnected": event.reason has a string with a disconnect reason
-   *
-   * @returns unbind function
-   */
-  addEventListener(event, callback) {
-    return this.#eventEmitter.on(event, callback);
+    this.#selected = false;
+    this.#connected = false;
   }
 
   /*
@@ -70,6 +57,7 @@ criteria example:
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
   userSelect(criteria) {
+    this.#selected = true;
     //console.log("choose()");
     return Promise.resolve();
   }
@@ -89,51 +77,141 @@ criteria example:
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
+    this.#selected = true;
     return Promise.resolve();
   }
 
+  selected() {
+    return Promise.resolve(this.#selected ? { fwVersion: "unknown" } : null);
+  }
+
+  unselect() {
+    this.#selected = false;
+    return Promise.resolve();
+  }
+
+  connect(attempts) {
+    if (this.#selected) {
+      this.#connected = true;
+      this.#interfaceReference.emit("#connected");
+      return Promise.resolve();
+    } else {
+      return Promise.reject("NotSelected");
+    }
+  }
+
   connected() {
-    return false;
+    return Promise.resolve(this.#connected);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   disconnect() {
-    return Promise.resolve();
+    if (this.#selected) {
+      this.#connected = false;
+      this.#interfaceReference.emit("#disconnected");
+      return Promise.resolve();
+    } else {
+      return Promise.reject("NotSelected");
+    }
   }
 
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    return Promise.resolve();
+    if (this.#connected) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject("Disconnected");
+    }
   }
 
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    return Promise.resolve();
+    if (this.#connected) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject("Disconnected");
+    }
   }
 
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    return Promise.resolve();
+    if (this.#connected) {
+      return Promise.resolve([]);
+    } else {
+      return Promise.reject("Disconnected");
+    }
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    return Promise.resolve();
+    if (this.#connected) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject("Disconnected");
+    }
   }
 
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    return Promise.resolve();
+    if (this.#connected) {
+      return Promise.resolve(new TimeTrack(0));
+    } else {
+      return Promise.reject("Disconnected");
+    }
   }
 
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
-    return Promise.resolve();
+    return new Promise(async (resolve, reject) => {
+      if (!this.#connected) {
+        reject("Disconnected");
+        return;
+      }
+
+      this.#interfaceReference.emit("ota_status", "begin");
+
+      await sleep(1000);
+
+      for (let percentage = 1; percentage <= 100; percentage++) {
+        this.#interfaceReference.emit("ota_progress", percentage);
+
+        await sleep(50);
+
+        if (!this.#connected) {
+          this.#interfaceReference.emit("ota_status", "fail");
+          reject("Connection Failure");
+          return;
+        }
+
+        if (Math.random() <= 0.01) {
+          this.#interfaceReference.emit("ota_status", "fail");
+          reject("Simulated Failure");
+          return;
+        }
+      }
+
+      await sleep(1000);
+
+      this.#interfaceReference.emit("ota_status", "success");
+
+      resolve();
+      return;
+    });
+  }
+
+  destroy() {
+    //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
+    return this.disconnect()
+      .catch(() => {})
+      .then(() => {
+        return this.unselect();
+      })
+      .catch(() => {});
   }
 }

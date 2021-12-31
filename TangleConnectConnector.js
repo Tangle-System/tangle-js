@@ -1,10 +1,5 @@
-// npm install --save-dev @types/web-bluetooth
-/// <reference types="web-bluetooth" />
-
-/// <reference path="TangleInterface.js" />
-/// <reference path="TnglReader.js" />
-
-
+import { sleep } from "./functions.js";
+import { TimeTrack } from "./TimeTrack.js";
 
 // Čus Viktore, tohle ber jenom jako nástřel. Pokud něco nebude dávat smysl, ozvi se. Díky
 
@@ -17,40 +12,26 @@
 
 /////////////////////////////////////////////////////////////////////////////////////
 
+// just a placeholder
+var JAVA_TANGLE_CONNECT = {};
+
 // Connector connects the application with one Tangle Device, that is then in a
 // position of a controller for other Tangle Devices
-class TangleConnectConnector {
-  #eventEmitter;
-  #reconection;
-  #criteria;
+export class TangleConnectConnector {
+  #interfaceReference;
 
-  constructor() {
+  constructor(interfaceReference) {
+    this.#interfaceReference = interfaceReference;
+
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
 
     this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
     this.CLOCK_CHAR_UUID = "7a1e0e3a-6b9b-49ef-b9b7-65c81b714a19";
     this.DEVICE_CHAR_UUID = "9ebe2e4b-10c7-4a81-ac83-49540d1135a5";
 
-    this.#eventEmitter = createNanoEvents();
-    this.#reconection = false;
-    this.#criteria = {};
-
     JAVA_TANGLE_CONNECT.addEventListener("gattserverdisconnected", () => {
       this.#onDisconnected();
     });
-  }
-
-  /**
-   * @name addEventListener
-   * events: "connected", "disconnected", "ota_status", "event"
-   *
-   * all events: event.target === the sender object (this)
-   * event "disconnected": event.reason has a string with a disconnect reason
-   *
-   * @returns unbind function
-   */
-  addEventListener(event, callback) {
-    return this.#eventEmitter.on(event, callback);
   }
 
   /*
@@ -125,11 +106,13 @@ criteria example:
     return JAVA_TANGLE_CONNECT.selected();
   }
 
+  unselect() {
+    return JAVA_TANGLE_CONNECT.unselect();
+  }
+
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
   connect(attempts = 3) {
-    this.#reconection = true;
-
     return JAVA_TANGLE_CONNECT.connect(attempts);
   }
 
@@ -150,13 +133,7 @@ criteria example:
   // only then start this.connect() to reconnect to the bluetooth device
   #onDisconnected = event => {
     console.log("> Bluetooth Device disconnected");
-    return this.#eventEmitter.emit("disconnected", { target: this }).then(() => {
-      if (this.#reconection) {
-        return sleep(1000).then(() => {
-          return this.connect();
-        });
-      }
-    });
+    this.#interfaceReference.emit("#disconnected", { target: this });
   };
 
   // deliver handles the communication with the Tangle network in a way
@@ -233,5 +210,15 @@ criteria example:
   // to all handlers
   updateFW(firmware) {
     return JAVA_TANGLE_CONNECT.updateFirmware(firmware);
+  }
+
+  destroy() {
+    //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
+    return this.disconnect()
+      .catch(() => {})
+      .then(() => {
+        return this.unselect();
+      })
+      .catch(() => {});
   }
 }

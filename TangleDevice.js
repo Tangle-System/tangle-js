@@ -17,7 +17,7 @@ export class TangleDevice {
   #ownerSignature;
   #ownerKey;
 
-  constructor() {
+  constructor(connectorType="webbluetooth") {
     this.clock = new TimeTrack();
     this.timeline = new TimeTrack();
 
@@ -28,6 +28,9 @@ export class TangleDevice {
     this.#ownerKey = null;
 
     this.interface = new TangleInterface(this);
+    if(connectorType != "dummy") {
+      this.interface.assignConnector(connectorType);
+    }
 
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
@@ -59,6 +62,10 @@ export class TangleDevice {
     this.interface.unselect().finally(() => {
       this.#ownerKey = ownerKey;
     });
+  }
+
+  assignConnector(connector_type) {
+    this.interface.assignConnector(connector_type);
   }
 
   // valid UUIDs are in range [1..4294967295]

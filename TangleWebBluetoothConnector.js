@@ -1,5 +1,6 @@
 // npm install --save-dev @types/web-bluetooth
 /// <reference types="web-bluetooth" />
+
 import { createNanoEvents, detectAndroid, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -65,17 +66,6 @@ export class WebBLEConnection {
     this.#writing = false;
 
     this.#uuidCounter = 0;
-
-    window.onbeforeunload = e => {
-      if (!e) e = window.event;
-
-      if (this.#writing) {
-        e.preventDefault();
-        e.cancelBubble = true;
-        e.returnValue = "Právě probíhá update připojeného zařízení, neopouštějte tuto stránku.";
-        window.confirm("Právě probíhá update připojeného zařízení, neopouštějte tuto stránku.");
-      }
-    };
   }
 
   #getUUID() {
@@ -413,6 +403,11 @@ export class WebBLEConnection {
     this.#deviceChar = null;
     this.#writing = false;
   }
+
+  destroy() {
+    this.reset();
+    this.#interfaceReference = null;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -697,7 +692,7 @@ criteria example:
   }
 
   selected() {
-    return  Promise.resolve(this.#webBTDevice ? { fwVersion: this.#webBTDeviceFwVersion } : null);
+    return Promise.resolve(this.#webBTDevice ? { fwVersion: this.#webBTDeviceFwVersion } : null);
   }
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
@@ -756,7 +751,7 @@ criteria example:
   }
 
   connected() {
-    return Promise.resolve( this.#webBTDevice && this.#webBTDevice.gatt.connected);
+    return Promise.resolve(this.#webBTDevice && this.#webBTDevice.gatt.connected);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -788,7 +783,7 @@ criteria example:
   #onDisconnected = event => {
     console.log("> Bluetooth Device disconnected");
     this.#connection.reset();
-    return this.#interfaceReference.emit("#disconnected", { target: this });
+    this.#interfaceReference.emit("#disconnected", { target: this });
   };
 
   // deliver handles the communication with the Tangle network in a way
@@ -879,5 +874,15 @@ criteria example:
     }
 
     return this.#connection.updateFirmware(firmware);
+  }
+
+  destroy() {
+    //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
+    return this.disconnect()
+      .catch(() => {})
+      .then(() => {
+        return this.unselect();
+      })
+      .catch(() => {});
   }
 }
