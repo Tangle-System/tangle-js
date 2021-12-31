@@ -39,11 +39,13 @@ export class TangleDevice {
     // auto clock sync loop
     // how to get rid of it on TangleDevice object destruction ????
     setInterval(() => {
-      if (this.connected()) {
-        this.syncClock().catch(error => {
-          console.warn(error);
-        });
-      }
+      this.connected().then(connected => {
+        if (connected) {
+          this.syncClock().catch(error => {
+            console.warn(error);
+          });
+        }
+      });
     }, 60000);
   }
 
