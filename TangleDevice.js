@@ -27,18 +27,12 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface();
+    this.interface = new TangleInterface(this);
 
-    this.interface.addEventListener("ota_status", e => {
-      this.#eventEmitter.emit("ota_status", e);
-    });
-    this.interface.addEventListener("ota_progress", e => {
-      this.#eventEmitter.emit("ota_progress", e);
-    });
-    this.interface.addEventListener("disconnected", e => {
+    this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
     });
-    this.interface.addEventListener("connected", e => {
+    this.#eventEmitter.on("#connected", e => {
       this.#onConnected(e);
     });
 
@@ -95,6 +89,10 @@ export class TangleDevice {
    */
   on(event, callback) {
     return this.#eventEmitter.on(event, callback);
+  }
+
+  emit(event, ...args) {
+    this.#eventEmitter.emit(event, ...args);
   }
 
   #onDisconnected = event => {

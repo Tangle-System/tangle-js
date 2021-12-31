@@ -130,6 +130,9 @@ criteria example:
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
+
+    
+
     return Promise.resolve();
   }
 }

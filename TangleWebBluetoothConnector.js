@@ -18,16 +18,19 @@ import { TnglReader } from "./TnglReader.js";
     is renamed Transmitter. Helper class for WebBluetoothConnector.js
 */
 export class WebBLEConnection {
+  #interfaceReference;
   // private fields
   #service;
   #networkChar;
   #clockChar;
   #deviceChar;
   #writing;
-  #eventEmitter;
   #uuidCounter;
 
-  constructor() {
+  constructor(interfaceReference) {
+
+    this.#interfaceReference = interfaceReference;
+
     /*
       BLE Tangle Service
     */
@@ -62,7 +65,6 @@ export class WebBLEConnection {
     */
     this.#writing = false;
 
-    this.#eventEmitter = createNanoEvents();
     this.#uuidCounter = 0;
 
     window.onbeforeunload = e => {
@@ -152,14 +154,6 @@ export class WebBLEConnection {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
     // console.log("> " + a.join(" "));
-  }
-
-  addEventListener(event, callback) {
-    this.#eventEmitter.on(event, callback);
-  }
-
-  emit(event, ...args) {
-    this.#eventEmitter.emit(event, ...args);
   }
 
   attach(service, networkUUID, clockUUID, deviceUUID) {
@@ -341,7 +335,7 @@ export class WebBLEConnection {
       console.log(firmware);
 
       try {
-        this.#eventEmitter.emit("ota_status", "begin");
+        this.#interfaceReference.emit("ota_status", "begin");
 
         {
           //===========// RESET //===========//
@@ -382,7 +376,7 @@ export class WebBLEConnection {
             const percentage = Math.floor((written * 10000) / firmware.length) / 100;
             console.log(percentage + "%");
 
-            this.#eventEmitter.emit("ota_progress", percentage);
+            this.#interfaceReference.emit("ota_progress", percentage);
 
             index_from += chunk_size;
             index_to = index_from + chunk_size;
@@ -401,10 +395,10 @@ export class WebBLEConnection {
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
-        this.#eventEmitter.emit("ota_status", "success");
+        this.#interfaceReference.emit("ota_status", "success");
         resolve();
       } catch (e) {
-        this.#eventEmitter.emit("ota_status", "fail");
+        this.#interfaceReference.emit("ota_status", "fail");
         reject(e);
       }
     }).finally(() => {
@@ -427,13 +421,17 @@ export class WebBLEConnection {
 // Connector connects the application with one Tangle Device, that is then in a
 // position of a controller for other Tangle Devices
 export class TangleWebBluetoothConnector {
+  #interfaceReference;
+  
   #webBTDevice;
   #webBTDeviceFwVersion;
   #connection;
   #reconection;
   #criteria;
 
-  constructor() {
+  constructor(interfaceReference) {
+    this.#interfaceReference = interfaceReference;  
+
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
 
     this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
@@ -442,23 +440,11 @@ export class TangleWebBluetoothConnector {
 
     this.#webBTDevice = null;
     this.#webBTDeviceFwVersion = "";
-    this.#connection = new WebBLEConnection();
+    this.#connection = new WebBLEConnection(interfaceReference);
     this.#reconection = false;
     this.#criteria = {};
   }
 
-  /**
-   * @name addEventListener
-   * events: "connected", "disconnected", "ota_status", "event"
-   *
-   * all events: event.target === the sender object (this)
-   * event "disconnected": event.reason has a string with a disconnect reason
-   *
-   * @returns unbind function
-   */
-  addEventListener(event, callback) {
-    return this.#connection.addEventListener(event, callback);
-  }
 
   /*
 
@@ -751,7 +737,7 @@ criteria example:
       })
       .then(() => {
         console.log("> Bluetooth Device Connected");
-        return this.#connection.emit("connected", { target: this });
+        return this.#interfaceReference.emit("#connected", { target: this });
       })
       .catch(error => {
         console.warn(error.name);
@@ -804,7 +790,7 @@ criteria example:
   #onDisconnected = event => {
     console.log("> Bluetooth Device disconnected");
     this.#connection.reset();
-    return this.#connection.emit("disconnected", { target: this });
+    return this.#interfaceReference.emit("#disconnected", { target: this });
   };
 
   // deliver handles the communication with the Tangle network in a way

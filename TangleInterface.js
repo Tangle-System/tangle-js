@@ -83,6 +83,8 @@ class QueueItem {
 
 // filters out duplicate payloads and merges them together. Also decodes payloads received from the connector.
 export class TangleInterface {
+  #deviceReference; // reference to the device object this interface is a part of
+  
   #queue;
   #processing;
 
@@ -92,10 +94,12 @@ export class TangleInterface {
   #connecting;
   #selecting;
 
-  constructor() {
-    this.connector = new TangleWebBluetoothConnector();
+  constructor(deviceReference) {
+    this.#deviceReference = deviceReference;
+    
+    this.connector = new TangleWebBluetoothConnector(this);
 
-    this.connector.addEventListener("disconnected", () => {
+    this.#deviceReference.addEventListener("#disconnected", () => {
       this.#onDisconnected();
     });
 
@@ -129,8 +133,8 @@ export class TangleInterface {
     }
   }
 
-  addEventListener(event, callback) {
-    return this.connector.addEventListener(event, callback);
+  emit(event, ...arg) {
+    this.#deviceReference.emit(event, ...arg);
   }
 
   userSelect(criteria) {
