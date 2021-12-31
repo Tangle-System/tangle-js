@@ -101,17 +101,20 @@ export class TangleDevice {
   };
 
   #onConnected = event => {
-    return event.target
+    return this.interface
       .getClock()
       .then(clock => {
         this.clock = clock;
-        return this.requestTimeline();
+        return this.requestTimeline().catch(e => {
+          console.error(e);
+        });
       })
       .then(() => {
         console.log("> Bluetooth Device connected");
         return this.#eventEmitter.emit("connected", { target: this });
       })
       .catch(error => {
+        this.disconnect();
         console.warn(error);
       });
   };
