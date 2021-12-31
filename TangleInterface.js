@@ -1,4 +1,5 @@
 import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy } from "./functions.js";
+import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
@@ -84,7 +85,7 @@ class QueueItem {
 // filters out duplicate payloads and merges them together. Also decodes payloads received from the connector.
 export class TangleInterface {
   #deviceReference; // reference to the device object this interface is a part of
-  
+
   #queue;
   #processing;
 
@@ -96,7 +97,7 @@ export class TangleInterface {
 
   constructor(deviceReference) {
     this.#deviceReference = deviceReference;
-    
+
     this.connector = new TangleWebBluetoothConnector(this);
 
     this.#deviceReference.addEventListener("#disconnected", () => {
@@ -178,9 +179,9 @@ export class TangleInterface {
   }
 
   unselect() {
-    if (this.connector.connected()) {
-      return Promise.reject("DeviceConnected");
-    }
+    // if (this.connector.connected()) {
+    //   return Promise.reject("DeviceConnected");
+    // }
 
     if (this.#selecting) {
       return Promise.reject("SelectingInProgress");
@@ -196,9 +197,9 @@ export class TangleInterface {
   connect(attempts) {
     this.#reconection = true;
 
-    if (this.connector.connected()) {
-      return Promise.resolve();
-    }
+    // if (this.connector.connected()) {
+    //   return Promise.resolve();
+    // }
 
     if (this.#connecting) {
       return Promise.reject("ConnectingInProgress");
@@ -206,9 +207,9 @@ export class TangleInterface {
 
     this.#connecting = true;
 
-    if (!this.connector.selected()) {
-      return Promise.reject("NoDeviceSelected");
-    }
+    // if (!this.connector.selected()) {
+    //   return Promise.reject("NoDeviceSelected");
+    // }
 
     return this.connector.connect(attempts).finally(() => {
       this.#connecting = false;
@@ -218,10 +219,10 @@ export class TangleInterface {
   disconnect() {
     this.#reconection = false;
 
-    if (this.connector.selected() && this.connector.connected()) {
-      return this.connector.disconnect();
-    }
-    return Promise.resolve();
+    // if (this.connector.selected() && this.connector.connected()) {
+    return this.connector.disconnect();
+    // }
+    // return Promise.resolve();
   }
 
   connected() {

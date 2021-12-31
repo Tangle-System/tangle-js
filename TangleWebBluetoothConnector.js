@@ -28,7 +28,6 @@ export class WebBLEConnection {
   #uuidCounter;
 
   constructor(interfaceReference) {
-
     this.#interfaceReference = interfaceReference;
 
     /*
@@ -422,7 +421,7 @@ export class WebBLEConnection {
 // position of a controller for other Tangle Devices
 export class TangleWebBluetoothConnector {
   #interfaceReference;
-  
+
   #webBTDevice;
   #webBTDeviceFwVersion;
   #connection;
@@ -430,7 +429,7 @@ export class TangleWebBluetoothConnector {
   #criteria;
 
   constructor(interfaceReference) {
-    this.#interfaceReference = interfaceReference;  
+    this.#interfaceReference = interfaceReference;
 
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
 
@@ -444,7 +443,6 @@ export class TangleWebBluetoothConnector {
     this.#reconection = false;
     this.#criteria = {};
   }
-
 
   /*
 
@@ -492,7 +490,7 @@ criteria example:
   userSelect(criteria) {
     //console.log("choose()");
 
-    if (this.connected()) {
+    if (this.#webBTDevice && this.#webBTDevice.gatt.connected) {
       return this.disconnect().then(() => {
         return this.userSelect(criteria);
       });
@@ -670,7 +668,7 @@ criteria example:
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
-    if (this.connected()) {
+    if (this.#webBTDevice && this.#webBTDevice.gatt.connected) {
       return this.disconnect().then(() => {
         return this.autoSelect(criteria);
       });
@@ -689,7 +687,7 @@ criteria example:
 
   // if device is not connected, then erase it
   unselect() {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       this.#webBTDevice = null;
       this.#connection.reset();
       return Promise.resolve();
@@ -699,7 +697,7 @@ criteria example:
   }
 
   selected() {
-    return this.#webBTDevice ? { fwVersion: this.#webBTDeviceFwVersion } : null;
+    return  Promise.resolve(this.#webBTDevice ? { fwVersion: this.#webBTDeviceFwVersion } : null);
   }
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
@@ -708,7 +706,7 @@ criteria example:
     this.#reconection = true;
 
     if (!this.#webBTDevice) {
-      return Promise.reject("SelectionError");
+      return Promise.reject("NotSelected");
     }
 
     if (this.#webBTDevice.gatt.connected) {
@@ -758,7 +756,7 @@ criteria example:
   }
 
   connected() {
-    return this.#webBTDevice && this.#webBTDevice.gatt.connected;
+    return Promise.resolve( this.#webBTDevice && this.#webBTDevice.gatt.connected);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -770,7 +768,7 @@ criteria example:
     this.#connection.reset();
 
     if (!this.#webBTDevice) {
-      return Promise.reject("SelectionError");
+      return Promise.reject("NotSelected");
     }
 
     if (this.#webBTDevice.gatt.connected) {
@@ -796,7 +794,7 @@ criteria example:
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
@@ -806,7 +804,7 @@ criteria example:
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
@@ -816,7 +814,7 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
@@ -826,7 +824,7 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
@@ -851,7 +849,7 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
@@ -876,7 +874,7 @@ criteria example:
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
-    if (!this.connected()) {
+    if (!(this.#webBTDevice && this.#webBTDevice.gatt.connected)) {
       return Promise.reject("Disconnected");
     }
 
