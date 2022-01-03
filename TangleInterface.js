@@ -199,6 +199,13 @@ export class TangleInterface {
   autoSelect(criteria) {
     this.#reconection = false;
 
+    // if("ownerSignature" in criteria) {
+    //   if(criteria.ownerSignature === null) {
+    //     console.error("bad ownerSignature");
+    //     throw "bad ownerSignature";
+    //   }
+    // }
+
     if (this.#selecting) {
       return Promise.reject("SelectingInProgress");
     }

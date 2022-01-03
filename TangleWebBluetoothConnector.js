@@ -825,7 +825,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
-        await sleep(1000);
+       
         try {
           await this.#connection.writeClock(clock.millis());
           console.log("Clock write success");
@@ -833,6 +833,7 @@ criteria example:
           return;
         } catch (e) {
           console.warn("Clock write failed");
+          await sleep(1000);
         }
       }
 
