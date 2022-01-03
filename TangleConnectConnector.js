@@ -240,8 +240,8 @@ export class TangleConnectConnector {
   constructor(interfaceReference) {
     this.#interfaceReference = interfaceReference;
 
-    this.#selected = true;
-    this.#connected = true;
+    this.#selected = false;
+    this.#connected = false;
   }
 
   /*
@@ -354,9 +354,9 @@ criteria example:
       this.#interfaceReference.emit("#disconnected");
       return Promise.resolve();
     } 
-    // else {
-    //   return Promise.reject("NotSelected");
-    // }
+    else {
+      return Promise.reject("NotSelected");
+    }
   }
 
   // deliver handles the communication with the Tangle network in a way
