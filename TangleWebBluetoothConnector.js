@@ -423,7 +423,6 @@ export class TangleWebBluetoothConnector {
   #interfaceReference;
 
   #webBTDevice;
-  #webBTDeviceFwVersion;
   #connection;
   #reconection;
   #criteria;
@@ -431,6 +430,12 @@ export class TangleWebBluetoothConnector {
   constructor(interfaceReference) {
     this.#interfaceReference = interfaceReference;
 
+    this.FW_PRE_0_7_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
+    this.FW_0_7_0_SERVICE_UUID = "60cb125a-0000-0007-0000-5ad20c574c10";
+    this.FW_0_7_1_SERVICE_UUID = "60cb125a-0000-0007-0001-5ad20c574c10";
+    this.FW_0_7_2_SERVICE_UUID = "60cb125a-0000-0007-0002-5ad20c574c10";
+    this.FW_0_7_3_SERVICE_UUID = "60cb125a-0000-0007-0003-5ad20c574c10";
+    this.FW_0_7_4_SERVICE_UUID = "60cb125a-0000-0007-0004-5ad20c574c10";
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
 
     this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
@@ -438,7 +443,6 @@ export class TangleWebBluetoothConnector {
     this.DEVICE_CHAR_UUID = "9ebe2e4b-10c7-4a81-ac83-49540d1135a5";
 
     this.#webBTDevice = null;
-    this.#webBTDeviceFwVersion = "";
     this.#connection = new WebBLEConnection(interfaceReference);
     this.#reconection = false;
     this.#criteria = {};
@@ -458,10 +462,12 @@ možnosti:
 
 criteria example:
 [
-  // selects all legacy devices
+  // selects also legacy devices
   {
     legacy:true
   }
+  //
+
   // all Devices that are named "NARA Aplha", are on 0.8.0 fw and are
   // adopted by the owner with "baf2398ff5e6a7b8c9d097d54a9f865f" signature.
   // Product code is 1 what means NARA Alpha
@@ -523,6 +529,14 @@ criteria example:
         // if legacy criterium is set, then fill the
         if (criterium.legacy) {
           // TO-DO make legacy filter
+
+          web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
+          web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
+          web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
+          web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
+          web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
+          web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+
           continue;
         }
 
@@ -646,10 +660,6 @@ criteria example:
       this.#webBTDevice.addEventListener("gattserverdisconnected", () => {
         this.#onDisconnected();
       });
-
-      // TO-DO detect FW version from manufacturer data field
-      // Seems like imposibble in web bluetooth so setting this to "unknown"
-      this.#webBTDeviceFwVersion = "unknown";
     });
   }
 
@@ -697,7 +707,7 @@ criteria example:
   }
 
   selected() {
-    return  Promise.resolve(this.#webBTDevice ? { fwVersion: this.#webBTDeviceFwVersion } : null);
+    return Promise.resolve(this.#webBTDevice ? { connector: "webbluetooth" } : null);
   }
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
@@ -725,8 +735,69 @@ criteria example:
       .then(server => {
         this.#connection.reset();
 
-        console.log("> Getting the Bluetooth Service...");
-        return server.getPrimaryService(this.TANGLE_SERVICE_UUID);
+        console.log("> Getting the Bluetooth Service UUID...");
+        return (
+          server
+            .getPrimaryServices()
+            // figure out which FW we are connecting to
+            .then(services => {
+              if (services.length != 1 || !services[0].isPrimary) {
+                console.error("Connected to device that is not Tangle");
+                throw "BadDevice";
+              }
+
+              const service_uuid = services[0].uuid.toLowerCase();
+              console.log("Got Service UUID " + service_uuid);
+
+              let legacy_fw_version = "unknown";
+
+              switch (service_uuid) {
+                case this.FW_PRE_0_7_SERVICE_UUID:
+                  legacy_fw_version = "legacy";
+                  break;
+
+                case this.FW_0_7_0_SERVICE_UUID:
+                  legacy_fw_version = "0.7.0";
+                  break;
+
+                case this.FW_0_7_1_SERVICE_UUID:
+                  legacy_fw_version = "0.7.1";
+                  break;
+
+                case this.FW_0_7_2_SERVICE_UUID:
+                  legacy_fw_version = "0.7.2";
+                  break;
+
+                case this.FW_0_7_3_SERVICE_UUID:
+                  legacy_fw_version = "0.7.3";
+                  break;
+
+                case this.FW_0_7_4_SERVICE_UUID:
+                  legacy_fw_version = "0.7.4";
+                  break;
+
+                case this.TANGLE_SERVICE_UUID:
+                  legacy_fw_version = null;
+                  break;
+
+                default:
+                  console.error("Connected to non Tangle Device");
+                  throw "BadDevice";
+                  break;
+              }
+
+              if (legacy_fw_version) {
+                console.log("FW Version: " + legacy_fw_version);
+                this.#interfaceReference.emit("version", legacy_fw_version);
+
+                console.warn("Connected to unsupported legacy FW version");
+                throw "UnsupportedDevice";
+              }
+
+              console.log("> Getting the Bluetooth Service...");
+              return server.getPrimaryService(service_uuid);
+            })
+        );
       })
       .then(service => {
         console.log("> Getting the Service Characteristic...");
@@ -756,7 +827,7 @@ criteria example:
   }
 
   connected() {
-    return Promise.resolve( this.#webBTDevice && this.#webBTDevice.gatt.connected);
+    return Promise.resolve(this.#webBTDevice && this.#webBTDevice.gatt.connected ? { connector: "webbluetooth" } : null);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
