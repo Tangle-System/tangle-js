@@ -1,6 +1,8 @@
 import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
+import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
+import { TangleConnectConnector } from "./TangleConnectConnector.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
 
@@ -98,7 +100,7 @@ export class TangleInterface {
   constructor(deviceReference) {
     this.#deviceReference = deviceReference;
 
-    this.connector = new TangleWebBluetoothConnector(this);
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector } */ (new TangleDummyConnector(this));
 
     this.#deviceReference.addEventListener("#disconnected", () => {
       this.#onDisconnected();
@@ -112,7 +114,17 @@ export class TangleInterface {
     this.#connecting = false;
     this.#selecting = false;
 
-    window.addEventListener("beforeunload", () => {
+    window.addEventListener("beforeunload", e => {
+      // If I cant disconnect right now for some readon
+      // return this.disconnect(false).catch(reason => {
+      //   if (reason == "CurrentlyWriting") {
+      //     e.preventDefault();
+      //     e.cancelBubble = true;
+      //     e.returnValue = "Právě probíhá update připojeného zařízení, neopouštějte tuto stránku.";
+      //     window.confirm("Právě probíhá update připojeného zařízení, neopouštějte tuto stránku.");
+      //   }
+      // });
+
       this.disconnect();
     });
   }
@@ -138,6 +150,33 @@ export class TangleInterface {
     this.#deviceReference.emit(event, ...arg);
   }
 
+  assignConnector(connector_type) {
+    this.connector.destroy();
+
+    switch (connector_type) {
+      case "dummy":
+        this.connector = new TangleDummyConnector(this);
+        break;
+
+      case "default":
+      case "webbluetooth":
+        this.connector = new TangleWebBluetoothConnector(this);
+        break;
+
+      case "webserial":
+        this.connector = new TangleWebSerialConnector(this);
+        break;
+
+      case "tangleconnect":
+        this.connector = new TangleConnectConnector(this);
+        break;
+
+      default:
+        throw "UnknownConnector";
+        break;
+    }
+  }
+
   userSelect(criteria) {
     this.#reconection = false;
 
@@ -160,6 +199,13 @@ export class TangleInterface {
 
   autoSelect(criteria) {
     this.#reconection = false;
+
+    // if("ownerSignature" in criteria) {
+    //   if(criteria.ownerSignature === null) {
+    //     console.error("bad ownerSignature");
+    //     throw "bad ownerSignature";
+    //   }
+    // }
 
     if (this.#selecting) {
       return Promise.reject("SelectingInProgress");
@@ -194,12 +240,17 @@ export class TangleInterface {
     return this.connector.selected();
   }
 
-  connect(attempts) {
+  connect(timeout = 5000) {
     this.#reconection = true;
 
     // if (this.connector.connected()) {
     //   return Promise.resolve();
     // }
+
+    if(timeout < 1000) {
+      console.error("Timeout is too short.")
+      return Promise.reject("InvalidTimeout");
+    }
 
     if (this.#connecting) {
       return Promise.reject("ConnectingInProgress");
@@ -211,16 +262,20 @@ export class TangleInterface {
     //   return Promise.reject("NoDeviceSelected");
     // }
 
-    return this.connector.connect(attempts).finally(() => {
+    return this.connector.connect(timeout).finally(() => {
       this.#connecting = false;
     });
   }
 
-  disconnect() {
+  disconnect(force = true) {
     this.#reconection = false;
 
     // if (this.connector.selected() && this.connector.connected()) {
-    return this.connector.disconnect();
+    if (!this.#processing || force) {
+      return this.connector.disconnect();
+    } else {
+      return Promise.reject("CommunicationInProgress");
+    }
     // }
     // return Promise.resolve();
   }

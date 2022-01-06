@@ -1,6 +1,4 @@
-// npm install --save-dev @types/web-bluetooth
-/// <reference types="web-bluetooth" />
-import { createNanoEvents, sleep } from "./functions.js";
+import { sleep } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +90,7 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(attempts) {
+  connect(timeout) {
     if (this.#selected) {
       this.#connected = true;
       this.#interfaceReference.emit("#connected");
@@ -185,6 +183,12 @@ criteria example:
 
         await sleep(50);
 
+        if (!this.#connected) {
+          this.#interfaceReference.emit("ota_status", "fail");
+          reject("Connection Failure");
+          return;
+        }
+
         if (Math.random() <= 0.01) {
           this.#interfaceReference.emit("ota_status", "fail");
           reject("Simulated Failure");
@@ -199,5 +203,15 @@ criteria example:
       resolve();
       return;
     });
+  }
+
+  destroy() {
+    //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
+    return this.disconnect()
+      .catch(() => {})
+      .then(() => {
+        return this.unselect();
+      })
+      .catch(() => {});
   }
 }

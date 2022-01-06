@@ -17,7 +17,7 @@ export class TangleDevice {
   #ownerSignature;
   #ownerKey;
 
-  constructor() {
+  constructor(connectorType = "webbluetooth") {
     this.clock = new TimeTrack();
     this.timeline = new TimeTrack();
 
@@ -28,6 +28,9 @@ export class TangleDevice {
     this.#ownerKey = null;
 
     this.interface = new TangleInterface(this);
+    if (connectorType != "dummy") {
+      this.interface.assignConnector(connectorType);
+    }
 
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
@@ -49,16 +52,62 @@ export class TangleDevice {
     }, 60000);
   }
 
-  assignOwnerSignature(ownerSignature) {
+  setOwnerSignature(ownerSignature) {
+    if(ownerSignature.length != 32) {
+      throw "InvalidSignature";
+    }
+
+    const reg = ownerSignature.match(/[\dabcdefABCDEF]{32}/);
+    
+    if(!reg[0]) {
+      throw "InvalidSignature";
+    }
+
     this.interface.unselect().finally(() => {
       this.#ownerSignature = ownerSignature;
     });
   }
 
-  assignOwnerKey(ownerKey) {
+  /**
+   * @alias this.setOwnerSignature
+   */
+  assignOwnerSignature(ownerSignature) {
+    return this.setOwnerSignature(ownerSignature);
+  }
+
+  getOwnerSignature() {
+    return this.#ownerSignature;
+  }
+
+  setOwnerKey(ownerKey) {
+    if(ownerKey.length != 32) {
+      throw "InvalidKey";
+    }
+
+    const reg = ownerKey.match(/[\dabcdefABCDEF]{32}/);
+    
+    if(!reg[0]) {
+      throw "InvalidKey";
+    }
+
     this.interface.unselect().finally(() => {
-      this.#ownerKey = ownerKey;
+      this.#ownerKey = reg[0];
     });
+  }
+
+  /**
+   * @alias this.setOwnerKey
+   */
+  assignOwnerKey(ownerKey) {
+    return this.setOwnerKey(ownerKey);
+  }
+
+  getOwnerKey() {
+    return this.#ownerKey;
+  }
+
+  assignConnector(connector_type) {
+    this.interface.assignConnector(connector_type);
   }
 
   // valid UUIDs are in range [1..4294967295]
@@ -157,7 +206,7 @@ export class TangleDevice {
     return this.interface
       .userSelect(criteria)
       .then(() => {
-        return this.interface.connect(3);
+        return this.interface.connect(5000);
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
@@ -198,7 +247,7 @@ export class TangleDevice {
                 return this.interface.disconnect();
               })
               .then(() => {
-                return this.interface.connect(3);
+                return this.interface.connect(5000);
               })
               .then(() => {
                 return { mac: device_mac };
@@ -215,7 +264,7 @@ export class TangleDevice {
     const criteria = [{ ownerSignature: this.#ownerSignature }]; //, { ownerSignature: "00000000000000000000000000000000" }
 
     return this.interface.autoSelect(criteria).then(() => {
-      this.interface.connect(3);
+      this.interface.connect(5000);
     });
   }
 
