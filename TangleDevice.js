@@ -244,7 +244,9 @@ export class TangleDevice {
           if (error_code === 0) {
             return (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
               .then(() => {
-                return this.interface.disconnect();
+                return sleep(1000).then(() => {
+                  this.interface.disconnect();
+                });
               })
               .then(() => {
                 return this.interface.connect(5000);
