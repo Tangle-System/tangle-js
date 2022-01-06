@@ -176,7 +176,7 @@ criteria example:
     });
 
     // ! for now autoselect calls userSelect
-    window.tangleConnect.userSelect(JSON.stringify(criteria));
+    window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period = 1000, timeout = 3000);
 
     return this.#promise;
   }
