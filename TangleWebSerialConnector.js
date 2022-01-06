@@ -7,7 +7,7 @@ import { TimeTrack } from "./TimeTrack.js";
  * @name LineBreakTransformer
  * TransformStream to parse the stream into lines.
  */
- class LineBreakTransformer {
+class LineBreakTransformer {
   constructor() {
     // A container for holding stream data until a new line.
     this.container = "";
@@ -18,7 +18,7 @@ import { TimeTrack } from "./TimeTrack.js";
     this.container += chunk;
     const lines = this.container.split("\n");
     this.container = lines.pop();
-    lines.forEach((line) => controller.enqueue(line));
+    lines.forEach(line => controller.enqueue(line));
   }
 
   flush(controller) {
@@ -46,29 +46,26 @@ export class TangleWebSerialConnector {
 
     this.#serialPort = null;
 
-
     this.#selected = false;
     this.#connected = false;
   }
 
-
   /**
- * @name #run()
- * Reads data from the input stream until it is interruped in some way. Then it returns.
- * Received data is handled to the processor's funtion onReceive(value).
- */
+   * @name #run()
+   * Reads data from the input stream until it is interruped in some way. Then it returns.
+   * Received data is handled to the processor's funtion onReceive(value).
+   */
   async #run() {
-
     let error = null;
-  
+
     while (true) {
       try {
         const { value, done } = await this._receiveStreamReader.read();
-  
+
         if (value) {
           this.#interfaceReference.emit("receive", { target: this, payload: value });
         }
-  
+
         if (done) {
           this._receiveStreamReader.releaseLock();
           console.log("Reader done");
@@ -76,15 +73,15 @@ export class TangleWebSerialConnector {
         }
       } catch (e) {
         console.error(e);
-        error = e;       
+        error = e;
       }
     }
 
     this.detach();
-  
+
     this.#connected = false;
     this.#interfaceReference.emit("#disconnected");
-  };
+  }
 
   /*
 
@@ -126,13 +123,13 @@ criteria example:
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
   userSelect(criteria) {
-
-    this.#connected ? this.disconnect() : Promise.resolve() .then(()=> {
-      return navigator.serial.requestPort().then(port => {
-        this.#serialPort = port;
-      });
-    })
-
+    this.#connected
+      ? this.disconnect()
+      : Promise.resolve().then(() => {
+          return navigator.serial.requestPort().then(port => {
+            this.#serialPort = port;
+          });
+        });
   }
 
   // takes the criteria, scans for scan_period and automatically selects the device,
@@ -179,11 +176,11 @@ criteria example:
         // this.receiver.attach(this.serialPort.readable);
         // this.run();
 
-        let textDecoder = new TextDecoderStream();
+        let textDecoder = new window.TextDecoderStream();
         this._receiveTextDecoderDone = this.#serialPort.readable.pipeTo(textDecoder.writable);
-        this._receiveStream = textDecoder.readable.pipeThrough(new TransformStream(new LineBreakTransformer()));
+        this._receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
         //.pipeThrough(new TransformStream(new JSONTransformer()));
-      
+
         this._receiveStreamReader = this._receiveStream.getReader();
 
         this.#run();
@@ -221,11 +218,10 @@ criteria example:
       this._receiveStream = null;
     }
 
-   
-      //.then(() => {
-        return this.#serialPort.close();
-      //})
-    
+    //.then(() => {
+    return this.#serialPort.close();
+    //})
+
     this.#connected = false;
     this.#interfaceReference.emit("#disconnected");
   }
