@@ -153,12 +153,24 @@ export class TangleInterface {
   assignConnector(connector_type) {
     this.connector.destroy();
 
+    if (connector_type == "default") {
+      if ("tangleConnect" in window) {
+        this.connector = new TangleConnectConnector(this);
+      } else if (navigator.bluetooth) {
+        this.connector = new TangleWebBluetoothConnector(this);
+      } else if (navigator.serial) {
+        this.connector = new TangleWebSerialConnector(this);
+      } else {
+        this.connector = new TangleDummyConnector(this);
+      }
+      return;
+    }
+
     switch (connector_type) {
       case "dummy":
         this.connector = new TangleDummyConnector(this);
         break;
 
-      case "default":
       case "webbluetooth":
         this.connector = new TangleWebBluetoothConnector(this);
         break;
@@ -247,8 +259,8 @@ export class TangleInterface {
     //   return Promise.resolve();
     // }
 
-    if(timeout < 1000) {
-      console.error("Timeout is too short.")
+    if (timeout < 1000) {
+      console.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
     }
 
