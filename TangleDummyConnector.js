@@ -90,7 +90,7 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(attempts) {
+  connect(timeout) {
     if (this.#selected) {
       this.#connected = true;
       this.#interfaceReference.emit("#connected");

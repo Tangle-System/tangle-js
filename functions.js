@@ -203,7 +203,7 @@ export function detectBluefy() {
 //////////////////////////////////////////////////////
 
 export function getTnglSignature(tngl_bytes, tngl_label) {
-  let enc = new TextEncoder("utf-8");
+  let enc = new TextEncoder();
   let algorithm = { name: "HMAC", hash: "SHA-256" };
   let body = new Uint8Array(tngl_bytes);
 

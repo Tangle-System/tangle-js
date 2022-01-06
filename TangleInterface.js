@@ -158,6 +158,7 @@ export class TangleInterface {
         this.connector = new TangleDummyConnector(this);
         break;
 
+      case "default":
       case "webbluetooth":
         this.connector = new TangleWebBluetoothConnector(this);
         break;
@@ -239,12 +240,17 @@ export class TangleInterface {
     return this.connector.selected();
   }
 
-  connect(attempts) {
+  connect(timeout = 5000) {
     this.#reconection = true;
 
     // if (this.connector.connected()) {
     //   return Promise.resolve();
     // }
+
+    if(timeout < 1000) {
+      console.error("Timeout is too short.")
+      return Promise.reject("InvalidTimeout");
+    }
 
     if (this.#connecting) {
       return Promise.reject("ConnectingInProgress");
@@ -256,7 +262,7 @@ export class TangleInterface {
     //   return Promise.reject("NoDeviceSelected");
     // }
 
-    return this.connector.connect(attempts).finally(() => {
+    return this.connector.connect(timeout).finally(() => {
       this.#connecting = false;
     });
   }

@@ -1,4 +1,3 @@
-
 import { sleep } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglWriter } from "./TnglWriter.js";
@@ -21,22 +20,47 @@ export class TangleConnectConnector {
     this.#promise = null;
 
     if (!("tangleConnect" in window)) {
+      window.tangleConnect = /** @type {any} */({});
 
-      window.tangleConnect = {};
-      window.tangleConnect.userSelect = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.autoSelect = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.selected = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.unselect = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.connect = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.disconnect = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.connected = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.deliver = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.transmit = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.request = function () { window.tangleConnect.resolve([]); };
-      window.tangleConnect.readClock = function () { window.tangleConnect.resolve([0,0,0,0]); };
-      window.tangleConnect.writeClock = function () { window.tangleConnect.resolve(); };
-      window.tangleConnect.updateFW = function () { window.tangleConnect.resolve(); };
-
+      window.tangleConnect.userSelect = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.autoSelect = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.selected = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.unselect = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.connect = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.disconnect = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.connected = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.deliver = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.transmit = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.request = function () {
+        window.tangleConnect.resolve([]);
+      };
+      window.tangleConnect.readClock = function () {
+        window.tangleConnect.resolve([0, 0, 0, 0]);
+      };
+      window.tangleConnect.writeClock = function () {
+        window.tangleConnect.resolve();
+      };
+      window.tangleConnect.updateFW = function () {
+        window.tangleConnect.resolve();
+      };
     }
 
     window.tangleConnect.emit = this.#interfaceReference.emit;
@@ -49,17 +73,15 @@ export class TangleConnectConnector {
     //   // window.tangleConnect.resolve = this.#resolve;
     //   // window.tangleConnect.reject = this.#reject;
     // }
-
   }
 
   available() {
-    return ("tangleConnect" in window);
+    return "tangleConnect" in window;
   }
 
   async ping() {
-    console.time('tangle_delay');
+    console.time("ping_measure");
     for (let i = 0; i < 1000; i++) {
-
       this.#promise = new Promise((resolve, reject) => {
         window.tangleConnect.resolve = resolve;
         window.tangleConnect.reject = reject;
@@ -70,8 +92,8 @@ export class TangleConnectConnector {
       await this.#promise;
       // console.log("pong")
     }
-    // 
-    console.timeEnd('tangle_delay');
+    //
+    console.timeEnd("ping_measure");
 
     return this.#promise;
   }
@@ -185,16 +207,13 @@ criteria example:
     return this.#promise;
   }
 
-
   /*
   
   timeout ms 
 
   */
-  connect(timeout) {
+  connect(timeout = 5000) {
     console.log(`connect(timeout=${timeout})`);
-
-    timeout = 5000;   // ! temporary override until attempts will be replaced with timeout 
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = () => {
@@ -291,75 +310,76 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    console.log("setClock()")
+    console.log("setClock()");
     return Promise.resolve();
 
-        return new Promise(async (resolve, reject) => {
-          for (let index = 0; index < 3; index++) {
-            await sleep(1000);
-            try {
-              // tryes to ASAP write a timestamp to the clock characteristics.
-              // if the ASAP write fails, then try it once more
+    return new Promise(async (resolve, reject) => {
+      for (let index = 0; index < 3; index++) {
+        await sleep(1000);
+        try {
+          // tryes to ASAP write a timestamp to the clock characteristics.
+          // if the ASAP write fails, then try it once more
 
-              this.#promise = new Promise((resolve, reject) => {
-                window.tangleConnect.resolve = resolve;
-                window.tangleConnect.reject = reject;
-              });
+          this.#promise = new Promise((resolve, reject) => {
+            window.tangleConnect.resolve = resolve;
+            window.tangleConnect.reject = reject;
+          });
 
-              const writer = new TnglWriter(4);
-              const timestamp = clock.millis();
+          // const writer = new TnglWriter(4);
+          // const timestamp = clock.millis();
+          // writer.writeInt32(timestamp)
+          // window.tangleConnect.writeClock(writer.bytes());
 
-              writer.writeInt32(timestamp)
-              window.tangleConnect.writeClock(writer.bytes());
+          const timestamp = clock.millis();
+          window.tangleConnect.writeClock(timestamp);
 
-              await this.#promise;
-              console.log("Clock write success:", timestamp);
+          await this.#promise;
+          console.log("Clock write success:", timestamp);
 
-              resolve();
-              return;
-            } catch (e) {
-              console.warn("Clock write failed");
-            }
-          }
-
-          reject("Clock write failed");
+          resolve();
           return;
-        });
+        } catch (e) {
+          console.warn("Clock write failed");
+        }
+      }
+
+      reject("Clock write failed");
+      return;
+    });
   }
 
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    console.log("getClock()")
-  
-        return new Promise(async (resolve, reject) => {
-          for (let index = 0; index < 3; index++) {
-          
-            try {
-              // tryes to ASAP read a timestamp from the clock characteristics.
-              // if the ASAP read fails, then try it once more
+    console.log("getClock()");
 
-              this.#promise = new Promise((resolve, reject) => {
-                window.tangleConnect.resolve = resolve;
-                window.tangleConnect.reject = reject;
-              });
+    return new Promise(async (resolve, reject) => {
+      for (let index = 0; index < 3; index++) {
+        try {
+          // tryes to ASAP read a timestamp from the clock characteristics.
+          // if the ASAP read fails, then try it once more
 
-              window.tangleConnect.readClock();
+          this.#promise = new Promise((resolve, reject) => {
+            window.tangleConnect.resolve = resolve;
+            window.tangleConnect.reject = reject;
+          });
 
-              const bytes = await this.#promise;
+          window.tangleConnect.readClock();
 
-              const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
-              const timestamp = reader.readInt32();
+          // const bytes = await this.#promise;
+          // const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          // const timestamp = reader.readInt32();
 
-              console.log("Clock read success:", timestamp);
+          const timestamp = await this.#promise;
+          console.log("Clock read success:", timestamp);
 
-              resolve(new TimeTrack(timestamp));
-              return;
-            } catch (e) {
-              console.warn("Clock read failed:", e);
-              await sleep(1000);
-            }
-          }
+          resolve(new TimeTrack(timestamp));
+          return;
+        } catch (e) {
+          console.warn("Clock read failed:", e);
+          await sleep(1000);
+        }
+      }
 
       reject("Clock read failed");
       return;
@@ -395,10 +415,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }

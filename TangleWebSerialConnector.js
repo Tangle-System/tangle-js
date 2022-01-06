@@ -167,7 +167,7 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(attempts) {
+  connect(timeout = 5000) {
     if (!this.#serialPort) {
       return Promise.reject("NotSelected");
     }
