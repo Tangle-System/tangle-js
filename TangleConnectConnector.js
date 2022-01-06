@@ -20,50 +20,201 @@ export class TangleConnectConnector {
     this.#promise = null;
 
     if (!("tangleConnect" in window)) {
+   
+      // simulate Tangle Connect
+   
+      var _connected = false;
+      var _seleted = false;
+
+      function _fail(chance) {
+        return Math.random() < chance;
+      }
+
       window.tangleConnect = {};
 
-      window.tangleConnect.userSelect = function () {
+      window.tangleConnect.userSelect = async function (criteria) {
+        if (_connected) {
+          await window.tangleConnect.disconnect();
+        }
+        await sleep(Math.random() * 5000); // userSelect logic
+        if (_fail(0.5)) {
+          window.tangleConnect.reject("UserCanceledSelection");
+          return;
+        }
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("SelectionFailed");
+          return;
+        }
+        _seleted = true;
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.autoSelect = function () {
+
+      window.tangleConnect.autoSelect = async function (criteria, scan_period, timeout) {
+        if (_connected) {
+          await window.tangleConnect.disconnect();
+        }
+        await sleep(Math.random() * timeout); // autoSelect logic
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("SelectionFailed");
+          return;
+        }
+        _seleted = true;
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.selected = function () {
+
+      window.tangleConnect.selected = async function () {
+        if (_seleted) {
+          window.tangleConnect.resolve('{"connector":"tangleconnect"}');
+        } else {
+          window.tangleConnect.resolve(null);
+        }
+      };
+
+      window.tangleConnect.unselect = async function () {
+        if (_connected) {
+          await window.tangleConnect.disconnect();
+        }
+        await sleep(10); // unselect logic
+        _seleted = false;
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.unselect = function () {
+
+      window.tangleConnect.connect = async function (timeout) {
+        if (!_seleted) {
+          window.tangleConnect.reject("DeviceNotSelected");
+          return;
+        }
+        await sleep(Math.random() * timeout); // connecting logic
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("ConnectionFailed");
+          return;
+        }
+        _connected = true;
+        window.tangleConnect.emit("#connected");
+        window.tangleConnect.resolve();
+        // after connection the TangleConnect can any time emit #disconnect event.
+        setTimeout(() => {
+          window.tangleConnect.emit("#disconnected");
+        }, Math.random() * 60000);
+      };
+
+      window.tangleConnect.disconnect = async function () {
+        if (_connected) {
+          await sleep(100); // disconnecting logic
+          _connected = false;
+          window.tangleConnect.emit("#disconnected");
+        }
+        window.tangleConnect.resolve(); // always resolves even if there are internal errors
+      };
+
+      window.tangleConnect.connected = async function () {
+        if (_connected) {
+          window.tangleConnect.resolve('{"connector":"tangleconnect"}');
+        } else {
+          window.tangleConnect.resolve(null);
+        }
+      };
+
+      window.tangleConnect.deliver = async function () {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        await sleep(25); // delivering logic
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("DeliverFailed");
+          return;
+        }
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.connect = function () {
+
+      window.tangleConnect.transmit = async function () {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        await sleep(10); // transmiting logic
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("TransmitFailed");
+          return;
+        }
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.disconnect = function () {
+
+      window.tangleConnect.request = async function () {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        await sleep(50); // requesting logic
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("RequestFailed");
+          return;
+        }
+        window.tangleConnect.resolve([]); // returns data as an array of bytes: [0,255,123,89]
+      };
+
+      window.tangleConnect.readClock = async function () {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        await sleep(50); // reading clock logic.
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("ClockReadFailed");
+          return;
+        }
+        window.tangleConnect.resolve(0); // returns timestamp as an 32-bit signed number
+      };
+
+      window.tangleConnect.writeClock = async function (timestamp) {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        await sleep(10); // writing clock logic.
+        if (_fail(0.1)) {
+          window.tangleConnect.reject("ClockWriteFailed");
+          return;
+        }
         window.tangleConnect.resolve();
       };
-      window.tangleConnect.connected = function () {
-        window.tangleConnect.resolve();
-      };
-      window.tangleConnect.deliver = function () {
-        window.tangleConnect.resolve();
-      };
-      window.tangleConnect.transmit = function () {
-        window.tangleConnect.resolve();
-      };
-      window.tangleConnect.request = function () {
-        window.tangleConnect.resolve([]);
-      };
-      window.tangleConnect.readClock = function () {
-        window.tangleConnect.resolve([0, 0, 0, 0]);
-      };
-      window.tangleConnect.writeClock = function () {
-        window.tangleConnect.resolve();
-      };
-      window.tangleConnect.updateFW = function () {
+
+      window.tangleConnect.updateFW = async function () {
+        if (!_connected) {
+          window.tangleConnect.reject("DeviceNotConnected");
+          return;
+        }
+        window.tangleConnect.emit("ota_status", "begin");
+        await sleep(10000); // preparing FW logic.
+        if (_fail(0.1)) {
+          window.tangleConnect.emit("ota_status", "fail");
+          window.tangleConnect.reject("UpdateFailed");
+          return;
+        }
+        for (let i = 1; i <= 100; i++) {
+          window.tangleConnect.emit("ota_progress", i);
+          await sleep(25); // writing FW logic.
+          if (_fail(0.01)) {
+            window.tangleConnect.emit("ota_status", "fail");
+            window.tangleConnect.reject("UpdateFailed");
+            return;
+          }
+        }
+        await sleep(1000); // finishing FW logic.
+        if (_fail(0.1)) {
+          window.tangleConnect.emit("ota_status", "fail");
+          window.tangleConnect.reject("UpdateFailed");
+          return;
+        }
+        window.tangleConnect.emit("ota_status", "success");
         window.tangleConnect.resolve();
       };
     }
 
-    window.tangleConnect.emit = this.#interfaceReference.emit;
+    window.tangleConnect.emit = (event, param) => {
+      this.#interfaceReference.emit(event, param);
+    };
 
     // if ("tangleConnect" in window) {
     //   // window.tangleConnect.resolve = (json_response) => {
@@ -176,7 +327,7 @@ criteria example:
     });
 
     // ! for now autoselect calls userSelect
-    window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period = 1000, timeout = 3000);
+    window.tangleConnect.autoSelect(JSON.stringify(criteria), (scan_period = 1000), (timeout = 3000));
 
     return this.#promise;
   }
@@ -215,6 +366,11 @@ criteria example:
   connect(timeout = 5000) {
     console.log(`connect(timeout=${timeout})`);
 
+    if (timeout < 1000) {
+      console.error("Invalid timeout. Must be more than 1000 ms.");
+      timeout = 1000;
+    }
+
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = resolve;
       window.tangleConnect.reject = reject;
@@ -245,11 +401,7 @@ criteria example:
     console.log(`disconnect()`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = () => {
-        console.log("TangleConnect Disconnected");
-        this.#interfaceReference.emit("#disconnected");
-        resolve();
-      };
+      window.tangleConnect.resolve = resolve;
       window.tangleConnect.reject = reject;
     });
 
@@ -307,7 +459,6 @@ criteria example:
   // of the application as precisely as possible
   setClock(clock) {
     console.log("setClock()");
-    return Promise.resolve();
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
@@ -390,17 +541,9 @@ criteria example:
   updateFW(firmware) {
     console.log(`updateFW(firmware.length=${firmware.length})`);
 
-    this.#interfaceReference.emit("ota_status", "begin");
-
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = () => {
-        this.#interfaceReference.emit("ota_status", "success");
-        resolve();
-      };
-      window.tangleConnect.reject = () => {
-        this.#interfaceReference.emit("ota_status", "fail");
-        reject();
-      };
+      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.reject = reject;
     });
 
     window.tangleConnect.updateFW(firmware);
