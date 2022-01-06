@@ -20,7 +20,7 @@ export class TangleConnectConnector {
     this.#promise = null;
 
     if (!("tangleConnect" in window)) {
-      window.tangleConnect = /** @type {any} */({});
+      window.tangleConnect = {};
 
       window.tangleConnect.userSelect = function () {
         window.tangleConnect.resolve();
@@ -216,11 +216,7 @@ criteria example:
     console.log(`connect(timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = () => {
-        console.log("TangleConnect Connected");
-        this.#interfaceReference.emit("#connected");
-        resolve();
-      };
+      window.tangleConnect.resolve = resolve;
       window.tangleConnect.reject = reject;
     });
 
