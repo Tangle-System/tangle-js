@@ -17,7 +17,7 @@ export class TangleDevice {
   #ownerSignature;
   #ownerKey;
 
-  constructor(connectorType = "webbluetooth") {
+  constructor(connectorType = "default") {
     this.clock = new TimeTrack();
     this.timeline = new TimeTrack();
 
