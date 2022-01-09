@@ -1,7 +1,7 @@
 // npm install --save-dev @types/web-bluetooth
 /// <reference types="web-bluetooth" />
 
-import { createNanoEvents, detectAndroid, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
+import { detectAndroid, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
@@ -648,7 +648,7 @@ criteria example:
 
     console.log(web_ble_options.filters);
 
-    return navigator.bluetooth.requestDevice(web_ble_options.filters.length != 0 ? web_ble_options : { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] }).then(device => {
+    return navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] }).then(device => {
       console.log(device);
 
       this.#webBTDevice = device;
@@ -695,7 +695,7 @@ criteria example:
   // if device is conneced, then disconnect it
   unselect() {
 
-    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(()=> {
+    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(() => {
       this.#webBTDevice = null;
       this.#connection.reset();
       return Promise.resolve();
@@ -787,7 +787,6 @@ criteria example:
                 default:
                   console.error("Connected to non Tangle Device");
                   throw "BadDevice";
-                  break;
               }
 
               if (legacy_fw_version) {
@@ -849,7 +848,7 @@ criteria example:
   disconnect() {
     this.#reconection = false;
 
-    if(!this.#selected()) {
+    if (!this.#selected()) {
       return Promise.reject("NotSelected");
     }
 
@@ -916,7 +915,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
-       
+
         try {
           await this.#connection.writeClock(clock.millis());
           console.log("Clock write success");
@@ -971,10 +970,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
