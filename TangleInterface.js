@@ -3,6 +3,7 @@ import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
 import { TangleConnectConnector } from "./TangleConnectConnector.js";
+import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
 
@@ -86,7 +87,7 @@ class QueueItem {
 
 // filters out duplicate payloads and merges them together. Also decodes payloads received from the connector.
 export class TangleInterface {
-  #deviceReference; // reference to the device object this interface is a part of
+  #eventEmitter;
 
   #queue;
   #processing;
@@ -97,14 +98,12 @@ export class TangleInterface {
   #connecting;
   #selecting;
 
-  constructor(deviceReference) {
-    this.#deviceReference = deviceReference;
+  constructor() {
+    this.clock = new TimeTrack();
 
     this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector } */ (new TangleDummyConnector(this));
 
-    this.#deviceReference.addEventListener("#disconnected", () => {
-      this.#onDisconnected();
-    });
+    this.#eventEmitter = createNanoEvents();
 
     this.#queue = /** @type {QueueItem[]} */ ([]);
     this.#processing = false;
@@ -113,6 +112,13 @@ export class TangleInterface {
     this.#reconection = false;
     this.#connecting = false;
     this.#selecting = false;
+
+    this.#eventEmitter.on("#disconnected", e => {
+      this.#onDisconnected(e);
+    });
+    this.#eventEmitter.on("#connected", e => {
+      this.#onConnected(e);
+    });
 
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
@@ -125,29 +131,35 @@ export class TangleInterface {
       //   }
       // });
 
-      this.disconnect();
+      this.connector.destroy();
     });
   }
 
-  #onDisconnected() {
-    for (let i = 0; i < this.#queue.length; i++) {
-      this.#queue[i].reject("Disconnected");
-    }
-    this.#queue = [];
+  /**
+   * @name addEventListener
+   * @param {string} event
+   * @param {Function} callback
+   *
+   * events: "disconnected", "connected"
+   *
+   * all events: event.target === the sender object (TangleWebBluetoothConnector)
+   * event "disconnected": event.reason has a string with a disconnect reason
+   *
+   * @returns {Function} unbind function
+   */
 
-    if (this.#reconection) {
-      console.log("Reconnecting in 1s...");
-      setTimeout(() => {
-        console.log("Reconnecting device");
-        return this.connect().catch(() => {
-          console.log("Reconnection failed.");
-        });
-      }, 1000);
-    }
+  addEventListener(event, callback) {
+    return this.#eventEmitter.on(event, callback);
+  }
+  /**
+   * @alias this.addEventListener
+   */
+  on(event, callback) {
+    return this.#eventEmitter.on(event, callback);
   }
 
   emit(event, ...arg) {
-    this.#deviceReference.emit(event, ...arg);
+    this.#eventEmitter.emit(event, ...arg);
   }
 
   assignConnector(connector_type) {
@@ -274,23 +286,53 @@ export class TangleInterface {
     //   return Promise.reject("NoDeviceSelected");
     // }
 
-    return this.connector.connect(timeout).finally(() => {
-      this.#connecting = false;
-    });
+    return this.connector
+      .connect(timeout)
+      .then(() => {
+        return this.getClock();
+      })
+      .then(clock => {
+        this.clock = clock;
+      })
+      .finally(() => {
+        this.#connecting = false;
+      });
   }
+
+  #onConnected = event => {
+    console.log("> Bluetooth Device connected");
+    return this.#eventEmitter.emit("connected", { target: this });
+  };
 
   disconnect(force = true) {
     this.#reconection = false;
 
-    // if (this.connector.selected() && this.connector.connected()) {
     if (!this.#processing || force) {
       return this.connector.disconnect();
     } else {
       return Promise.reject("CommunicationInProgress");
     }
-    // }
-    // return Promise.resolve();
   }
+
+  #onDisconnected = event => {
+    for (let i = 0; i < this.#queue.length; i++) {
+      this.#queue[i].reject("Disconnected");
+    }
+    this.#queue = [];
+
+    console.log("> Bluetooth Device disconnected");
+    this.#eventEmitter.emit("disconnected", { target: this });
+
+    if (this.#reconection) {
+      console.log("Reconnecting in 1s...");
+      setTimeout(() => {
+        console.log("Reconnecting device");
+        return this.connect().catch(() => {
+          console.log("Reconnection failed.");
+        });
+      }, 1000);
+    }
+  };
 
   connected() {
     return this.connector.connected();
@@ -329,8 +371,8 @@ export class TangleInterface {
     return item.promise;
   }
 
-  setClock(clock) {
-    const item = new QueueItem(QueueItem.TYPE_SET_CLOCK, clock);
+  syncClock() {
+    const item = new QueueItem(QueueItem.TYPE_SET_CLOCK, this.clock);
 
     for (let i = 0; i < this.#queue.length; i++) {
       if (this.#queue[i].type === QueueItem.TYPE_SET_CLOCK) {

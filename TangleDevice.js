@@ -12,39 +12,29 @@ import "./TnglWriter.js";
 // the destruction of the TangleDevice is not well implemented
 
 export class TangleDevice {
-  #eventEmitter;
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
 
   constructor(connectorType = "default") {
-    this.clock = new TimeTrack();
     this.timeline = new TimeTrack();
 
     this.#uuidCounter = 0;
 
-    this.#eventEmitter = createNanoEvents();
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface(this);
+    this.interface = new TangleInterface();
     if (connectorType != "dummy") {
       this.interface.assignConnector(connectorType);
     }
 
-    this.#eventEmitter.on("#disconnected", e => {
-      this.#onDisconnected(e);
-    });
-    this.#eventEmitter.on("#connected", e => {
-      this.#onConnected(e);
-    });
-
     // auto clock sync loop
     // how to get rid of it on TangleDevice object destruction ????
     setInterval(() => {
-      this.connected().then(connected => {
+      this.interface.connected().then(connected => {
         if (connected) {
-          this.syncClock().catch(error => {
+          this.interface.syncClock().catch(error => {
             console.warn(error);
           });
         }
@@ -133,42 +123,14 @@ export class TangleDevice {
    */
 
   addEventListener(event, callback) {
-    return this.#eventEmitter.on(event, callback);
+    return this.interface.addEventListener(event, callback);
   }
   /**
    * @alias this.addEventListener
    */
   on(event, callback) {
-    return this.#eventEmitter.on(event, callback);
+    return this.interface.on(event, callback);
   }
-
-  emit(event, ...args) {
-    this.#eventEmitter.emit(event, ...args);
-  }
-
-  #onDisconnected = event => {
-    console.log("> Bluetooth Device disconnected");
-    return this.#eventEmitter.emit("disconnected", { target: this });
-  };
-
-  #onConnected = event => {
-    return this.interface
-      .getClock()
-      .then(clock => {
-        this.clock = clock;
-        return this.requestTimeline().catch(e => {
-          console.error(e);
-        });
-      })
-      .then(() => {
-        console.log("> Bluetooth Device connected");
-        return this.#eventEmitter.emit("connected", { target: this });
-      })
-      .catch(error => {
-        this.disconnect();
-        console.warn(error);
-      });
-  };
 
   // každé tangle zařízení může být spárováno pouze s jedním účtem. (jednim user_key)
   // jakmile je sparovana, pak ji nelze prepsat novým učtem.
@@ -252,12 +214,18 @@ export class TangleDevice {
                 return this.interface.connect(5000);
               })
               .then(() => {
+                return this.requestTimeline();
+              })
+              .then(() => {
                 return { mac: device_mac };
               });
           } else {
             console.warn("Adoption failed.");
             throw "AdoptionRefused";
           }
+        }).catch(e => {
+          console.error(e);
+          throw "AdoptionFailed";
         });
       });
   }
@@ -265,9 +233,14 @@ export class TangleDevice {
   connect() {
     const criteria = [{ ownerSignature: this.#ownerSignature }]; //, { ownerSignature: "00000000000000000000000000000000" }
 
-    return this.interface.autoSelect(criteria).then(() => {
-      this.interface.connect(5000);
-    });
+    return this.interface
+      .autoSelect(criteria)
+      .then(() => {
+        return this.interface.connect(5000);
+      })
+      .then(() => {
+        return this.requestTimeline();
+      });
   }
 
   disconnect() {
@@ -284,7 +257,7 @@ export class TangleDevice {
     //console.log("writeTngl()");
 
     const timeline_flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
-    const timeline_payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), timeline_flags];
+    const timeline_payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.interface.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), timeline_flags];
     const tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
     const tngl_payload = [NETWORK_FLAGS.FLAG_TNGL_BYTES, ...numberToBytes(tngl_bytes.length, 4), ...tngl_bytes];
 
@@ -345,13 +318,13 @@ export class TangleDevice {
   syncTimeline() {
     //console.log("syncTimeline()");
     const flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
-    const payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), flags];
+    const payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.interface.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), flags];
     return this.interface.execute(payload, "TMLN");
   }
 
   // syncClock() {
   //   //console.log("syncClock()");
-  //   return this.connector.setClock(this.clock);
+  //   return this.connector.setClock(this.interface.clock);
   // };
 
   updateDeviceFirmware(firmware) {
@@ -374,7 +347,7 @@ export class TangleDevice {
       console.log(firmware);
 
       try {
-        this.#eventEmitter.emit("ota_status", "begin");
+        this.interface.emit("ota_status", "begin");
 
         {
           //===========// RESET //===========//
@@ -417,7 +390,7 @@ export class TangleDevice {
 
             const percentage = Math.floor((written * 10000) / firmware.length) / 100;
             console.log(percentage + "%");
-            this.#eventEmitter.emit("ota_progress", percentage);
+            this.interface.emit("ota_progress", percentage);
 
             index_from += chunk_size;
             index_to = index_from + chunk_size;
@@ -444,11 +417,11 @@ export class TangleDevice {
         const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
         await this.interface.execute(payload, false);
 
-        this.#eventEmitter.emit("ota_status", "success");
+        this.interface.emit("ota_status", "success");
         resolve();
         return;
       } catch (e) {
-        this.#eventEmitter.emit("ota_status", "fail");
+        this.interface.emit("ota_status", "fail");
         reject(e);
         return;
       }
@@ -554,15 +527,15 @@ export class TangleDevice {
       if (timeline_paused) {
         this.timeline.setState(timeline_timestamp, true);
       } else {
-        this.timeline.setState(timeline_timestamp + (this.clock.millis() - clock_timestamp), false);
+        this.timeline.setState(timeline_timestamp + (this.interface.clock.millis() - clock_timestamp), false);
       }
     });
   }
 
   syncClock() {
-    console.log("> Setting current clock...");
+    console.log("> Forcing sync clock...");
 
-    return this.interface.setClock(this.clock).then(() => {
+    return this.interface.syncClock().then(() => {
       console.log("> Device clock synchronized");
     });
   }

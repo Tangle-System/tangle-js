@@ -20,9 +20,8 @@ export class TangleConnectConnector {
     this.#promise = null;
 
     if (!("tangleConnect" in window)) {
-   
       // simulate Tangle Connect
-   
+
       var _connected = false;
       var _seleted = false;
 
@@ -46,7 +45,7 @@ export class TangleConnectConnector {
           return;
         }
         _seleted = true;
-        window.tangleConnect.resolve();
+        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
       window.tangleConnect.autoSelect = async function (criteria, scan_period, timeout) {
@@ -59,14 +58,14 @@ export class TangleConnectConnector {
           return;
         }
         _seleted = true;
-        window.tangleConnect.resolve();
+        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
       window.tangleConnect.selected = async function () {
         if (_seleted) {
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
-          window.tangleConnect.resolve(null);
+          window.tangleConnect.resolve();
         }
       };
 
@@ -91,7 +90,7 @@ export class TangleConnectConnector {
         }
         _connected = true;
         window.tangleConnect.emit("#connected");
-        window.tangleConnect.resolve();
+        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         // after connection the TangleConnect can any time emit #disconnect event.
         setTimeout(() => {
           window.tangleConnect.emit("#disconnected");
@@ -111,7 +110,7 @@ export class TangleConnectConnector {
         if (_connected) {
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
-          window.tangleConnect.resolve(null);
+          window.tangleConnect.resolve();
         }
       };
 
@@ -295,7 +294,9 @@ criteria example:
     console.log(`userSelect(criteria=${JSON.stringify(criteria)})`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = function (json) {
+        resolve(JSON.parse(json));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -322,7 +323,9 @@ criteria example:
     console.log(`autoSelect(criteria=${JSON.stringify(criteria)}scan_period=${scan_period}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = function (json) {
+        resolve(JSON.parse(json));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -336,7 +339,9 @@ criteria example:
     console.log(`selected()`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = function (json) {
+        resolve(JSON.parse(json));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -372,7 +377,9 @@ criteria example:
     }
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = function (json) {
+        resolve(JSON.parse(json));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -385,7 +392,9 @@ criteria example:
     console.log(`connected()`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = function (json) {
+        resolve(JSON.parse(json));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -472,13 +481,13 @@ criteria example:
             window.tangleConnect.reject = reject;
           });
 
-          // const writer = new TnglWriter(4);
-          // const timestamp = clock.millis();
-          // writer.writeInt32(timestamp)
-          // window.tangleConnect.writeClock(writer.bytes());
-
+          const writer = new TnglWriter(4);
           const timestamp = clock.millis();
-          window.tangleConnect.writeClock(timestamp);
+          writer.writeInt32(timestamp);
+          window.tangleConnect.writeClock(writer.bytes());
+
+          // const timestamp = clock.millis();
+          // window.tangleConnect.writeClock(timestamp);
 
           await this.#promise;
           console.log("Clock write success:", timestamp);
@@ -513,11 +522,11 @@ criteria example:
 
           window.tangleConnect.readClock();
 
-          // const bytes = await this.#promise;
-          // const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
-          // const timestamp = reader.readInt32();
+          const bytes = await this.#promise;
+          const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          const timestamp = reader.readInt32();
 
-          const timestamp = await this.#promise;
+          // const timestamp = await this.#promise;
           console.log("Clock read success:", timestamp);
 
           resolve(new TimeTrack(timestamp));
