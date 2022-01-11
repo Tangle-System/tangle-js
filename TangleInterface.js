@@ -408,10 +408,10 @@ export class TangleInterface {
   }
 
   #onDisconnected = event => {
-    for (let i = 0; i < this.#queue.length; i++) {
-      this.#queue[i].reject("Disconnected");
-    }
-    this.#queue = [];
+    // for (let i = 0; i < this.#queue.length; i++) {
+    //   this.#queue[i].reject("Disconnected");
+    // }
+    // this.#queue = [];
 
     console.log("> Device disconnected");
     this.#eventEmitter.emit("disconnected", { target: this.#deviceReference });

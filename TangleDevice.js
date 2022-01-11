@@ -264,18 +264,19 @@ export class TangleDevice {
                   });
                 })
                 .then(() => {
-                  return this.interface.connect(10000);
+                  return this.interface.connect(10000).then(() => {
+                    return this.requestTimeline().catch((e) => {
+                      console.error("Timeline request failed.", e);
+                    });
+                  }).catch(e => {
+                    console.error("Failed to reconnect after adopt: ", e);
+                  })
                 })
-                .then(() => {
-                  return this.requestTimeline().catch((e) => {
-                    console.error("Timeline request failed.", e);
-                  });
-                })
-                .then(() => {
+                .finally(() => {
                   return { mac: device_mac };
                 });
             } else {
-              console.warn("Adoption failed.");
+              console.warn("Adoption refused.");
               throw "AdoptionRefused";
             }
           })
@@ -386,9 +387,11 @@ export class TangleDevice {
   }
 
   syncClock() {
-    //console.log("syncClock()");
-    return this.interface.syncClock();
-  };
+    console.log("> Forcing sync clock...");
+    return this.interface.syncClock().then(() => {
+      console.log("> Device clock synchronized");
+    });
+  }
 
   updateDeviceFirmware(firmware) {
     //console.log("updateDeviceFirmware()");
@@ -592,14 +595,6 @@ export class TangleDevice {
       } else {
         this.timeline.setState(timeline_timestamp + (this.interface.clock.millis() - clock_timestamp), false);
       }
-    });
-  }
-
-  syncClock() {
-    console.log("> Forcing sync clock...");
-
-    return this.interface.syncClock().then(() => {
-      console.log("> Device clock synchronized");
     });
   }
 
