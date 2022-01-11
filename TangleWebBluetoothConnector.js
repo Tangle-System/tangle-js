@@ -497,7 +497,7 @@ criteria example:
       });
     }
 
-    console.log(criteria);
+    // console.log(criteria);
 
     // store new criteria as a array
     if (criteria) {
@@ -646,10 +646,10 @@ criteria example:
       }
     }
 
-    console.log(web_ble_options.filters);
+    // console.log(web_ble_options.filters);
 
     return navigator.bluetooth.requestDevice(web_ble_options.filters.length != 0 ? web_ble_options : { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] }).then(device => {
-      console.log(device);
+      // console.log(device);
 
       this.#webBTDevice = device;
       this.#webBTDevice.addEventListener("gattserverdisconnected", () => {

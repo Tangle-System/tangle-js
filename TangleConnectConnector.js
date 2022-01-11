@@ -1,4 +1,4 @@
-import { sleep } from "./functions.js";
+import { sleep, toBytes } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglWriter } from "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
@@ -31,7 +31,7 @@ export class TangleConnectConnector {
 
       window.tangleConnect = {};
 
-      window.tangleConnect.userSelect = async function (criteria) {
+      window.tangleConnect.userSelect = async function (criteria, timeout = 60000) {
         if (_connected) {
           await window.tangleConnect.disconnect();
         }
@@ -48,11 +48,11 @@ export class TangleConnectConnector {
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
-      window.tangleConnect.autoSelect = async function (criteria, scan_period, timeout) {
+      window.tangleConnect.autoSelect = async function (criteria, scan_period = 1000, timeout = 10000) {
         if (_connected) {
           await window.tangleConnect.disconnect();
         }
-        await sleep(Math.random() * timeout); // autoSelect logic
+        await sleep(Math.random() * 5000); // autoSelect logic
         if (_fail(0.1)) {
           window.tangleConnect.reject("SelectionFailed");
           return;
@@ -83,7 +83,7 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("DeviceNotSelected");
           return;
         }
-        await sleep(Math.random() * timeout); // connecting logic
+        await sleep(Math.random() * 5000); // connecting logic
         if (_fail(0.1)) {
           window.tangleConnect.reject("ConnectionFailed");
           return;
@@ -94,7 +94,9 @@ export class TangleConnectConnector {
         // after connection the TangleConnect can any time emit #disconnect event.
         setTimeout(() => {
           window.tangleConnect.emit("#disconnected");
-        }, Math.random() * 60000);
+          //}, Math.random() * 60000);
+        }, 15000);
+
       };
 
       window.tangleConnect.disconnect = async function () {
@@ -150,7 +152,8 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("RequestFailed");
           return;
         }
-        window.tangleConnect.resolve([]); // returns data as an array of bytes: [0,255,123,89]
+
+        window.tangleConnect.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
       };
 
       window.tangleConnect.readClock = async function () {
@@ -163,10 +166,10 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("ClockReadFailed");
           return;
         }
-        window.tangleConnect.resolve(0); // returns timestamp as an 32-bit signed number
+        window.tangleConnect.resolve([0, 0, 0, 0]); // returns timestamp as an 32-bit signed number
       };
 
-      window.tangleConnect.writeClock = async function (timestamp) {
+      window.tangleConnect.writeClock = async function (bytes) {
         if (!_connected) {
           window.tangleConnect.reject("DeviceNotConnected");
           return;
@@ -287,20 +290,20 @@ criteria example:
   // if no criteria are set, then show all Tangle devices visible.
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
-  userSelect(criteria) {
+  userSelect(criteria, timeout = 60000) {
     // this.#selected = true;
     // //console.log("choose()");
 
-    console.log(`userSelect(criteria=${JSON.stringify(criteria)})`);
+    console.log(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = function (json) {
-        resolve(JSON.parse(json));
+        resolve(json ? JSON.parse(json) : null);
       };
       window.tangleConnect.reject = reject;
     });
 
-    window.tangleConnect.userSelect(JSON.stringify(criteria));
+    window.tangleConnect.userSelect(JSON.stringify(criteria), timeout);
 
     return this.#promise;
   }
@@ -314,23 +317,23 @@ criteria example:
   // if no criteria are provided, all Tangle enabled devices (with all different FWs and Owners and such)
   // are eligible.
 
-  autoSelect(criteria, scan_period = 1000, timeout = 3000) {
+  autoSelect(criteria, scan_period = 1000, timeout = 10000) {
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
-    console.log(`autoSelect(criteria=${JSON.stringify(criteria)}scan_period=${scan_period}, timeout=${timeout})`);
+    console.log(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = function (json) {
-        resolve(JSON.parse(json));
+        resolve(json ? JSON.parse(json) : null);
       };
       window.tangleConnect.reject = reject;
     });
 
     // ! for now autoselect calls userSelect
-    window.tangleConnect.autoSelect(JSON.stringify(criteria), (scan_period = 1000), (timeout = 3000));
+    window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period, timeout);
 
     return this.#promise;
   }
@@ -340,7 +343,7 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = function (json) {
-        resolve(JSON.parse(json));
+        resolve(json ? JSON.parse(json) : null);
       };
       window.tangleConnect.reject = reject;
     });
@@ -368,7 +371,7 @@ criteria example:
   timeout ms 
 
   */
-  connect(timeout = 5000) {
+  connect(timeout = 10000) {
     console.log(`connect(timeout=${timeout})`);
 
     if (timeout < 1000) {
@@ -378,7 +381,7 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = function (json) {
-        resolve(JSON.parse(json));
+        resolve(json ? JSON.parse(json) : null);
       };
       window.tangleConnect.reject = reject;
     });
@@ -393,7 +396,7 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       window.tangleConnect.resolve = function (json) {
-        resolve(JSON.parse(json));
+        resolve(json ? JSON.parse(json) : null);
       };
       window.tangleConnect.reject = reject;
     });
@@ -455,7 +458,9 @@ criteria example:
     console.log(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = resolve;
+      window.tangleConnect.resolve = (response) => {
+        resolve(new DataView(new Uint8Array(response).buffer));
+      };
       window.tangleConnect.reject = reject;
     });
 
@@ -481,10 +486,9 @@ criteria example:
             window.tangleConnect.reject = reject;
           });
 
-          const writer = new TnglWriter(4);
           const timestamp = clock.millis();
-          writer.writeInt32(timestamp);
-          window.tangleConnect.writeClock(writer.bytes());
+          const bytes = toBytes(timestamp, 4);
+          window.tangleConnect.writeClock(bytes);
 
           // const timestamp = clock.millis();
           // window.tangleConnect.writeClock(timestamp);
@@ -495,7 +499,7 @@ criteria example:
           resolve();
           return;
         } catch (e) {
-          console.warn("Clock write failed");
+          console.warn("Clock write failed: " + e);
         }
       }
 
@@ -563,10 +567,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }

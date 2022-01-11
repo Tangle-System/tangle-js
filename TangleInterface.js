@@ -66,18 +66,26 @@ export const NETWORK_FLAGS = Object.freeze({
 /////////////////////////////////////////////////////////////////////////
 
 // Deffered object
-class QueueItem {
+class Query {
   static TYPE_EXECUTE = 1;
-  static TYPE_REQUEST = 2;
-  static TYPE_SET_CLOCK = 3;
-  static TYPE_GET_CLOCK = 4;
-  static TYPE_FIRMWARE_UPDATE = 5;
+  static TYPE_USERSELECT = 2;
+  static TYPE_AUTOSELECT = 3;
+  static TYPE_SELECTED = 4;
+  static TYPE_UNSELECT = 5;
+  static TYPE_CONNECT = 6;
+  static TYPE_CONNECTED = 7;
+  static TYPE_DISCONNECT = 8;
+  static TYPE_REQUEST = 9;
+  static TYPE_SET_CLOCK = 10;
+  static TYPE_GET_CLOCK = 11;
+  static TYPE_FIRMWARE_UPDATE = 12;
 
-  constructor(type, a = null, b = null, c = null) {
+  constructor(type, a = null, b = null, c = null, d = null) {
     this.type = type;
     this.a = a;
     this.b = b;
     this.c = c;
+    this.d = d;
     this.promise = new Promise((resolve, reject) => {
       this.reject = reject;
       this.resolve = resolve;
@@ -87,6 +95,8 @@ class QueueItem {
 
 // filters out duplicate payloads and merges them together. Also decodes payloads received from the connector.
 export class TangleInterface {
+  #deviceReference;
+
   #eventEmitter;
 
   #queue;
@@ -98,14 +108,16 @@ export class TangleInterface {
   #connecting;
   #selecting;
 
-  constructor() {
+  constructor(deviceReference) {
+    this.#deviceReference = deviceReference;
+
     this.clock = new TimeTrack();
 
     this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector } */ (new TangleDummyConnector(this));
 
     this.#eventEmitter = createNanoEvents();
 
-    this.#queue = /** @type {QueueItem[]} */ ([]);
+    this.#queue = /** @type {Query[]} */ ([]);
     this.#processing = false;
     this.#chunkSize = 5000;
 
@@ -120,6 +132,17 @@ export class TangleInterface {
       this.#onConnected(e);
     });
 
+    // auto clock sync loop
+    setInterval(() => {
+      this.connected().then(connected => {
+        if (connected) {
+          this.syncClock().catch(error => {
+            console.warn(error);
+          });
+        }
+      });
+    }, 10000);
+
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
       // return this.disconnect(false).catch(reason => {
@@ -131,7 +154,8 @@ export class TangleInterface {
       //   }
       // });
 
-      this.connector.destroy();
+      this.#reconection = false;
+      this.connector.destroy(); // dodelat .destroy() v tangleConnectConnectoru
     });
   }
 
@@ -201,8 +225,14 @@ export class TangleInterface {
     }
   }
 
-  userSelect(criteria) {
+  userSelect(criteria, timeout = 60000) {
+
     this.#reconection = false;
+
+    if (timeout < 1000) {
+      console.error("Timeout is too short.");
+      return Promise.reject("InvalidTimeout");
+    }
 
     if (this.#selecting) {
       return Promise.reject("SelectingInProgress");
@@ -210,66 +240,98 @@ export class TangleInterface {
 
     this.#selecting = true;
 
-    return this.connector
-      .disconnect()
-      .catch(() => {})
-      .then(() => {
-        return this.connector.userSelect(criteria);
-      })
-      .finally(() => {
-        this.#selecting = false;
-      });
-  }
+    const item = new Query(Query.TYPE_USERSELECT, criteria, timeout);
+    this.#process(item);
+    return item.promise .finally(() => {
+      this.#selecting = false;
+    });
+    
+    // =========================================
 
-  autoSelect(criteria) {
-    this.#reconection = false;
 
-    // if("ownerSignature" in criteria) {
-    //   if(criteria.ownerSignature === null) {
-    //     console.error("bad ownerSignature");
-    //     throw "bad ownerSignature";
-    //   }
+    // this.#reconection = false;
+
+    // if (this.#selecting) {
+    //   return Promise.reject("SelectingInProgress");
     // }
 
+    // this.#selecting = true;
+
+    // return this.connector
+    //   .disconnect()
+    //   .catch(() => {})
+    //   .then(() => {
+    //     return this.connector.userSelect(criteria, timeout);
+    //   })
+    //   .finally(() => {
+    //     this.#selecting = false;
+    //   });
+  }
+
+  autoSelect(criteria, scan_period = 1000, timeout = 10000) {
+    
+    this.#reconection = false;
+
+    if (timeout < 1000) {
+      console.error("Timeout is too short.");
+      return Promise.reject("InvalidTimeout");
+    }
+
     if (this.#selecting) {
       return Promise.reject("SelectingInProgress");
     }
 
     this.#selecting = true;
 
-    return this.connector
-      .disconnect()
-      .catch(() => {})
-      .then(() => {
-        return this.connector.autoSelect(criteria);
-      })
-      .finally(() => {
-        this.#selecting = false;
-      });
+    const item = new Query(Query.TYPE_AUTOSELECT, criteria, scan_period, timeout);
+    this.#process(item);
+    return item.promise .finally(() => {
+      this.#selecting = false;
+    });
+    
+    // =========================================
+
+    // this.#reconection = false;
+
+    // if (this.#selecting) {
+    //   return Promise.reject("SelectingInProgress");
+    // }
+
+    // this.#selecting = true;
+
+    // return this.connector
+    //   .disconnect()
+    //   .catch(() => {})
+    //   .then(() => {
+    //     return this.connector.autoSelect(criteria, scan_period, timeout);
+    //   })
+    //   .finally(() => {
+    //     this.#selecting = false;
+    //   });
   }
 
   unselect() {
-    // if (this.connector.connected()) {
-    //   return Promise.reject("DeviceConnected");
-    // }
+    const item = new Query(Query.TYPE_UNSELECT);
+    this.#process(item);
+    return item.promise;
 
-    if (this.#selecting) {
-      return Promise.reject("SelectingInProgress");
-    }
+    //========================================
 
-    return this.connector.unselect();
+    // return this.connector.unselect();
   }
 
   selected() {
-    return this.connector.selected();
+    const item = new Query(Query.TYPE_SELECTED);
+    this.#process(item);
+    return item.promise;
+
+    //========================================
+
+    // return this.connector.selected();
   }
 
-  connect(timeout = 5000) {
+  connect(timeout = 10000) {
     this.#reconection = true;
-
-    // if (this.connector.connected()) {
-    //   return Promise.resolve();
-    // }
 
     if (timeout < 1000) {
       console.error("Timeout is too short.");
@@ -282,36 +344,67 @@ export class TangleInterface {
 
     this.#connecting = true;
 
-    // if (!this.connector.selected()) {
-    //   return Promise.reject("NoDeviceSelected");
+    const item = new Query(Query.TYPE_CONNECT, timeout);
+    this.#process(item);
+    return item.promise.finally(() => {
+      this.#connecting = false;
+    });
+
+    //========================================
+
+    // this.#reconection = true;
+
+    // if (timeout < 1000) {
+    //   console.error("Timeout is too short.");
+    //   return Promise.reject("InvalidTimeout");
     // }
 
-    return this.connector
-      .connect(timeout)
-      .then(() => {
-        return this.getClock();
-      })
-      .then(clock => {
-        this.clock = clock;
-      })
-      .finally(() => {
-        this.#connecting = false;
-      });
+    // if (this.#connecting) {
+    //   return Promise.reject("ConnectingInProgress");
+    // }
+
+    // this.#connecting = true;
+
+    // return this.connector
+    //   .connect(timeout)
+    //   .then(() => {
+    //     return this.connector
+    //       .getClock()
+    //       .then(clock => {
+    //         this.clock = clock;
+    //       })
+    //       .catch(e => {
+    //         this.clock = new TimeTrack();
+    //         return this.connector.setClock(this.clock);
+    //       });
+    //   })
+
+    //   .finally(() => {
+    //     this.#connecting = false;
+    //   });
   }
 
   #onConnected = event => {
-    console.log("> Bluetooth Device connected");
-    return this.#eventEmitter.emit("connected", { target: this });
+    console.log("> Device connected");
+    return this.#eventEmitter.emit("connected", { target: this.#deviceReference });
   };
 
-  disconnect(force = true) {
+  disconnect() {
     this.#reconection = false;
 
-    if (!this.#processing || force) {
-      return this.connector.disconnect();
-    } else {
-      return Promise.reject("CommunicationInProgress");
-    }
+    const item = new Query(Query.TYPE_DISCONNECT);
+    this.#process(item);
+    return item.promise;
+
+    //========================================
+
+    // this.#reconection = false;
+
+    // if (!this.#processing || force) {
+    //   return this.connector.disconnect();
+    // } else {
+    //   return Promise.reject("CommunicationInProgress");
+    // }
   }
 
   #onDisconnected = event => {
@@ -320,26 +413,36 @@ export class TangleInterface {
     }
     this.#queue = [];
 
-    console.log("> Bluetooth Device disconnected");
-    this.#eventEmitter.emit("disconnected", { target: this });
+    console.log("> Device disconnected");
+    this.#eventEmitter.emit("disconnected", { target: this.#deviceReference });
 
     if (this.#reconection) {
       console.log("Reconnecting in 1s...");
       setTimeout(() => {
         console.log("Reconnecting device");
-        return this.connect().catch(() => {
-          console.log("Reconnection failed.");
-        });
+        return this.connect(5000)
+          .then(() => {
+            this.#eventEmitter.emit("#reconnected");
+          })
+          .catch(() => {
+            console.warn("Reconnection failed.");
+          });
       }, 1000);
     }
   };
 
   connected() {
-    return this.connector.connected();
+    const item = new Query(Query.TYPE_CONNECTED);
+    this.#process(item);
+    return item.promise;
+
+    //========================================
+
+    // return this.connector.connected();
   }
 
   execute(bytes, bytes_label) {
-    const item = new QueueItem(QueueItem.TYPE_EXECUTE, bytes, bytes_label);
+    const item = new Query(Query.TYPE_EXECUTE, bytes, bytes_label);
 
     // there must only by one item in the queue with given label
     // this is used to send only the most recent item.
@@ -348,7 +451,7 @@ export class TangleInterface {
     // push this item to the end of the queue
     if (item.b) {
       for (let i = 0; i < this.#queue.length; i++) {
-        if (this.#queue[i].type === QueueItem.TYPE_EXECUTE && this.#queue[i].b === item.b) {
+        if (this.#queue[i].type === Query.TYPE_EXECUTE && this.#queue[i].b === item.b) {
           this.#queue[i].resolve();
           this.#queue.splice(i, 1);
           break;
@@ -356,87 +459,176 @@ export class TangleInterface {
       }
     }
 
-    this.#queue.push(item);
-    this.#process();
-
+    this.#process(item);
     return item.promise;
   }
 
   request(bytes, read_response) {
-    const item = new QueueItem(QueueItem.TYPE_REQUEST, bytes, read_response);
-
-    this.#queue.push(item);
-    this.#process();
-
+    const item = new Query(Query.TYPE_REQUEST, bytes, read_response);
+    this.#process(item);
     return item.promise;
   }
 
   syncClock() {
-    const item = new QueueItem(QueueItem.TYPE_SET_CLOCK, this.clock);
+    const item = new Query(Query.TYPE_SET_CLOCK, this.clock);
 
     for (let i = 0; i < this.#queue.length; i++) {
-      if (this.#queue[i].type === QueueItem.TYPE_SET_CLOCK) {
+      if (this.#queue[i].type === Query.TYPE_SET_CLOCK) {
         this.#queue[i].reject("Multiple Clock writes");
         this.#queue.splice(i, 1);
         break;
       }
     }
 
-    this.#queue.push(item);
-    this.#process();
-
+    this.#process(item);
     return item.promise;
   }
 
-  getClock() {
-    const item = new QueueItem(QueueItem.TYPE_GET_CLOCK);
+  // getClock() {
+  //   const item = new Query(Query.TYPE_GET_CLOCK);
 
-    for (let i = 0; i < this.#queue.length; i++) {
-      if (this.#queue[i].type === QueueItem.TYPE_GET_CLOCK) {
-        this.#queue[i].reject("Multiple Clock Requests");
-        this.#queue.splice(i, 1);
-        break;
-      }
-    }
+  //   for (let i = 0; i < this.#queue.length; i++) {
+  //     if (this.#queue[i].type === Query.TYPE_GET_CLOCK) {
+  //       this.#queue[i].reject("Multiple Clock Requests");
+  //       this.#queue.splice(i, 1);
+  //       break;
+  //     }
+  //   }
 
-    this.#queue.push(item);
-    this.#process();
+  //   this.#process(item);
 
-    return item.promise;
-  }
+  //   return item.promise;
+  // }
 
   updateFW(firmware_bytes) {
-    const item = new QueueItem(QueueItem.TYPE_FIRMWARE_UPDATE, firmware_bytes);
+    const item = new Query(Query.TYPE_FIRMWARE_UPDATE, firmware_bytes);
 
     for (let i = 0; i < this.#queue.length; i++) {
-      if (this.#queue[i].type === QueueItem.TYPE_FIRMWARE_UPDATE) {
+      if (this.#queue[i].type === Query.TYPE_FIRMWARE_UPDATE) {
         this.#queue[i].reject("Multiple FW Updates");
         this.#queue.splice(i, 1);
         break;
       }
     }
 
-    this.#queue.push(item);
-    this.#process();
-
+    this.#process(item);
     return item.promise;
   }
 
   // starts a "thread" that is processing the commands from queue
-  #process() {
+  #process(item) {
+    if (item) {
+      this.#queue.push(item);
+    }
+
     if (!this.#processing) {
       this.#processing = true;
 
       // spawn async function to handle the transmittion one item at the time
       (async () => {
-        await sleep(0.001); // short delay to let fill up the queue to merge the execure items if possible
+        await sleep(0.001); // short delay to let fill up the queue to merge the execute items if possible
 
         try {
           while (this.#queue.length > 0) {
             const item = this.#queue.shift();
 
             switch (item.type) {
-              case QueueItem.TYPE_EXECUTE:
+              case Query.TYPE_USERSELECT:
+                await this.connector
+                .userSelect(item.a, item.b) // criteria, timeout
+                .then(device => {
+                  item.resolve(device);
+                })
+                .catch(error => {
+                  //console.warn(error);
+                  item.reject(error);
+                });
+                break;
+
+              case Query.TYPE_AUTOSELECT:
+                await this.connector
+                  .autoSelect(item.a, item.b, item.c) // criteria, scan_period, timeout
+                  .then(device => {
+                    item.resolve(device);
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_SELECTED:
+                await this.connector
+                  .selected()
+                  .then(device => {
+                    item.resolve(device);
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_UNSELECT:
+                await this.connector
+                  .unselect()
+                  .then(() => {
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_CONNECT:
+                await this.connector
+                  .connect(item.a) // a = timeout
+                  .then(device => {
+                    return this.connector
+                      .getClock()
+                      .then(clock => {
+                        this.clock = clock;
+                      })
+                      .catch(e => {
+                        this.clock = new TimeTrack();
+                        return this.connector.setClock(this.clock);
+                      })
+                      .finally(() => {
+                        item.resolve(device);
+                      });
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_CONNECTED:
+                await this.connector
+                  .connected()
+                  .then(device => {
+                    item.resolve(device);
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_DISCONNECT:
+                await this.connector
+                  .disconnect()
+                  .then(() => {
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_EXECUTE:
                 let payload = new Uint8Array(this.#chunkSize);
                 let index = 0;
 
@@ -444,7 +636,7 @@ export class TangleInterface {
                 index += item.a.length;
 
                 // while there are items in the queue, and the next item is also TYPE_EXECUTE
-                while (this.#queue.length && this.#queue[0].type == QueueItem.TYPE_EXECUTE) {
+                while (this.#queue.length && this.#queue[0].type == Query.TYPE_EXECUTE) {
                   const next_item = this.#queue.shift();
 
                   // then check if I have toom to merge the payload bytes
@@ -469,7 +661,7 @@ export class TangleInterface {
                   });
                 break;
 
-              case QueueItem.TYPE_REQUEST:
+              case Query.TYPE_REQUEST:
                 await this.connector
                   .request(item.a, item.b)
                   .then(response => {
@@ -482,7 +674,7 @@ export class TangleInterface {
                   });
                 break;
 
-              case QueueItem.TYPE_SET_CLOCK:
+              case Query.TYPE_SET_CLOCK:
                 await this.connector
                   .setClock(item.a)
                   .then(response => {
@@ -495,20 +687,20 @@ export class TangleInterface {
                   });
                 break;
 
-              case QueueItem.TYPE_GET_CLOCK:
-                await this.connector
-                  .getClock()
-                  .then(response => {
-                    item.resolve(response);
-                  })
+              // case Query.TYPE_GET_CLOCK:
+              //   await this.connector
+              //     .getClock()
+              //     .then(response => {
+              //       item.resolve(response);
+              //     })
 
-                  .catch(error => {
-                    //console.warn(error);
-                    item.reject(error);
-                  });
-                break;
+              //     .catch(error => {
+              //       //console.warn(error);
+              //       item.reject(error);
+              //     });
+              //   break;
 
-              case QueueItem.TYPE_FIRMWARE_UPDATE:
+              case Query.TYPE_FIRMWARE_UPDATE:
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {

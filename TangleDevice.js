@@ -24,22 +24,15 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface();
+    this.interface = new TangleInterface(this);
     if (connectorType != "dummy") {
       this.interface.assignConnector(connectorType);
     }
 
-    // auto clock sync loop
-    // how to get rid of it on TangleDevice object destruction ????
-    setInterval(() => {
-      this.interface.connected().then(connected => {
-        if (connected) {
-          this.interface.syncClock().catch(error => {
-            console.warn(error);
-          });
-        }
-      });
-    }, 60000);
+    this.interface.on("#reconnected", (e) => {
+      this.#onReconnected(e);
+    })
+
   }
 
   setOwnerSignature(ownerSignature) {
@@ -163,12 +156,70 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName, newDeviceId, tnglCode) {
-    const criteria = detectBluefy() ? [{ name: "NARA Alpha" }] : [{ adoptionFlag: true }]; // Bluefy workaroud
+    let criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
+
+    // Bluefy obechcávka
+    if (detectBluefy()) {
+      criteria = [
+        { namePrefix: "A" },
+        { namePrefix: "a" },
+        { namePrefix: "B" },
+        { namePrefix: "b" },
+        { namePrefix: "C" },
+        { namePrefix: "c" },
+        { namePrefix: "D" },
+        { namePrefix: "d" },
+        { namePrefix: "E" },
+        { namePrefix: "e" },
+        { namePrefix: "F" },
+        { namePrefix: "f" },
+        { namePrefix: "G" },
+        { namePrefix: "g" },
+        { namePrefix: "H" },
+        { namePrefix: "h" },
+        { namePrefix: "I" },
+        { namePrefix: "i" },
+        { namePrefix: "J" },
+        { namePrefix: "j" },
+        { namePrefix: "K" },
+        { namePrefix: "k" },
+        { namePrefix: "L" },
+        { namePrefix: "l" },
+        { namePrefix: "M" },
+        { namePrefix: "m" },
+        { namePrefix: "N" },
+        { namePrefix: "n" },
+        { namePrefix: "O" },
+        { namePrefix: "o" },
+        { namePrefix: "P" },
+        { namePrefix: "p" },
+        { namePrefix: "Q" },
+        { namePrefix: "q" },
+        { namePrefix: "R" },
+        { namePrefix: "r" },
+        { namePrefix: "S" },
+        { namePrefix: "s" },
+        { namePrefix: "T" },
+        { namePrefix: "t" },
+        { namePrefix: "U" },
+        { namePrefix: "u" },
+        { namePrefix: "V" },
+        { namePrefix: "v" },
+        { namePrefix: "W" },
+        { namePrefix: "w" },
+        { namePrefix: "X" },
+        { namePrefix: "x" },
+        { namePrefix: "Y" },
+        { namePrefix: "y" },
+        { namePrefix: "Z" },
+        { namePrefix: "z" },
+      ];
+    }
 
     return this.interface
-      .userSelect(criteria)
+      .userSelect(criteria, 60000)
       .then(() => {
-        return this.interface.connect(5000);
+        return this.interface.connect(10000);
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
@@ -183,50 +234,55 @@ export class TangleDevice {
 
         console.log(bytes);
 
-        return this.interface.request(bytes, true).then(response => {
-          let reader = new TnglReader(response);
+        return this.interface
+          .request(bytes, true)
+          .then(response => {
+            let reader = new TnglReader(response);
 
-          console.log("> Got response:", response);
+            console.log("> Got response:", response);
 
-          if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ADOPT_RESPONSE) {
-            throw "InvalidResponse";
-          }
+            if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ADOPT_RESPONSE) {
+              throw "InvalidResponse";
+            }
 
-          const response_uuid = reader.readUint32();
+            const response_uuid = reader.readUint32();
 
-          if (response_uuid != request_uuid) {
-            throw "InvalidResponse";
-          }
+            if (response_uuid != request_uuid) {
+              throw "InvalidResponse";
+            }
 
-          const error_code = reader.readUint8();
-          const device_mac = error_code === 0 ? reader.readBytes(6) : [0, 0, 0, 0, 0, 0];
+            const error_code = reader.readUint8();
+            const device_mac = error_code === 0 ? reader.readBytes(6) : [0, 0, 0, 0, 0, 0];
 
-          console.log(`error_code=${error_code}, device_mac=${device_mac}`);
+            console.log(`error_code=${error_code}, device_mac=${device_mac}`);
 
-          if (error_code === 0) {
-            return (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
-              .then(() => {
-                return sleep(1000).then(() => {
-                  this.interface.disconnect();
+            if (error_code === 0) {
+              return (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
+                .then(() => {
+                  return sleep(1000).then(() => {
+                    this.interface.disconnect();
+                  });
+                })
+                .then(() => {
+                  return this.interface.connect(10000);
+                })
+                .then(() => {
+                  return this.requestTimeline().catch((e) => {
+                    console.error("Timeline request failed.", e);
+                  });
+                })
+                .then(() => {
+                  return { mac: device_mac };
                 });
-              })
-              .then(() => {
-                return this.interface.connect(5000);
-              })
-              .then(() => {
-                return this.requestTimeline();
-              })
-              .then(() => {
-                return { mac: device_mac };
-              });
-          } else {
-            console.warn("Adoption failed.");
-            throw "AdoptionRefused";
-          }
-        }).catch(e => {
-          console.error(e);
-          throw "AdoptionFailed";
-        });
+            } else {
+              console.warn("Adoption failed.");
+              throw "AdoptionRefused";
+            }
+          })
+          .catch(e => {
+            console.error(e);
+            throw "AdoptionFailed";
+          });
       });
   }
 
@@ -236,11 +292,18 @@ export class TangleDevice {
     return this.interface
       .autoSelect(criteria)
       .then(() => {
-        return this.interface.connect(5000);
+        return this.interface.connect(10000);
+      }).then(() => {
+        return this.requestTimeline().catch((e) => {
+          console.error("Timeline request failed.", e);
+        });
       })
-      .then(() => {
-        return this.requestTimeline();
-      });
+  }
+
+  #onReconnected(e) {
+    this.requestTimeline().catch((e) => {
+      console.error("Timeline request after reconnection failed.", e);
+    });
   }
 
   disconnect() {
@@ -322,10 +385,10 @@ export class TangleDevice {
     return this.interface.execute(payload, "TMLN");
   }
 
-  // syncClock() {
-  //   //console.log("syncClock()");
-  //   return this.connector.setClock(this.interface.clock);
-  // };
+  syncClock() {
+    //console.log("syncClock()");
+    return this.interface.syncClock();
+  };
 
   updateDeviceFirmware(firmware) {
     //console.log("updateDeviceFirmware()");
@@ -509,13 +572,13 @@ export class TangleDevice {
       console.log("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TIMELINE_RESPONSE) {
-        throw "InvalidResponse";
+        throw "InvalidResponseFlag";
       }
 
       const response_uuid = reader.readUint32();
 
       if (response_uuid != request_uuid) {
-        throw "InvalidResponse";
+        throw "InvalidResponseUuid";
       }
 
       const clock_timestamp = reader.readInt32();
