@@ -15,7 +15,6 @@ export class TangleDevice {
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
-  #adopedDevice;
 
   constructor(connectorType = "default") {
     this.timeline = new TimeTrack();
@@ -24,7 +23,6 @@ export class TangleDevice {
 
     this.#ownerSignature = null;
     this.#ownerKey = null;
-    this.#adopedDevice = null;
 
     this.interface = new TangleInterface(this);
     if (connectorType != "dummy") {
@@ -219,9 +217,7 @@ export class TangleDevice {
                   });
                 })
                 .then(() => {
-                  const device = { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
-                  this.#adopedDevice = device;
-                  return device;
+                  return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
                 })
                 .catch(e => {
                   console.error(e);
@@ -260,10 +256,6 @@ export class TangleDevice {
 
         criteria.push(criterium);
       }
-    }
-
-    if (this.#adopedDevice) {
-      criteria = [{ name: this.#adopedDevice.name }];
     }
 
     return this.interface
