@@ -267,7 +267,7 @@ export class TangleDevice {
     }
 
     return this.interface
-      .autoSelect(criteria)
+      .userSelect(criteria)
       .then(() => {
         return this.interface.connect(10000);
       })
