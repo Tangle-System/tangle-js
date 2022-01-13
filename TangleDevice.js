@@ -8,63 +8,6 @@ import "./TnglWriter.js";
 
 /////////////////////////////////////////////////////////////////////////
 
-const bluefy_obechcavka_criteria = [
-  { namePrefix: "A" },
-  { namePrefix: "a" },
-  { namePrefix: "B" },
-  { namePrefix: "b" },
-  { namePrefix: "C" },
-  { namePrefix: "c" },
-  { namePrefix: "D" },
-  { namePrefix: "d" },
-  { namePrefix: "E" },
-  { namePrefix: "e" },
-  { namePrefix: "F" },
-  { namePrefix: "f" },
-  { namePrefix: "G" },
-  { namePrefix: "g" },
-  { namePrefix: "H" },
-  { namePrefix: "h" },
-  { namePrefix: "I" },
-  { namePrefix: "i" },
-  { namePrefix: "J" },
-  { namePrefix: "j" },
-  { namePrefix: "K" },
-  { namePrefix: "k" },
-  { namePrefix: "L" },
-  { namePrefix: "l" },
-  { namePrefix: "M" },
-  { namePrefix: "m" },
-  { namePrefix: "N" },
-  { namePrefix: "n" },
-  { namePrefix: "O" },
-  { namePrefix: "o" },
-  { namePrefix: "P" },
-  { namePrefix: "p" },
-  { namePrefix: "Q" },
-  { namePrefix: "q" },
-  { namePrefix: "R" },
-  { namePrefix: "r" },
-  { namePrefix: "S" },
-  { namePrefix: "s" },
-  { namePrefix: "T" },
-  { namePrefix: "t" },
-  { namePrefix: "U" },
-  { namePrefix: "u" },
-  { namePrefix: "V" },
-  { namePrefix: "v" },
-  { namePrefix: "W" },
-  { namePrefix: "w" },
-  { namePrefix: "X" },
-  { namePrefix: "x" },
-  { namePrefix: "Y" },
-  { namePrefix: "y" },
-  { namePrefix: "Z" },
-  { namePrefix: "z" }
-];
-
-/////////////////////////////////////////////////////////////////////////
-
 // should not create more than one object!
 // the destruction of the TangleDevice is not well implemented
 
@@ -212,7 +155,7 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName, newDeviceId, tnglCode) {
-    const criteria = /** @type {any} */ (detectBluefy() ? bluefy_obechcavka_criteria : [{ adoptionFlag: true }, { legacy: true }]);
+    const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
     return this.interface
       .userSelect(criteria, 60000)
@@ -295,13 +238,13 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices) {
-    let criteria = /** @type {any} */ (detectBluefy() ? [] : [{ ownerSignature: this.#ownerSignature }]);
+    let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
     if (devices !== null && devices.length > 0) {
       criteria = [];
 
       for (let i = 0; i < devices.length; i++) {
-        let criterium = detectBluefy() ? {} : { ownerSignature: this.#ownerSignature };
+        let criterium = {};
 
         if (devices[i].name !== null) {
           criterium.name = devices[i].name;

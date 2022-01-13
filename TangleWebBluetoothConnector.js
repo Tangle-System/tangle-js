@@ -1,7 +1,7 @@
 // npm install --save-dev @types/web-bluetooth
 /// <reference types="web-bluetooth" />
 
-import { createNanoEvents, detectAndroid, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
+import { createNanoEvents, detectAndroid, detectBluefy, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
@@ -511,10 +511,89 @@ criteria example:
     /** @type {RequestDeviceOptions} */
     let web_ble_options = { filters: /** @type {BluetoothLEScanFilter[]} */ ([]), optionalServices: [this.TANGLE_SERVICE_UUID] };
 
-    if (this.#criteria.length == 0) {
-      web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
+    if (detectBluefy()) {
+      let adopt_or_legacy = false;
+
+      for (let i = 0; i < this.#criteria.length; i++) {
+        if (this.#criteria[i].adopt || this.#criteria[i].legacy) {
+          adopt_or_legacy = true;
+          break;
+        }
+      }
+
+      if (adopt_or_legacy) {
+        web_ble_options.filters = [
+          { namePrefix: "A" },
+          { namePrefix: "a" },
+          { namePrefix: "B" },
+          { namePrefix: "b" },
+          { namePrefix: "C" },
+          { namePrefix: "c" },
+          { namePrefix: "D" },
+          { namePrefix: "d" },
+          { namePrefix: "E" },
+          { namePrefix: "e" },
+          { namePrefix: "F" },
+          { namePrefix: "f" },
+          { namePrefix: "G" },
+          { namePrefix: "g" },
+          { namePrefix: "H" },
+          { namePrefix: "h" },
+          { namePrefix: "I" },
+          { namePrefix: "i" },
+          { namePrefix: "J" },
+          { namePrefix: "j" },
+          { namePrefix: "K" },
+          { namePrefix: "k" },
+          { namePrefix: "L" },
+          { namePrefix: "l" },
+          { namePrefix: "M" },
+          { namePrefix: "m" },
+          { namePrefix: "N" },
+          { namePrefix: "n" },
+          { namePrefix: "O" },
+          { namePrefix: "o" },
+          { namePrefix: "P" },
+          { namePrefix: "p" },
+          { namePrefix: "Q" },
+          { namePrefix: "q" },
+          { namePrefix: "R" },
+          { namePrefix: "r" },
+          { namePrefix: "S" },
+          { namePrefix: "s" },
+          { namePrefix: "T" },
+          { namePrefix: "t" },
+          { namePrefix: "U" },
+          { namePrefix: "u" },
+          { namePrefix: "V" },
+          { namePrefix: "v" },
+          { namePrefix: "W" },
+          { namePrefix: "w" },
+          { namePrefix: "X" },
+          { namePrefix: "x" },
+          { namePrefix: "Y" },
+          { namePrefix: "y" },
+          { namePrefix: "Z" },
+          { namePrefix: "z" }
+        ];
+      } else {
+        for (let i = 0; i < this.#criteria.length; i++) {
+          if (this.#criteria[i].namePrefix) {
+            web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID], namePrefix: this.#criteria[i].namePrefix });
+          } else if (this.#criteria[i].name) {
+            web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID], name: this.#criteria[i].name });
+          } else {
+            // NOP
+          }
+        }
+      }
     }
     
+    //
+    else if (this.#criteria.length == 0) {
+      web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
+    }
+
     //
     else {
       for (let i = 0; i < this.#criteria.length; i++) {
@@ -522,7 +601,6 @@ criteria example:
 
         // if legacy criterium is set, then fill the services of legacy FW versions
         if (criterium.legacy) {
-
           web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
           web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
           web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -644,9 +722,13 @@ criteria example:
       }
     }
 
-    // console.log(web_ble_options.filters);
+    if(web_ble_options.filters.length == 0) {
+      web_ble_options = { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] };
+    }
 
-    return navigator.bluetooth.requestDevice(web_ble_options.filters.length != 0 ? web_ble_options : { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] }).then(device => {
+    console.log(web_ble_options);
+
+    return navigator.bluetooth.requestDevice(web_ble_options).then(device => {
       // console.log(device);
 
       this.#webBTDevice = device;
@@ -692,13 +774,11 @@ criteria example:
 
   // if device is conneced, then disconnect it
   unselect() {
-
-    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(()=> {
+    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(() => {
       this.#webBTDevice = null;
       this.#connection.reset();
       return Promise.resolve();
-    })
-
+    });
   }
 
   // #selected returns boolean if a device is selected
@@ -847,7 +927,7 @@ criteria example:
   disconnect() {
     this.#reconection = false;
 
-    if(!this.#selected()) {
+    if (!this.#selected()) {
       return Promise.reject("NotSelected");
     }
 
@@ -914,7 +994,6 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
-       
         try {
           await this.#connection.writeClock(clock.millis());
           console.log("Clock write success");
