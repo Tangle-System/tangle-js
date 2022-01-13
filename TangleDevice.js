@@ -205,11 +205,13 @@ export class TangleDevice {
               return (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
                 .then(() => {
                   return sleep(1000).then(() => {
-                    this.interface.disconnect();
+                    return this.interface.disconnect();
                   });
                 })
                 .then(() => {
-                  return this.interface.connect(10000);
+                  return sleep(100).then(() => {
+                    return this.interface.connect(10000);
+                  });
                 })
                 .then(() => {
                   return this.requestTimeline().catch(e => {
@@ -241,20 +243,24 @@ export class TangleDevice {
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
     if (devices && devices.length > 0) {
-      criteria = [];
+      let devices_criteria = [];
 
       for (let i = 0; i < devices.length; i++) {
         let criterium = {};
 
         if (devices[i].name !== null) {
           criterium.name = devices[i].name;
+          devices_criteria.push(criterium);
         }
 
-        if (devices[i].mac !== null) {
+        else if (devices[i].mac !== null) {
           criterium.mac = devices[i].mac;
-        }
+          devices_criteria.push(criterium);
+        } 
+      }
 
-        criteria.push(criterium);
+      if(devices_criteria.length != 0) {
+        criteria = devices_criteria;
       }
     }
 

@@ -794,7 +794,6 @@ criteria example:
   // Fails if no device is selected
   connect(timeout = 5000) {
     this.#reconection = true;
-
     const start = new Date().getTime();
 
     if (!this.#selected()) {
