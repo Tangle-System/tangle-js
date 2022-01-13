@@ -8,6 +8,63 @@ import "./TnglWriter.js";
 
 /////////////////////////////////////////////////////////////////////////
 
+const bluefy_obechcavka_criteria = [
+  { namePrefix: "A" },
+  { namePrefix: "a" },
+  { namePrefix: "B" },
+  { namePrefix: "b" },
+  { namePrefix: "C" },
+  { namePrefix: "c" },
+  { namePrefix: "D" },
+  { namePrefix: "d" },
+  { namePrefix: "E" },
+  { namePrefix: "e" },
+  { namePrefix: "F" },
+  { namePrefix: "f" },
+  { namePrefix: "G" },
+  { namePrefix: "g" },
+  { namePrefix: "H" },
+  { namePrefix: "h" },
+  { namePrefix: "I" },
+  { namePrefix: "i" },
+  { namePrefix: "J" },
+  { namePrefix: "j" },
+  { namePrefix: "K" },
+  { namePrefix: "k" },
+  { namePrefix: "L" },
+  { namePrefix: "l" },
+  { namePrefix: "M" },
+  { namePrefix: "m" },
+  { namePrefix: "N" },
+  { namePrefix: "n" },
+  { namePrefix: "O" },
+  { namePrefix: "o" },
+  { namePrefix: "P" },
+  { namePrefix: "p" },
+  { namePrefix: "Q" },
+  { namePrefix: "q" },
+  { namePrefix: "R" },
+  { namePrefix: "r" },
+  { namePrefix: "S" },
+  { namePrefix: "s" },
+  { namePrefix: "T" },
+  { namePrefix: "t" },
+  { namePrefix: "U" },
+  { namePrefix: "u" },
+  { namePrefix: "V" },
+  { namePrefix: "v" },
+  { namePrefix: "W" },
+  { namePrefix: "w" },
+  { namePrefix: "X" },
+  { namePrefix: "x" },
+  { namePrefix: "Y" },
+  { namePrefix: "y" },
+  { namePrefix: "Z" },
+  { namePrefix: "z" }
+];
+
+/////////////////////////////////////////////////////////////////////////
+
 // should not create more than one object!
 // the destruction of the TangleDevice is not well implemented
 
@@ -29,10 +86,9 @@ export class TangleDevice {
       this.interface.assignConnector(connectorType);
     }
 
-    this.interface.on("#reconnected", (e) => {
+    this.interface.on("#reconnected", e => {
       this.#onReconnected(e);
-    })
-
+    });
   }
 
   setOwnerSignature(ownerSignature) {
@@ -156,65 +212,7 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName, newDeviceId, tnglCode) {
-    let criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
-
-    // Bluefy obechcávka
-    if (detectBluefy()) {
-      criteria = [
-        { namePrefix: "A" },
-        { namePrefix: "a" },
-        { namePrefix: "B" },
-        { namePrefix: "b" },
-        { namePrefix: "C" },
-        { namePrefix: "c" },
-        { namePrefix: "D" },
-        { namePrefix: "d" },
-        { namePrefix: "E" },
-        { namePrefix: "e" },
-        { namePrefix: "F" },
-        { namePrefix: "f" },
-        { namePrefix: "G" },
-        { namePrefix: "g" },
-        { namePrefix: "H" },
-        { namePrefix: "h" },
-        { namePrefix: "I" },
-        { namePrefix: "i" },
-        { namePrefix: "J" },
-        { namePrefix: "j" },
-        { namePrefix: "K" },
-        { namePrefix: "k" },
-        { namePrefix: "L" },
-        { namePrefix: "l" },
-        { namePrefix: "M" },
-        { namePrefix: "m" },
-        { namePrefix: "N" },
-        { namePrefix: "n" },
-        { namePrefix: "O" },
-        { namePrefix: "o" },
-        { namePrefix: "P" },
-        { namePrefix: "p" },
-        { namePrefix: "Q" },
-        { namePrefix: "q" },
-        { namePrefix: "R" },
-        { namePrefix: "r" },
-        { namePrefix: "S" },
-        { namePrefix: "s" },
-        { namePrefix: "T" },
-        { namePrefix: "t" },
-        { namePrefix: "U" },
-        { namePrefix: "u" },
-        { namePrefix: "V" },
-        { namePrefix: "v" },
-        { namePrefix: "W" },
-        { namePrefix: "w" },
-        { namePrefix: "X" },
-        { namePrefix: "x" },
-        { namePrefix: "Y" },
-        { namePrefix: "y" },
-        { namePrefix: "Z" },
-        { namePrefix: "z" },
-      ];
-    }
+    const criteria = /** @type {any} */ (detectBluefy() ? bluefy_obechcavka_criteria : [{ adoptionFlag: true }, { legacy: true }]);
 
     return this.interface
       .userSelect(criteria, 60000)
@@ -252,7 +250,11 @@ export class TangleDevice {
             }
 
             const error_code = reader.readUint8();
-            const device_mac = error_code === 0 ? reader.readBytes(6) : [0, 0, 0, 0, 0, 0];
+            const device_mac_bytes = error_code === 0 ? reader.readBytes(6) : [0, 0, 0, 0, 0, 0];
+
+            const device_mac = Array.from(device_mac_bytes, function (byte) {
+              return ("0" + (byte & 0xff).toString(16)).slice(-2);
+            }).join(":");
 
             console.log(`error_code=${error_code}, device_mac=${device_mac}`);
 
@@ -264,16 +266,19 @@ export class TangleDevice {
                   });
                 })
                 .then(() => {
-                  return this.interface.connect(10000).then(() => {
-                    return this.requestTimeline().catch((e) => {
-                      console.error("Timeline request failed.", e);
-                    });
-                  }).catch(e => {
-                    console.error("Failed to reconnect after adopt: ", e);
-                  })
+                  return this.interface.connect(10000);
                 })
-                .finally(() => {
-                  return { mac: device_mac };
+                .then(() => {
+                  return this.requestTimeline().catch(e => {
+                    console.error("Timeline request failed.", e);
+                  });
+                })
+                .then(() => {
+                  return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
+                })
+                .catch(e => {
+                  console.error(e);
+                  throw "AdoptionFailed";
                 });
             } else {
               console.warn("Adoption refused.");
@@ -287,22 +292,43 @@ export class TangleDevice {
       });
   }
 
-  connect() {
-    const criteria = [{ ownerSignature: this.#ownerSignature }]; //, { ownerSignature: "00000000000000000000000000000000" }
+  // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
+
+  connect(devices) {
+    let criteria = /** @type {any} */ (detectBluefy() ? [] : [{ ownerSignature: this.#ownerSignature }]);
+
+    if (devices !== null && devices.length > 0) {
+      criteria = [];
+
+      for (let i = 0; i < devices.length; i++) {
+        let criterium = detectBluefy() ? {} : { ownerSignature: this.#ownerSignature };
+
+        if (devices[i].name !== null) {
+          criterium.name = devices[i].name;
+        }
+
+        if (devices[i].mac !== null) {
+          criterium.mac = devices[i].mac;
+        }
+
+        criteria.push(criterium);
+      }
+    }
 
     return this.interface
       .autoSelect(criteria)
       .then(() => {
         return this.interface.connect(10000);
-      }).then(() => {
-        return this.requestTimeline().catch((e) => {
+      })
+      .then(() => {
+        return this.requestTimeline().catch(e => {
           console.error("Timeline request failed.", e);
         });
-      })
+      });
   }
 
   #onReconnected(e) {
-    this.requestTimeline().catch((e) => {
+    this.requestTimeline().catch(e => {
       console.error("Timeline request after reconnection failed.", e);
     });
   }

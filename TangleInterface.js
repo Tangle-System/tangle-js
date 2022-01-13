@@ -239,6 +239,12 @@ export class TangleInterface {
     }
 
     this.#selecting = true;
+    
+    if (criteria === null) {
+      criteria = [];
+    } else if (!Array.isArray(criteria)) {
+      criteria = [criteria];
+    }
 
     const item = new Query(Query.TYPE_USERSELECT, criteria, timeout);
     this.#process(item);
@@ -283,9 +289,15 @@ export class TangleInterface {
 
     this.#selecting = true;
 
+    if (criteria === null) {
+      criteria = [];
+    } else if (!Array.isArray(criteria)) {
+      criteria = [criteria];
+    }
+
     const item = new Query(Query.TYPE_AUTOSELECT, criteria, scan_period, timeout);
     this.#process(item);
-    return item.promise .finally(() => {
+    return item.promise.finally(() => {
       this.#selecting = false;
     });
     

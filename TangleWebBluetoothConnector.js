@@ -461,8 +461,6 @@ criteria example:
   {
     legacy:true
   }
-  //
-
   // all Devices that are named "NARA Aplha", are on 0.8.0 fw and are
   // adopted by the owner with "baf2398ff5e6a7b8c9d097d54a9f865f" signature.
   // Product code is 1 what means NARA Alpha
@@ -516,14 +514,14 @@ criteria example:
     if (this.#criteria.length == 0) {
       web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
     }
+    
     //
     else {
       for (let i = 0; i < this.#criteria.length; i++) {
         const criterium = this.#criteria[i];
 
-        // if legacy criterium is set, then fill the
+        // if legacy criterium is set, then fill the services of legacy FW versions
         if (criterium.legacy) {
-          // TO-DO make legacy filter
 
           web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
           web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
