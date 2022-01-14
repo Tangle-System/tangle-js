@@ -107,6 +107,7 @@ export class TangleInterface {
   #reconection;
   #connecting;
   #selecting;
+  #disconnectQuery;
 
   constructor(deviceReference) {
     this.#deviceReference = deviceReference;
@@ -124,6 +125,7 @@ export class TangleInterface {
     this.#reconection = false;
     this.#connecting = false;
     this.#selecting = false;
+    this.#disconnectQuery = null;
 
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
@@ -226,8 +228,7 @@ export class TangleInterface {
   }
 
   userSelect(criteria, timeout = 60000) {
-
-    this.#reconection = false;
+    // this.#reconection = false;
 
     if (timeout < 1000) {
       console.error("Timeout is too short.");
@@ -239,7 +240,7 @@ export class TangleInterface {
     }
 
     this.#selecting = true;
-    
+
     if (criteria === null) {
       criteria = [];
     } else if (!Array.isArray(criteria)) {
@@ -248,12 +249,11 @@ export class TangleInterface {
 
     const item = new Query(Query.TYPE_USERSELECT, criteria, timeout);
     this.#process(item);
-    return item.promise .finally(() => {
+    return item.promise.finally(() => {
       this.#selecting = false;
     });
-    
-    // =========================================
 
+    // =========================================
 
     // this.#reconection = false;
 
@@ -275,8 +275,7 @@ export class TangleInterface {
   }
 
   autoSelect(criteria, scan_period = 1000, timeout = 10000) {
-    
-    this.#reconection = false;
+    // this.#reconection = false;
 
     if (timeout < 1000) {
       console.error("Timeout is too short.");
@@ -300,7 +299,7 @@ export class TangleInterface {
     return item.promise.finally(() => {
       this.#selecting = false;
     });
-    
+
     // =========================================
 
     // this.#reconection = false;
@@ -343,8 +342,6 @@ export class TangleInterface {
   }
 
   connect(timeout = 10000) {
-    this.#reconection = true;
-
     if (timeout < 1000) {
       console.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
@@ -440,6 +437,10 @@ export class TangleInterface {
             console.warn("Reconnection failed.");
           });
       }, 1000);
+    }
+
+    if (this.#disconnectQuery) {
+      this.#disconnectQuery.resolve();
     }
   };
 
@@ -546,18 +547,20 @@ export class TangleInterface {
 
             switch (item.type) {
               case Query.TYPE_USERSELECT:
+                this.#reconection = false;
                 await this.connector
-                .userSelect(item.a, item.b) // criteria, timeout
-                .then(device => {
-                  item.resolve(device);
-                })
-                .catch(error => {
-                  //console.warn(error);
-                  item.reject(error);
-                });
+                  .userSelect(item.a, item.b) // criteria, timeout
+                  .then(device => {
+                    item.resolve(device);
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
                 break;
 
               case Query.TYPE_AUTOSELECT:
+                this.#reconection = false;
                 await this.connector
                   .autoSelect(item.a, item.b, item.c) // criteria, scan_period, timeout
                   .then(device => {
@@ -582,6 +585,7 @@ export class TangleInterface {
                 break;
 
               case Query.TYPE_UNSELECT:
+                this.#reconection = false;
                 await this.connector
                   .unselect()
                   .then(() => {
@@ -594,6 +598,7 @@ export class TangleInterface {
                 break;
 
               case Query.TYPE_CONNECT:
+                this.#reconection = true;
                 await this.connector
                   .connect(item.a) // a = timeout
                   .then(device => {
@@ -629,9 +634,13 @@ export class TangleInterface {
                 break;
 
               case Query.TYPE_DISCONNECT:
+                this.#reconection = false;
+                this.#disconnectQuery = new Query();
                 await this.connector
                   .disconnect()
+                  .then(this.#disconnectQuery.promise)
                   .then(() => {
+                    this.#disconnectQuery = null;
                     item.resolve();
                   })
                   .catch(error => {

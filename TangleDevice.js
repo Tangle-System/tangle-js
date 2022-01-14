@@ -209,7 +209,7 @@ export class TangleDevice {
                   });
                 })
                 .then(() => {
-                  return sleep(100).then(() => {
+                  return sleep(5000).then(() => {
                     return this.interface.connect(10000);
                   });
                 })
@@ -248,12 +248,12 @@ export class TangleDevice {
       for (let i = 0; i < devices.length; i++) {
         let criterium = {};
 
-        if (devices[i].name !== null) {
+        if (devices[i].name) {
           criterium.name = devices[i].name;
           devices_criteria.push(criterium);
         }
 
-        else if (devices[i].mac !== null) {
+        else if (devices[i].mac) {
           criterium.mac = devices[i].mac;
           devices_criteria.push(criterium);
         } 
@@ -263,6 +263,8 @@ export class TangleDevice {
         criteria = devices_criteria;
       }
     }
+
+    console.log(criteria)
 
     return this.interface
       .userSelect(criteria)
