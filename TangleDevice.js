@@ -154,13 +154,22 @@ export class TangleDevice {
   //   });
   // }
 
-  adopt(newDeviceName, newDeviceId, tnglCode) {
+  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
 
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
         return this.interface.connect(10000);
+      })
+      .then(async () => {
+        if(!newDeviceName) {
+          newDeviceName = await window.prompt("Pls zadejte jmeno", "Tangle");
+        } 
+        if(!newDeviceId) {
+          newDeviceId = await window.prompt("Pls zadejte id", "0");
+        } 
+          return Promise.resolve();
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
