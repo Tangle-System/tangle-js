@@ -616,6 +616,7 @@ export class TangleInterface {
                       });
                   })
                   .catch(error => {
+                    this.disconnect();
                     //console.warn(error);
                     item.reject(error);
                   });

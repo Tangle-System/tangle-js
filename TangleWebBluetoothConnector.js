@@ -432,6 +432,7 @@ export class TangleWebBluetoothConnector {
     this.FW_0_7_3_SERVICE_UUID = "60cb125a-0000-0007-0003-5ad20c574c10";
     this.FW_0_7_4_SERVICE_UUID = "60cb125a-0000-0007-0004-5ad20c574c10";
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
+    this.TANGLE_ADOPTING_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf6";
 
     this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
     this.CLOCK_CHAR_UUID = "7a1e0e3a-6b9b-49ef-b9b7-65c81b714a19";
@@ -512,84 +513,110 @@ criteria example:
     let web_ble_options = { filters: /** @type {BluetoothLEScanFilter[]} */ ([]), optionalServices: [this.TANGLE_SERVICE_UUID] };
 
     if (detectBluefy()) {
-      let adopt_or_legacy = false;
+      let add_all_devices = false;
+      let add_tangle_uuid = false;
+      let add_legacy_uuids = false;
+      let add_adoption_uuid = false;
 
       for (let i = 0; i < this.#criteria.length; i++) {
-        if (this.#criteria[i].adopt || this.#criteria[i].legacy) {
-          adopt_or_legacy = true;
-          break;
+        if (this.#criteria[i].adoptionFlag) {
+          add_all_devices = true;
+          add_adoption_uuid = true;
+        }
+
+        if (this.#criteria[i].legacy) {
+          add_legacy_uuids = true;
+        }
+
+        if (this.#criteria[i].namePrefix) {
+          add_tangle_uuid = true;
+          web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
+        }
+
+        if (this.#criteria[i].name) {
+          add_tangle_uuid = true;
+          web_ble_options.filters.push({ name: this.#criteria[i].name });
+        }
+
+        if (this.#criteria[i].ownerSignature) {
+          add_tangle_uuid = true;
+          add_all_devices = true;
         }
       }
 
-      if (adopt_or_legacy) {
-        web_ble_options.filters = [
-          { namePrefix: "A" },
-          { namePrefix: "a" },
-          { namePrefix: "B" },
-          { namePrefix: "b" },
-          { namePrefix: "C" },
-          { namePrefix: "c" },
-          { namePrefix: "D" },
-          { namePrefix: "d" },
-          { namePrefix: "E" },
-          { namePrefix: "e" },
-          { namePrefix: "F" },
-          { namePrefix: "f" },
-          { namePrefix: "G" },
-          { namePrefix: "g" },
-          { namePrefix: "H" },
-          { namePrefix: "h" },
-          { namePrefix: "I" },
-          { namePrefix: "i" },
-          { namePrefix: "J" },
-          { namePrefix: "j" },
-          { namePrefix: "K" },
-          { namePrefix: "k" },
-          { namePrefix: "L" },
-          { namePrefix: "l" },
-          { namePrefix: "M" },
-          { namePrefix: "m" },
-          { namePrefix: "N" },
-          { namePrefix: "n" },
-          { namePrefix: "O" },
-          { namePrefix: "o" },
-          { namePrefix: "P" },
-          { namePrefix: "p" },
-          { namePrefix: "Q" },
-          { namePrefix: "q" },
-          { namePrefix: "R" },
-          { namePrefix: "r" },
-          { namePrefix: "S" },
-          { namePrefix: "s" },
-          { namePrefix: "T" },
-          { namePrefix: "t" },
-          { namePrefix: "U" },
-          { namePrefix: "u" },
-          { namePrefix: "V" },
-          { namePrefix: "v" },
-          { namePrefix: "W" },
-          { namePrefix: "w" },
-          { namePrefix: "X" },
-          { namePrefix: "x" },
-          { namePrefix: "Y" },
-          { namePrefix: "y" },
-          { namePrefix: "Z" },
-          { namePrefix: "z" }
-        ];
-      } else {
-        for (let i = 0; i < this.#criteria.length; i++) {
-          if (this.#criteria[i].namePrefix) {
-            web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix, services: [this.TANGLE_SERVICE_UUID] });
-          } else if (this.#criteria[i].name) {
-            alert(this.#criteria[i].name);
-            web_ble_options.filters.push({ name: this.#criteria[i].name, services: [this.TANGLE_SERVICE_UUID] });
-          } else {
-            // NOP
-          }
-        }
+      if (add_tangle_uuid) {
+        web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
+      }
+
+      if (add_adoption_uuid) {
+        web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
+      }
+
+      if (add_legacy_uuids) {
+        web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
+        web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
+        web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
+        web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
+        web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
+        web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+      }
+
+      if (add_all_devices) {
+        web_ble_options.filters.push({ namePrefix: "A" });
+        web_ble_options.filters.push({ namePrefix: "a" });
+        web_ble_options.filters.push({ namePrefix: "B" });
+        web_ble_options.filters.push({ namePrefix: "b" });
+        web_ble_options.filters.push({ namePrefix: "C" });
+        web_ble_options.filters.push({ namePrefix: "c" });
+        web_ble_options.filters.push({ namePrefix: "D" });
+        web_ble_options.filters.push({ namePrefix: "d" });
+        web_ble_options.filters.push({ namePrefix: "E" });
+        web_ble_options.filters.push({ namePrefix: "e" });
+        web_ble_options.filters.push({ namePrefix: "F" });
+        web_ble_options.filters.push({ namePrefix: "f" });
+        web_ble_options.filters.push({ namePrefix: "G" });
+        web_ble_options.filters.push({ namePrefix: "g" });
+        web_ble_options.filters.push({ namePrefix: "H" });
+        web_ble_options.filters.push({ namePrefix: "h" });
+        web_ble_options.filters.push({ namePrefix: "I" });
+        web_ble_options.filters.push({ namePrefix: "i" });
+        web_ble_options.filters.push({ namePrefix: "J" });
+        web_ble_options.filters.push({ namePrefix: "j" });
+        web_ble_options.filters.push({ namePrefix: "K" });
+        web_ble_options.filters.push({ namePrefix: "k" });
+        web_ble_options.filters.push({ namePrefix: "L" });
+        web_ble_options.filters.push({ namePrefix: "l" });
+        web_ble_options.filters.push({ namePrefix: "M" });
+        web_ble_options.filters.push({ namePrefix: "m" });
+        web_ble_options.filters.push({ namePrefix: "N" });
+        web_ble_options.filters.push({ namePrefix: "n" });
+        web_ble_options.filters.push({ namePrefix: "O" });
+        web_ble_options.filters.push({ namePrefix: "o" });
+        web_ble_options.filters.push({ namePrefix: "P" });
+        web_ble_options.filters.push({ namePrefix: "p" });
+        web_ble_options.filters.push({ namePrefix: "Q" });
+        web_ble_options.filters.push({ namePrefix: "q" });
+        web_ble_options.filters.push({ namePrefix: "R" });
+        web_ble_options.filters.push({ namePrefix: "r" });
+        web_ble_options.filters.push({ namePrefix: "S" });
+        web_ble_options.filters.push({ namePrefix: "s" });
+        web_ble_options.filters.push({ namePrefix: "T" });
+        web_ble_options.filters.push({ namePrefix: "t" });
+        web_ble_options.filters.push({ namePrefix: "U" });
+        web_ble_options.filters.push({ namePrefix: "u" });
+        web_ble_options.filters.push({ namePrefix: "V" });
+        web_ble_options.filters.push({ namePrefix: "v" });
+        web_ble_options.filters.push({ namePrefix: "W" });
+        web_ble_options.filters.push({ namePrefix: "w" });
+        web_ble_options.filters.push({ namePrefix: "X" });
+        web_ble_options.filters.push({ namePrefix: "x" });
+        web_ble_options.filters.push({ namePrefix: "Y" });
+        web_ble_options.filters.push({ namePrefix: "y" });
+        web_ble_options.filters.push({ namePrefix: "Z" });
+        web_ble_options.filters.push({ namePrefix: "z" });
       }
     }
-    
+
     //
     else if (this.#criteria.length == 0) {
       web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
@@ -597,17 +624,23 @@ criteria example:
 
     //
     else {
+      let legacy_filters_applied = false;
+
       for (let i = 0; i < this.#criteria.length; i++) {
         const criterium = this.#criteria[i];
 
         // if legacy criterium is set, then fill the services of legacy FW versions
         if (criterium.legacy) {
-          web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
-          web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
-          web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
-          web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
-          web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
-          web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+          if (!legacy_filters_applied) {
+            legacy_filters_applied = true;
+
+            web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
+            web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
+            web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
+            web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
+            web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
+            web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+          }
 
           continue;
         }
@@ -723,10 +756,11 @@ criteria example:
       }
     }
 
-    if(web_ble_options.filters.length == 0) {
+    if (web_ble_options.filters.length == 0) {
       web_ble_options = { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] };
     }
 
+    //alert("E");
     console.log(web_ble_options);
 
     return navigator.bluetooth.requestDevice(web_ble_options).then(device => {

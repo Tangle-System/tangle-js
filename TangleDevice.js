@@ -155,7 +155,7 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName, newDeviceId, tnglCode) {
-    const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
+    const criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
 
     return this.interface
       .userSelect(criteria, 60000)
@@ -240,20 +240,22 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null) {
-    let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
+    let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
 
     if (devices && devices.length > 0) {
-      let devices_criteria = [];
+      let devices_criteria =  /** @type {any} */ ([{ legacy: true }]);
 
       for (let i = 0; i < devices.length; i++) {
         let criterium = {};
 
         if (devices[i].name) {
+          criterium.ownerSignature = this.#ownerSignature;
           criterium.name = devices[i].name;
           devices_criteria.push(criterium);
         }
 
         else if (devices[i].mac) {
+          criterium.ownerSignature = this.#ownerSignature;
           criterium.mac = devices[i].mac;
           devices_criteria.push(criterium);
         } 
@@ -262,7 +264,8 @@ export class TangleDevice {
       if(devices_criteria.length != 0) {
         criteria = devices_criteria;
       }
-    }
+    } 
+
 
     console.log(criteria)
 
