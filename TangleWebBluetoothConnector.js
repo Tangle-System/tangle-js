@@ -512,6 +512,7 @@ criteria example:
     /** @type {RequestDeviceOptions} */
     let web_ble_options = { filters: /** @type {BluetoothLEScanFilter[]} */ ([]), optionalServices: [this.TANGLE_SERVICE_UUID] };
 
+    // Bluefy Obechcavky
     if (detectBluefy()) {
       let add_all_devices = false;
       let add_tangle_uuid = false;
