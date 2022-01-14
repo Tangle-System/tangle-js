@@ -1,6 +1,7 @@
 import { TangleDevice } from "./TangleDevice.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { uint8ArrayToHexString } from "./functions.js";
+import "../../control.js";
 
 window.TangleDevice = TangleDevice;
 window.TimeTrack = TimeTrack;
@@ -13,4 +14,4 @@ function injectScript(src) {
 }
 
 injectScript("code.js");
-injectScript("control.js");
+// injectScript("control.js");
