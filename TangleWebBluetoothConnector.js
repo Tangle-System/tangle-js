@@ -579,9 +579,10 @@ criteria example:
       } else {
         for (let i = 0; i < this.#criteria.length; i++) {
           if (this.#criteria[i].namePrefix) {
-            web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID], namePrefix: this.#criteria[i].namePrefix });
+            web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix, services: [this.TANGLE_SERVICE_UUID] });
           } else if (this.#criteria[i].name) {
-            web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID], name: this.#criteria[i].name });
+            alert(this.#criteria[i].name);
+            web_ble_options.filters.push({ name: this.#criteria[i].name, services: [this.TANGLE_SERVICE_UUID] });
           } else {
             // NOP
           }
