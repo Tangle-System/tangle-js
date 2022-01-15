@@ -227,13 +227,13 @@ export class TangleDevice {
                     console.error("Timeline request failed.", e);
                   });
                 })
-                .then(() => {
+                .finally(() => {
                   return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
                 })
-                .catch(e => {
-                  console.error(e);
-                  throw "AdoptionFailed";
-                });
+                // .catch(e => {
+                //   console.error(e);
+                //   throw "AdoptionFailed";
+                // });
             } else {
               console.warn("Adoption refused.");
               throw "AdoptionRefused";
