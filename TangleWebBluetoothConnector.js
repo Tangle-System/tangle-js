@@ -432,7 +432,7 @@ export class TangleWebBluetoothConnector {
     this.FW_0_7_3_SERVICE_UUID = "60cb125a-0000-0007-0003-5ad20c574c10";
     this.FW_0_7_4_SERVICE_UUID = "60cb125a-0000-0007-0004-5ad20c574c10";
     this.TANGLE_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf5";
-    //this.TANGLE_ADOPTING_SERVICE_UUID = "cc540e31-80be-44af-b64a-5d2def886bf6";
+    this.TANGLE_ADOPTING_SERVICE_UUID = "723247e6-3e2d-4279-ad8e-85a13b74d4a5";
 
     this.TERMINAL_CHAR_UUID = "33a0937e-0c61-41ea-b770-007ade2c79fa";
     this.CLOCK_CHAR_UUID = "7a1e0e3a-6b9b-49ef-b9b7-65c81b714a19";
@@ -517,13 +517,16 @@ criteria example:
       let add_all_devices = false;
       let add_tangle_uuid = false;
       let add_legacy_uuids = false;
-      // let add_adoption_uuid = false;
+      let add_adoption_uuid = false;
 
       for (let i = 0; i < this.#criteria.length; i++) {
         if (this.#criteria[i].adoptionFlag) {
-          add_tangle_uuid = true;
+          
+          // add_legacy_uuids = true;
+          // add_tangle_uuid = true;
+         
           add_all_devices = true;
-          // add_adoption_uuid = true;
+          add_adoption_uuid = true;
         }
 
         if (this.#criteria[i].legacy) {
@@ -550,9 +553,9 @@ criteria example:
         web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
       }
 
-      // if (add_adoption_uuid) {
-      //   web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
-      // }
+      if (add_adoption_uuid) {
+        web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
+      }
 
       if (add_legacy_uuids) {
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
