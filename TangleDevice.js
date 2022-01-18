@@ -15,6 +15,7 @@ export class TangleDevice {
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
+  #adopting;
 
   constructor(connectorType = "default") {
     this.timeline = new TimeTrack();
@@ -29,10 +30,36 @@ export class TangleDevice {
       this.interface.assignConnector(connectorType);
     }
 
-    this.interface.on("#reconnected", e => {
-      this.#onReconnected(e);
+    this.#adopting = false;
+
+    // this.interface.on("#reconnected", e => {
+    //   this.#onReconnected(e);
+    // });
+    this.interface.on("#connected", e => {
+      this.#onConnected(e);
+    });
+    this.interface.on("#disconnected", e => {
+      this.#onConnected(e);
     });
   }
+
+  #onConnected = event => {
+    if (!this.#adopting) {
+      console.log("> Device connected");
+      this.interface.emit("connected", { target: this });
+
+      this.requestTimeline().catch(e => {
+        console.error("Timeline request after reconnection failed.", e);
+      });
+    }
+  };
+
+  #onDisconnected = event => {
+    if (!this.#adopting) {
+      console.log("> Device disconnected");
+      this.interface.emit("disconnected", { target: this });
+    }
+  };
 
   setOwnerSignature(ownerSignature) {
     if (ownerSignature.length != 32) {
@@ -157,27 +184,28 @@ export class TangleDevice {
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
 
+    this.#adopting = true;
+
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        try {
-          while(!newDeviceName.match(/^[\w_ ]+/)) {
-            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", "Karel", "Pojmenujte svoji lampu");
-          } 
-          while (!newDeviceId.match(/^[\d]+/)) {
-            newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
-          }
-
-          newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
-          newDeviceId = newDeviceId.match(/^[\d]+/)[0];
-
-        } catch (e) {
-          this.disconnect();
-          return Promise.reject("UserRefused");
+        // try {
+        while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
+          newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", "Karel", "Pojmenujte svoji lampu");
         }
+        while (!newDeviceId || !newDeviceId.match(/^[\d]+/)) {
+          newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
+        }
+
+        newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
+        newDeviceId = newDeviceId.match(/^[\d]+/)[0];
+        // } catch (e) {
+        //   this.disconnect();
+        //   return Promise.reject("UserRefused");
+        // }
         return Promise.resolve();
       })
       .then(() => {
@@ -251,6 +279,17 @@ export class TangleDevice {
             console.error(e);
             throw "AdoptionFailed";
           });
+      })
+      .finally(() => {
+
+        setTimeout(() => {
+          if (this.interface.connected()) {
+            console.log("> Device connected");
+            this.interface.emit("connected", { target: this });
+          }
+        }, 1);
+      
+        this.#adopting = false;
       });
   }
 
@@ -260,7 +299,7 @@ export class TangleDevice {
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
 
     if (devices && devices.length > 0) {
-      let devices_criteria =  /** @type {any} */ ([{ legacy: true }]);
+      let devices_criteria = /** @type {any} */ ([{ legacy: true }]);
 
       for (let i = 0; i < devices.length; i++) {
         let criterium = {};
@@ -269,22 +308,19 @@ export class TangleDevice {
           criterium.ownerSignature = this.#ownerSignature;
           criterium.name = devices[i].name;
           devices_criteria.push(criterium);
-        }
-
-        else if (devices[i].mac) {
+        } else if (devices[i].mac) {
           criterium.ownerSignature = this.#ownerSignature;
           criterium.mac = devices[i].mac;
           devices_criteria.push(criterium);
-        } 
+        }
       }
 
-      if(devices_criteria.length != 0) {
+      if (devices_criteria.length != 0) {
         criteria = devices_criteria;
       }
-    } 
+    }
 
-
-    console.log(criteria)
+    console.log(criteria);
 
     return this.interface
       .userSelect(criteria)
@@ -296,12 +332,6 @@ export class TangleDevice {
           console.error("Timeline request failed.", e);
         });
       });
-  }
-
-  #onReconnected(e) {
-    this.requestTimeline().catch(e => {
-      console.error("Timeline request after reconnection failed.", e);
-    });
   }
 
   disconnect() {

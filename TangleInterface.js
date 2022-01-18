@@ -130,9 +130,6 @@ export class TangleInterface {
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
     });
-    this.#eventEmitter.on("#connected", e => {
-      this.#onConnected(e);
-    });
 
     // auto clock sync loop
     setInterval(() => {
@@ -393,11 +390,6 @@ export class TangleInterface {
     //   });
   }
 
-  #onConnected = event => {
-    console.log("> Device connected");
-    return this.#eventEmitter.emit("connected", { target: this.#deviceReference });
-  };
-
   disconnect() {
     this.#reconection = false;
 
@@ -422,17 +414,14 @@ export class TangleInterface {
     // }
     // this.#queue = [];
 
-    console.log("> Device disconnected");
-    this.#eventEmitter.emit("disconnected", { target: this.#deviceReference });
-
     if (this.#reconection) {
       console.log("Reconnecting in 1s...");
       setTimeout(() => {
         console.log("Reconnecting device");
         return this.connect(5000)
-          .then(() => {
-            this.#eventEmitter.emit("#reconnected");
-          })
+          // .then(() => {
+          //   this.#eventEmitter.emit("#reconnected");
+          // })
           .catch(() => {
             console.warn("Reconnection failed.");
           });
