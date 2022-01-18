@@ -195,7 +195,6 @@ export class TangleDevice {
         const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Matej"];
 
         try {
-          
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
             newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu");
           }
@@ -209,13 +208,11 @@ export class TangleDevice {
           if (typeof newDeviceId !== "number") {
             newDeviceId = Number(newDeviceId.match(/^[\d]+/)[0]);
           }
-
         } catch (e) {
           this.disconnect();
           return Promise.reject("UserRefused");
         }
         return Promise.resolve();
-
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
@@ -368,49 +365,94 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
-  emitEvent(event_label, device_id = 0xff, force_delivery = true) {
-    //console.log("emitEvent()");
+  emitEvent(event_label, device_ids = [0xff], force_delivery = true) {
+    console.log("emitTimestampEvent(id=" + device_ids + ")");
 
-    const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id];
-    return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    const func = device_id => {
+      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id];
+      return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    };
+
+    if (typeof device_ids === "object") {
+      let promises = device_ids.map(func);
+      return Promise.all(promises);
+    } else {
+      return func(device_ids);
+    }
   }
 
   // event_label example: "evt1"
   // event_value example: 1000
-  emitTimestampEvent(event_label, event_value, device_id = 0xff, force_delivery = false) {
-    console.log("emitTimestampEvent(id=" + device_id + ")");
+  emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+    console.log("emitTimestampEvent(id=" + device_ids + ")");
 
-    const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id];
-    return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    const func = device_id => {
+      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id];
+      return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    };
+
+    if (typeof device_ids === "object") {
+      let promises = device_ids.map(func);
+      return Promise.all(promises);
+    } else {
+      return func(device_ids);
+    }
   }
 
   // event_label example: "evt1"
   // event_value example: "#00aaff"
-  emitColorEvent(event_label, event_value, device_id = 0xff, force_delivery = false) {
-    console.log("emitColorEvent(id=" + device_id + ")");
+  emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+    console.log("emitColorEvent(id=" + device_ids + ")");
 
-    const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), device_id];
-    return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    const func = device_id => {
+      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), device_id];
+      return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    };
+
+    if (typeof device_ids === "object") {
+      let promises = device_ids.map(func);
+      return Promise.all(promises);
+    } else {
+      return func(device_ids);
+    }
   }
 
   // event_label example: "evt1"
   // event_value example: 100.0
   // !!! PARAMETER CHANGE !!!
-  emitPercentageEvent(event_label, event_value, device_id = 0xff, force_delivery = false) {
-    console.log("emitColorEvent(id=" + device_id + ")");
+  emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+    console.log("emitColorEvent(id=" + device_ids + ")");
 
-    const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id];
-    return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    const func = device_id => {
+      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id];
+      return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    };
+
+    if (typeof device_ids === "object") {
+      let promises = device_ids.map(func);
+      return Promise.all(promises);
+    } else {
+      return func(device_ids);
+    }
   }
 
   // event_label example: "evt1"
   // event_value example: "label"
   // !!! PARAMETER CHANGE !!!
-  emitLabelEvent(event_label, event_value, device_id = 0xff, force_delivery = false) {
-    console.log("emitLabelEvent(id=" + device_id + ")");
+  emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+    console.log("emitLabelEvent(id=" + device_ids + ")");
 
-    const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), device_id];
-    return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    const func = device_id => {
+      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), device_id];
+      return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
+    };
+
+    if (typeof device_ids === "object") {
+      let promises = device_ids.map(func);
+      return Promise.all(promises);
+    } else {
+      return func(device_ids);
+    }
   }
 
   // !!! PARAMETER CHANGE !!!
