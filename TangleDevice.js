@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, detectBluefy, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, createNanoEvents, detectBluefy, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, czechHackyToEnglish } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -192,21 +192,30 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        // try {
-        while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
-          newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", "Karel", "Pojmenujte svoji lampu");
-        }
-        while (!newDeviceId || !newDeviceId.match(/^[\d]+/)) {
-          newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
-        }
+        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Matej"];
 
-        newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
-        newDeviceId = newDeviceId.match(/^[\d]+/)[0];
-        // } catch (e) {
-        //   this.disconnect();
-        //   return Promise.reject("UserRefused");
-        // }
+        try {
+          
+          while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
+            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu");
+          }
+          while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
+            newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
+          }
+
+          newDeviceName = czechHackyToEnglish(newDeviceName);
+          newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
+
+          if (typeof newDeviceId !== "number") {
+            newDeviceId = Number(newDeviceId.match(/^[\d]+/)[0]);
+          }
+
+        } catch (e) {
+          this.disconnect();
+          return Promise.reject("UserRefused");
+        }
         return Promise.resolve();
+
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
@@ -281,14 +290,13 @@ export class TangleDevice {
           });
       })
       .finally(() => {
-
         setTimeout(() => {
           if (this.interface.connected()) {
             console.log("> Device connected");
             this.interface.emit("connected", { target: this });
           }
         }, 1);
-      
+
         this.#adopting = false;
       });
   }

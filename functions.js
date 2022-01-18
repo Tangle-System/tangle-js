@@ -243,6 +243,38 @@ export function uint8ArrayToHexString(bytes) {
   return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
+export function czechHackyToEnglish(string) {
+  return string
+    .replace(/č/g, "c")
+    .replace(/š/g, "s")
+    .replace(/ř/g, "r")
+    .replace(/ž/g, "z")
+    .replace(/ý/g, "y")
+    .replace(/á/g, "a")
+    .replace(/é/g, "e")
+    .replace(/í/g, "i")
+    .replace(/ó/g, "o")
+    .replace(/ú/g, "u")
+    .replace(/ů/g, "u")
+    .replace(/ě/g, "e")
+    .replace(/ť/g, "t")
+    .replace(/ď/g, "d")
+    .replace(/ň/g, "n")
+    .replace(/Š/g, "S")
+    .replace(/Ž/g, "Z")
+    .replace(/Ý/g, "Y")
+    .replace(/Á/g, "A")
+    .replace(/É/g, "E")
+    .replace(/Í/g, "I")
+    .replace(/Ó/g, "O")
+    .replace(/Ú/g, "U")
+    .replace(/Ů/g, "U")
+    .replace(/Ě/g, "E")
+    .replace(/Ť/g, "T")
+    .replace(/Ď/g, "D")
+    .replace(/Ň/g, "N");
+}
+
 // let secret = "sec-demo"; // the secret key
 // let enc = new TextEncoder("utf-8");
 // let body = "GET\npub-demo\n/v2/auth/grant/sub-key/sub-demo\nauth=myAuthKey&g=1&target-uuid=user-1&timestamp=1595619509&ttl=300";
