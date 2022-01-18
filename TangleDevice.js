@@ -300,7 +300,7 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null) {
+  connect(devices = null, autoConnect = true) {
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
 
     if (devices && devices.length > 0) {
@@ -327,8 +327,7 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return this.interface
-      .userSelect(criteria)
+    return autoConnect ? this.interface.autoSelect(criteria, 1000, 10000) : this.interface.userSelect(criteria)
       .then(() => {
         return this.interface.connect(10000);
       })
