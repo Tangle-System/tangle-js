@@ -795,7 +795,7 @@ criteria example:
 
     if (this.#connected()) {
       return this.disconnect().then(() => {
-        return this.autoSelect(criteria);
+        return this.autoSelect(criteria, scan_period, timeout);
       });
     }
 
