@@ -39,7 +39,7 @@ export class TangleDevice {
       this.#onConnected(e);
     });
     this.interface.on("#disconnected", e => {
-      this.#onConnected(e);
+      this.#onDisconnected(e);
     });
   }
 
