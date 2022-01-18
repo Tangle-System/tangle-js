@@ -131,17 +131,6 @@ export class TangleInterface {
       this.#onDisconnected(e);
     });
 
-    // auto clock sync loop
-    setInterval(() => {
-      this.connected().then(connected => {
-        if (connected) {
-          this.syncClock().catch(error => {
-            console.warn(error);
-          });
-        }
-      });
-    }, 10000);
-
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
       // return this.disconnect(false).catch(reason => {

@@ -16,6 +16,7 @@ export class TangleDevice {
   #ownerSignature;
   #ownerKey;
   #adopting;
+  #updating;
 
   constructor(connectorType = "default") {
     this.timeline = new TimeTrack();
@@ -31,6 +32,7 @@ export class TangleDevice {
     }
 
     this.#adopting = false;
+    this.#updating = false;
 
     // this.interface.on("#reconnected", e => {
     //   this.#onReconnected(e);
@@ -41,6 +43,19 @@ export class TangleDevice {
     this.interface.on("#disconnected", e => {
       this.#onDisconnected(e);
     });
+
+    // auto clock sync loop
+    setInterval(() => {
+      if (!this.#updating) {
+        this.connected().then(connected => {
+          if (connected) {
+            this.syncClock().catch(error => {
+              console.warn(error);
+            });
+          }
+        });
+      }
+    }, 10000);
   }
 
   #onConnected = event => {
@@ -254,28 +269,38 @@ export class TangleDevice {
             console.log(`error_code=${error_code}, device_mac=${device_mac}`);
 
             if (error_code === 0) {
-              return (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
-                .then(() => {
-                  return sleep(1000).then(() => {
-                    return this.interface.disconnect();
-                  });
-                })
-                .then(() => {
-                  return sleep(5000).then(() => {
-                    return this.interface.connect(10000);
-                  });
-                })
-                .then(() => {
-                  return this.requestTimeline().catch(e => {
-                    console.error("Timeline request failed.", e);
-                  });
-                })
-                .catch(e => {
-                  console.error(e);
-                })
-                .then(() => {
-                  return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
-                });
+              return (
+                (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
+                  .then(() => {
+                    return sleep(1000).then(() => {
+                      return this.interface.disconnect();
+                    });
+                  })
+                  .then(() => {
+                    return sleep(5000).then(() => {
+                      return this.interface.connect(10000);
+                    });
+                  })
+                  // .then(() => {
+                  //   return this.requestTimeline().catch(e => {
+                  //     console.error("Timeline request failed.", e);
+                  //   });
+                  // })
+                  .then(()=>{                   
+                    setTimeout(() => {
+                      if (this.interface.connected()) {
+                        console.log("> Device connected");
+                        this.interface.emit("connected", { target: this });
+                      }
+                    }, 1);
+                  })
+                  .catch(e => {
+                    console.error(e);
+                  })
+                  .then(() => {
+                    return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
+                  })
+              );
             } else {
               console.warn("Adoption refused.");
               throw "AdoptionRefused";
@@ -287,13 +312,6 @@ export class TangleDevice {
           });
       })
       .finally(() => {
-        setTimeout(() => {
-          if (this.interface.connected()) {
-            console.log("> Device connected");
-            this.interface.emit("connected", { target: this });
-          }
-        }, 1);
-
         this.#adopting = false;
       });
   }
@@ -327,15 +345,14 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 10000) : this.interface.userSelect(criteria))
-      .then(() => {
-        return this.interface.connect(10000);
-      })
-      .then(() => {
-        return this.requestTimeline().catch(e => {
-          console.error("Timeline request failed.", e);
-        });
-      });
+    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 10000) : this.interface.userSelect(criteria)).then(() => {
+      return this.interface.connect(10000);
+    });
+    // .then(() => {
+    //   return this.requestTimeline().catch(e => {
+    //     console.error("Timeline request failed.", e);
+    //   });
+    // });
   }
 
   disconnect() {
@@ -477,6 +494,8 @@ export class TangleDevice {
   }
 
   updateNetworkFirmware(firmware) {
+    this.#updating = true;
+
     return new Promise(async (resolve, reject) => {
       const chunk_size = 4976; // must be modulo 16
 
@@ -567,9 +586,13 @@ export class TangleDevice {
         reject(e);
         return;
       }
-    }).then(() => {
-      this.disconnect();
-    });
+    })
+      .then(() => {
+        this.disconnect();
+      })
+      .finally(() => {
+        this.#updating = false;
+      });
   }
 
   /**
