@@ -163,13 +163,22 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        if(!newDeviceName) {
-          newDeviceName = await window.prompt("Pls zadejte jmeno", "Tangle");
-        } 
-        if(!newDeviceId) {
-          newDeviceId = await window.prompt("Pls zadejte id", "0");
-        } 
-          return Promise.resolve();
+        try {
+          while(!newDeviceName.match(/^[\w_ ]+/)) {
+            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", "Karel", "Pojmenujte svoji lampu");
+          } 
+          while (!newDeviceId.match(/^[\d]+/)) {
+            newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
+          }
+
+          newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
+          newDeviceId = newDeviceId.match(/^[\d]+/)[0];
+
+        } catch (e) {
+          this.disconnect();
+          return Promise.reject("UserRefused");
+        }
+        return Promise.resolve();
       })
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
@@ -228,11 +237,11 @@ export class TangleDevice {
                   });
                 })
                 .catch(e => {
-                  console.error(e);  
+                  console.error(e);
                 })
                 .then(() => {
                   return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
-                })
+                });
             } else {
               console.warn("Adoption refused.");
               throw "AdoptionRefused";
