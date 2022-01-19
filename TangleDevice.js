@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, detectBluefy, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, czechHackyToEnglish } from "./functions.js";
+import { colorToBytes, czechHackyToEnglish, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -286,7 +286,7 @@ export class TangleDevice {
                   //     console.error("Timeline request failed.", e);
                   //   });
                   // })
-                  .then(()=>{                   
+                  .then(() => {
                     setTimeout(() => {
                       if (this.interface.connected()) {
                         console.log("> Device connected");
@@ -400,7 +400,7 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 1000
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
-    console.log("emitTimestampEvent(id=" + device_ids + ")");
+    // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id];
@@ -418,7 +418,7 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: "#00aaff"
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
-    console.log("emitColorEvent(id=" + device_ids + ")");
+    // console.log("emitColorEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), device_id];
@@ -437,7 +437,7 @@ export class TangleDevice {
   // event_value example: 100.0
   // !!! PARAMETER CHANGE !!!
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
-    console.log("emitColorEvent(id=" + device_ids + ")");
+    // console.log("emitPercentageEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id];
