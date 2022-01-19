@@ -308,6 +308,7 @@ export class TangleDevice {
           })
           .catch(e => {
             console.error(e);
+            this.disconnect();
             throw "AdoptionFailed";
           });
       })
