@@ -386,7 +386,7 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 1000
   emitEvent(event_label, device_ids = [0xff], force_delivery = true) {
-    console.log("emitTimestampEvent(id=" + device_ids + ")");
+    // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id];
@@ -460,7 +460,7 @@ export class TangleDevice {
   // event_value example: "label"
   // !!! PARAMETER CHANGE !!!
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
-    console.log("emitLabelEvent(id=" + device_ids + ")");
+    // console.log("emitLabelEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), device_id];
