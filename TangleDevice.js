@@ -333,7 +333,7 @@ export class TangleDevice {
 
         if (devices[i].name) {
           criterium.ownerSignature = this.#ownerSignature;
-          criterium.name = devices[i].name;
+          criterium.name = devices[i].name.slice(0, 11);
           devices_criteria.push(criterium);
         } else if (devices[i].mac) {
           criterium.ownerSignature = this.#ownerSignature;
