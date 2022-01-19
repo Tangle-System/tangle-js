@@ -232,7 +232,7 @@ export class TangleDevice {
       .then(() => {
         const owner_signature_bytes = hexStringToUint8Array(this.#ownerSignature, 16);
         const owner_key_bytes = hexStringToUint8Array(this.#ownerKey, 16);
-        const device_name_bytes = stringToBytes(newDeviceName, 11);
+        const device_name_bytes = stringToBytes(newDeviceName.slice(0, 11), 16);
         const device_id = newDeviceId;
 
         const request_uuid = this.#getUUID();
