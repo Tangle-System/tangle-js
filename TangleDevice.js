@@ -224,7 +224,7 @@ export class TangleDevice {
             newDeviceId = Number(newDeviceId.match(/^[\d]+/)[0]);
           }
         } catch (e) {
-          this.disconnect();
+          await this.disconnect();
           return Promise.reject("UserRefused");
         }
         return Promise.resolve();
@@ -303,13 +303,16 @@ export class TangleDevice {
               );
             } else {
               console.warn("Adoption refused.");
-              throw "AdoptionRefused";
+              this.disconnect().finally(() => {
+                throw "AdoptionRefused";
+              });
             }
           })
           .catch(e => {
             console.error(e);
-            this.disconnect();
-            throw "AdoptionFailed";
+            this.disconnect().finally(() => {
+              throw "AdoptionFailed";
+            });
           });
       })
       .finally(() => {
