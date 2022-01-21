@@ -197,7 +197,7 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
-    const criteria = /** @type {any} */ ([{ adoptionFlag: true }]);
+    const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
     this.#adopting = true;
 
@@ -207,7 +207,7 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Matej"];
+        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Julie", ];
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
@@ -217,8 +217,11 @@ export class TangleDevice {
             newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
           }
 
-          newDeviceName = czechHackyToEnglish(newDeviceName);
-          newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0];
+
+          newDeviceName = czechHackyToEnglish(newDeviceName); // replace all hacky carky with english letters
+          newDeviceName = newDeviceName.replace(/((?![\w_ ]).)/g, " "); // replace all unsupported characters with whitespaces
+          newDeviceName = newDeviceName.trim(); // trim whitespaces on start and end
+          newDeviceName = newDeviceName.match(/^[\w_ ]+/)[0]; // do final match of only supported chars
 
           if (typeof newDeviceId !== "number") {
             newDeviceId = Number(newDeviceId.match(/^[\d]+/)[0]);
@@ -323,10 +326,10 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true) {
-    let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
+    let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
     if (devices && devices.length > 0) {
-      let devices_criteria = /** @type {any} */ ([{ legacy: true }]);
+      let devices_criteria = /** @type {any} */ ([]);
 
       for (let i = 0; i < devices.length; i++) {
         let criterium = {};

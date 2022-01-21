@@ -516,40 +516,38 @@ criteria example:
     if (detectBluefy()) {
       let add_all_devices = false;
       let add_tangle_uuid = false;
+      let dont_add_tangle_uuid = false;
       let add_legacy_uuids = false;
       let add_adoption_uuid = false;
 
+
       for (let i = 0; i < this.#criteria.length; i++) {
-        if (this.#criteria[i].adoptionFlag) {
-          
-          // add_legacy_uuids = true;
-          // add_tangle_uuid = true;
-         
+        if (this.#criteria[i].adoptionFlag) { 
           add_all_devices = true;
           add_adoption_uuid = true;
         }
 
         if (this.#criteria[i].legacy) {
+          add_all_devices = true;
           add_legacy_uuids = true;
-        }
-
-        if (this.#criteria[i].namePrefix) {
-          add_tangle_uuid = true;
-          web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
-        }
-
-        if (this.#criteria[i].name) {
-          add_tangle_uuid = true;
-          web_ble_options.filters.push({ name: this.#criteria[i].name });
         }
 
         if (this.#criteria[i].ownerSignature) {
           add_tangle_uuid = true;
-          add_all_devices = true;
+        }
+
+        if (this.#criteria[i].namePrefix) {
+          dont_add_tangle_uuid = true;
+          web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
+        }
+
+        if (this.#criteria[i].name) {
+          dont_add_tangle_uuid = true;
+          web_ble_options.filters.push({ name: this.#criteria[i].name });
         }
       }
 
-      if (add_tangle_uuid) {
+      if (add_tangle_uuid && !dont_add_tangle_uuid) {
         web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
       }
 
@@ -619,6 +617,17 @@ criteria example:
         web_ble_options.filters.push({ namePrefix: "y" });
         web_ble_options.filters.push({ namePrefix: "Z" });
         web_ble_options.filters.push({ namePrefix: "z" });
+        web_ble_options.filters.push({ namePrefix: "_" });
+        web_ble_options.filters.push({ namePrefix: "0" });
+        web_ble_options.filters.push({ namePrefix: "1" });
+        web_ble_options.filters.push({ namePrefix: "2" });
+        web_ble_options.filters.push({ namePrefix: "3" });
+        web_ble_options.filters.push({ namePrefix: "4" });
+        web_ble_options.filters.push({ namePrefix: "5" });
+        web_ble_options.filters.push({ namePrefix: "6" });
+        web_ble_options.filters.push({ namePrefix: "7" });
+        web_ble_options.filters.push({ namePrefix: "8" });
+        web_ble_options.filters.push({ namePrefix: "9" });
       }
     }
 
