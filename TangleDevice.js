@@ -206,7 +206,7 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Julie", ];
+        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Julie", "Emanuel", "Leontynka", "Maxipes Fik", "Otesanek", "Karkulka", "Popelka", "Malenka", "Fifinka", "Myspulin", "Brumda", "Cmelda", "Saxana", "Petronel", "Odetta", "Vecernice", "Trautenberk. Rakosnicek", "Asterix", "Obelix", "Gargamel", "Dasenka", "Pucmeloud", "Fantomas", "Skrblik", "Rumburak", "Arabela", "Xenie", "Rumcajs", "Cipisek", "Sarka Farka", "Lotrando", "Zubejda", "Fido", "Canfourek", "Hurvinek", "Spejbl", "Manicka", "Manka", "Macourek", "Ferda", "Beruska", "Vydrysek", "Bolek", "Lolek", "Pepina", "Bambi", "Krakonos", "Lucifek", "Vetrnik"];
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
