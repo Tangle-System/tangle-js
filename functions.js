@@ -1,4 +1,4 @@
-
+import { TnglCodeParser } from "./TangleParser.js";
 
 export function toBytes(value, byteCount) {
   var byteArray = [];
@@ -202,7 +202,7 @@ export function detectBluefy() {
 
 //////////////////////////////////////////////////////
 
-export function getTnglSignature(tngl_bytes, tngl_label) {
+export function computeTnglFingerprint(tngl_bytes, tngl_label) {
   let enc = new TextEncoder();
   let algorithm = { name: "HMAC", hash: "SHA-256" };
   let body = new Uint8Array(tngl_bytes);
@@ -213,10 +213,9 @@ export function getTnglSignature(tngl_bytes, tngl_label) {
       return crypto.subtle.sign(algorithm.name, key, body);
     })
     .then(signature => {
-      let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
-      console.log(digest);
-
-      return signature;
+      // let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
+      // console.log(digest);
+      return new Uint8Array(signature);
     });
 }
 

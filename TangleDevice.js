@@ -1,4 +1,4 @@
-import { colorToBytes, czechHackyToEnglish, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, czechHackyToEnglish, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, computeTnglFingerprint } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -55,7 +55,7 @@ export class TangleDevice {
           }
         });
       }
-    }, 10000);
+    }, 60000);
   }
 
   #onConnected = event => {
@@ -206,7 +206,68 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .then(async () => {
-        const random_names = ["Karel", "Kobliha", "Lucie", "Anna", "Julie", "Emanuel", "Leontynka", "Maxipes Fik", "Otesanek", "Karkulka", "Popelka", "Malenka", "Fifinka", "Myspulin", "Brumda", "Cmelda", "Saxana", "Petronel", "Odetta", "Vecernice", "Trautenberk. Rakosnicek", "Asterix", "Obelix", "Gargamel", "Dasenka", "Pucmeloud", "Fantomas", "Skrblik", "Rumburak", "Arabela", "Xenie", "Rumcajs", "Cipisek", "Sarka Farka", "Lotrando", "Zubejda", "Fido", "Canfourek", "Hurvinek", "Spejbl", "Manicka", "Manka", "Macourek", "Ferda", "Beruska", "Vydrysek", "Bolek", "Lolek", "Pepina", "Bambi", "Krakonos", "Lucifek", "Vetrnik"];
+        const random_names = [
+          "Karel",
+          "Kobliha",
+          "Lucie",
+          "Anna",
+          "Julie",
+          "Emanuel",
+          "Leontynka",
+          "Maxipes Fik",
+          "Otesanek",
+          "Karkulka",
+          "Popelka",
+          "Malenka",
+          "Fifinka",
+          "Myspulin",
+          "Brumda",
+          "Cmelda",
+          "Saxana",
+          "Petronel",
+          "Odetta",
+          "Vecernice",
+          "Trautenberk",
+          "Rakosnicek",
+          "Asterix",
+          "Obelix",
+          "Gargamel",
+          "Dasenka",
+          "Pucmeloud",
+          "Fantomas",
+          "Skrblik",
+          "Rumburak",
+          "Arabela",
+          "Xenie",
+          "Rumcajs",
+          "Cipisek",
+          "Sarka Farka",
+          "Lotrando",
+          "Zubejda",
+          "Fido",
+          "Canfourek",
+          "Hurvinek",
+          "Spejbl",
+          "Manicka",
+          "Manka",
+          "Macourek",
+          "Ferda",
+          "Beruska",
+          "Vydrysek",
+          "Bolek",
+          "Lolek",
+          "Pepina",
+          "Bambi",
+          "Krakonos",
+          "Lucifek",
+          "Vetrnik",
+          "Laskonka",
+          "Kremrole",
+          "Bombicka",
+          "Kokoska",
+          "Marlenka",
+          "Bobinka",
+        ];
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
@@ -215,7 +276,6 @@ export class TangleDevice {
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
             newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení");
           }
-
 
           newDeviceName = czechHackyToEnglish(newDeviceName); // replace all hacky carky with english letters
           newDeviceName = newDeviceName.replace(/((?![\w_ ]).)/g, " "); // replace all unsupported characters with whitespaces
@@ -371,12 +431,46 @@ export class TangleDevice {
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  writeTngl(tngl_code) {
+  // WIP, writes Tngl only if fingerprints does not match
+  syncTngl(tngl_code, tngl_bytes = null) {
     //console.log("writeTngl()");
+
+    if (!tngl_code && !tngl_bytes) {
+      return Promise.reject("Invalid");
+    }
+
+    if (!tngl_bytes) {
+      tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
+    }
+
+    return this.getTnglFingerprint().then(device_fingerprint => {
+      return computeTnglFingerprint(tngl_bytes, "fingerprint").then(new_fingerprint => {
+        // console.log(device_fingerprint);
+        // console.log(new_fingerprint);
+
+        for (let i = 0; i < device_fingerprint.length; i++) {
+          if (device_fingerprint[i] !== new_fingerprint[i]) {
+            return this.writeTngl(null, tngl_bytes);
+          }
+        }
+      });
+    });
+  }
+
+  writeTngl(tngl_code, tngl_bytes = null) {
+    //console.log("writeTngl()");
+
+    if (!tngl_code && !tngl_bytes) {
+      return Promise.reject("Invalid");
+    }
+
+    if (!tngl_bytes) {
+      tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
+    }
 
     const timeline_flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
     const timeline_payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.interface.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), timeline_flags];
-    const tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
+
     const tngl_payload = [NETWORK_FLAGS.FLAG_TNGL_BYTES, ...numberToBytes(tngl_bytes.length, 4), ...tngl_bytes];
 
     const payload = [...timeline_payload, ...tngl_payload];
@@ -581,8 +675,8 @@ export class TangleDevice {
 
         console.log("Rebooting whole network...");
 
-        const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
-        await this.interface.execute(payload, false);
+        const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+        await this.interface.execute(payload, null);
 
         this.interface.emit("ota_status", "success");
         resolve();
@@ -618,36 +712,34 @@ export class TangleDevice {
     // make config update request
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_CONFIG_UPDATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(config_bytes_size, 4), ...config_bytes];
-    return this.interface
-      .request(bytes, true)
-      .then(response => {
-        let reader = new TnglReader(response);
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
 
-        console.log("> Got response:", response);
+      console.log("> Got response:", response);
 
-        if (reader.readFlag() !== DEVICE_FLAGS.FLAG_CONFIG_UPDATE_RESPONSE) {
-          throw "InvalidResponse";
-        }
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_CONFIG_UPDATE_RESPONSE) {
+        throw "InvalidResponse";
+      }
 
-        const response_uuid = reader.readUint32();
+      const response_uuid = reader.readUint32();
 
-        if (response_uuid != request_uuid) {
-          throw "InvalidResponse";
-        }
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponse";
+      }
 
-        const error_code = reader.readUint8();
+      const error_code = reader.readUint8();
 
-        console.log(`error_code=${error_code}`);
+      console.log(`error_code=${error_code}`);
 
-        if (error_code === 0) {
-          console.log("Write Config Success");
-        }
-      })
-      .then(() => {
+      if (error_code === 0) {
+        console.log("Write Config Success");
         // reboot device
-        const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
+        const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
         return this.interface.request(payload, false);
-      });
+      } else {
+        throw "Fail";
+      }
+    });
   }
 
   updateNetworkConfig(config) {
@@ -663,8 +755,8 @@ export class TangleDevice {
 
     return this.interface.execute(payload_bytes, "CONF").then(() => {
       console.log("> Rebooting network...");
-      const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
-      return this.interface.execute(payload, false);
+      const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+      return this.interface.execute(payload, null);
     });
   }
 
@@ -706,8 +798,121 @@ export class TangleDevice {
   reboot() {
     console.log("> Rebooting network...");
 
-    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT];
-    return this.interface.execute(payload, false);
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+    return this.interface.execute(payload, null);
+  }
+
+  removeOwner() {
+    console.log("> Removing owner...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      console.log("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ERASE_OWNER_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      console.log(`error_code=${error_code}`);
+
+      if (error_code !== 0) {
+        throw "OwnerEraseFailed";
+      }
+
+      const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+      return this.interface.request(payload, false).then(() => {
+        return this.disconnect();
+      });
+    });
+  }
+
+  getFwVersion() {
+    console.log("> Requesting fw version...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_FW_VERSION_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      console.log("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_FW_VERSION_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      console.log(`error_code=${error_code}`);
+
+      let version = null;
+
+      if (error_code === 0) {
+        version = reader.readString(32);
+      } else {
+        throw "Fail";
+      }
+      console.log(`version=${version}`);
+
+      return version;
+    });
+  }
+
+  getTnglFingerprint() {
+    console.log("> Getting TNGL fingerprint...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_TNGL_FINGERPRINT_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      console.log("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TNGL_FINGERPRINT_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      console.log(`error_code=${error_code}`);
+
+      let fingerprint = null;
+
+      if (error_code === 0) {
+        fingerprint = reader.readBytes(32);
+      } else {
+        throw "Fail";
+      }
+
+      console.log(`fingerprint=${fingerprint}`);
+
+      return new Uint8Array(fingerprint);
+    });
   }
 
   // setDeviceId(id) {

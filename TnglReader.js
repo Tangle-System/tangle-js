@@ -1,5 +1,3 @@
-
-
 export class TnglReader {
   constructor(dataView) {
     this._dataView = dataView;
@@ -41,6 +39,21 @@ export class TnglReader {
       }
 
       return bytes;
+    } else {
+      console.warn("End of the data");
+      throw "Bytes read out of range";
+    }
+  }
+
+  readString(bufferLength) {
+    if (this._index + bufferLength <= this._dataView.byteLength) {
+      let string = "";
+
+      for (let i = 0; i < bufferLength; i++) {
+        string += String.fromCharCode(this._dataView.getUint8(this._index + i));
+      }
+
+      return string;
     } else {
       console.warn("End of the data");
       throw "Bytes read out of range";
