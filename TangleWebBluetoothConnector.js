@@ -487,12 +487,14 @@ criteria example:
   // if no criteria are set, then show all Tangle devices visible.
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
-  userSelect(criteria) {
+  userSelect(criteria, timeout) {
     //console.log("choose()");
 
     if (this.#connected()) {
       return this.disconnect().then(() => {
-        return this.userSelect(criteria);
+        return sleep(1000);
+      }).then(() => {
+        return this.userSelect(criteria, timeout);
       });
     }
 
@@ -804,6 +806,8 @@ criteria example:
 
     if (this.#connected()) {
       return this.disconnect().then(() => {
+        return sleep(1000);
+      }).then(() => {
         return this.autoSelect(criteria, scan_period, timeout);
       });
     }

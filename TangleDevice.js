@@ -199,11 +199,10 @@ export class TangleDevice {
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
-    this.#adopting = true;
-
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
+        this.#adopting = true;
         return this.interface.connect(10000);
       })
       .then(async () => {

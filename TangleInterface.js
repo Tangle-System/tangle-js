@@ -407,13 +407,9 @@ export class TangleInterface {
       console.log("Reconnecting in 1s...");
       setTimeout(() => {
         console.log("Reconnecting device");
-        return this.connect(5000)
-          // .then(() => {
-          //   this.#eventEmitter.emit("#reconnected");
-          // })
-          .catch(() => {
-            console.warn("Reconnection failed.");
-          });
+        return this.connect(5000).catch(() => {
+          console.warn("Reconnection failed.");
+        });
       }, 1000);
     }
 
