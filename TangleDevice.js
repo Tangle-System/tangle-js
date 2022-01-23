@@ -366,6 +366,7 @@ export class TangleDevice {
             } else {
               console.warn("Adoption refused.");
               this.disconnect().finally(() => {
+                window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(() => { this.adopt(newDeviceName, newDeviceId, tnglCode) })
                 throw "AdoptionRefused";
               });
             }
@@ -373,6 +374,7 @@ export class TangleDevice {
           .catch(e => {
             console.error(e);
             this.disconnect().finally(() => {
+              window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(() => { this.adopt(newDeviceName, newDeviceId, tnglCode) })
               throw "AdoptionFailed";
             });
           });
