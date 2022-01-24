@@ -114,7 +114,9 @@ export class TangleInterface {
   #selecting;
   #disconnectQuery;
 
-  constructor(deviceReference) {
+  #reconnectionInterval;
+
+  constructor(deviceReference, reconnectionInterval = 10000) {
     this.#deviceReference = deviceReference;
 
     this.clock = new TimeTrack();
@@ -131,6 +133,8 @@ export class TangleInterface {
     this.#connecting = false;
     this.#selecting = false;
     this.#disconnectQuery = null;
+
+    this.#reconnectionInterval = reconnectionInterval;
 
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
@@ -408,11 +412,11 @@ export class TangleInterface {
     // }
     // this.#queue = [];
 
-    if (this.#reconection) {
-      console.log("Reconnecting in 1s...");
+    if (this.#reconection && this.#reconnectionInterval) {
+      console.log("Reconnecting...");
       setTimeout(() => {
         console.log("Reconnecting device");
-        return this.connect(5000).catch(() => {
+        return this.connect(this.#reconnectionInterval).catch(() => {
           console.warn("Reconnection failed.");
         });
       }, 1000);

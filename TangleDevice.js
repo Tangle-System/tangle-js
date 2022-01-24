@@ -18,7 +18,7 @@ export class TangleDevice {
   #adopting;
   #updating;
 
-  constructor(connectorType = "default") {
+  constructor(connectorType = "default", reconnectionInterval = 10000) {
     this.timeline = new TimeTrack();
 
     this.#uuidCounter = 0;
@@ -26,7 +26,7 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface(this);
+    this.interface = new TangleInterface(this, reconnectionInterval);
     if (connectorType != "dummy") {
       this.interface.assignConnector(connectorType);
     }
