@@ -95,8 +95,7 @@ export class TangleConnectConnector {
         setTimeout(() => {
           window.tangleConnect.emit("#disconnected");
           //}, Math.random() * 60000);
-        }, 15000);
-
+        }, 60000);
       };
 
       window.tangleConnect.disconnect = async function () {
@@ -232,6 +231,16 @@ export class TangleConnectConnector {
     return "tangleConnect" in window;
   }
 
+  #applyTimeout(promise, timeout, message) {
+    let id = setTimeout(() => {
+      window.alert(message, "Error: TC response timeouted");
+      window.tangleConnect.reject("ResponseTimeout");
+    }, timeout);
+    return promise.finally(() => {
+      clearTimeout(id);
+    });
+  }
+
   async ping() {
     console.time("ping_measure");
     for (let i = 0; i < 1000; i++) {
@@ -248,7 +257,7 @@ export class TangleConnectConnector {
     //
     console.timeEnd("ping_measure");
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 10000, "ping");
   }
 
   /*
@@ -305,7 +314,7 @@ criteria example:
 
     window.tangleConnect.userSelect(JSON.stringify(criteria), timeout);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, timeout * 2, "userSelect");
   }
 
   // takes the criteria, scans for scan_period and automatically selects the device,
@@ -335,7 +344,7 @@ criteria example:
     // ! for now autoselect calls userSelect
     window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period, timeout);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, timeout * 2.0, "autoSelect");
   }
 
   selected() {
@@ -350,7 +359,7 @@ criteria example:
 
     window.tangleConnect.selected();
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 1000);
   }
 
   unselect() {
@@ -363,7 +372,7 @@ criteria example:
 
     window.tangleConnect.unselect();
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 1000, "unselect");
   }
 
   /*
@@ -388,7 +397,7 @@ criteria example:
 
     window.tangleConnect.connect(timeout);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, timeout * 2.0, "connect");
   }
 
   connected() {
@@ -403,9 +412,7 @@ criteria example:
 
     window.tangleConnect.connected();
 
-    return this.#promise.catch(() => {
-      return Promise.resolve();
-    });
+    return this.#applyTimeout(this.#promise, 1000, "connected");
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -419,7 +426,7 @@ criteria example:
 
     window.tangleConnect.disconnect();
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 1000, "disconnect");
   }
 
   // deliver handles the communication with the Tangle network in a way
@@ -434,7 +441,7 @@ criteria example:
 
     window.tangleConnect.deliver(payload);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 5000, "deliver");
   }
 
   // transmit handles the communication with the Tangle network in a way
@@ -449,7 +456,7 @@ criteria example:
 
     window.tangleConnect.transmit(payload);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 1000, "transmit");
   }
 
   // request handles the requests on the Tangle network. The command request
@@ -458,7 +465,7 @@ criteria example:
     console.log(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
 
     this.#promise = new Promise((resolve, reject) => {
-      window.tangleConnect.resolve = (response) => {
+      window.tangleConnect.resolve = response => {
         resolve(new DataView(new Uint8Array(response).buffer));
       };
       window.tangleConnect.reject = reject;
@@ -466,7 +473,7 @@ criteria example:
 
     window.tangleConnect.request(payload, read_response);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 5000, "request");
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -493,7 +500,7 @@ criteria example:
           // const timestamp = clock.millis();
           // window.tangleConnect.writeClock(timestamp);
 
-          await this.#promise;
+          await this.#applyTimeout(this.#promise, 1000, "writeClock");
           console.log("Clock write success:", timestamp);
 
           resolve();
@@ -526,7 +533,8 @@ criteria example:
 
           window.tangleConnect.readClock();
 
-          const bytes = await this.#promise;
+          const bytes = await this.#applyTimeout(this.#promise, 5000, "readClock");
+
           const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
           const timestamp = reader.readInt32();
 
@@ -561,16 +569,16 @@ criteria example:
 
     window.tangleConnect.updateFW(firmware);
 
-    return this.#promise;
+    return this.#applyTimeout(this.#promise, 60000, "updateFW");
   }
 
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }
