@@ -11,14 +11,25 @@ import "./TnglWriter.js";
 // should not create more than one object!
 // the destruction of the TangleDevice is not well implemented
 
+
+// TODO - kdyz zavolam tangleDevice.connect(), kdyz jsem pripojeny, tak nechci aby se do interfacu poslal select
+// TODO - kdyz zavolam funkci connect a uz jsem pripojeny, tak vyslu event connected, pokud si myslim ze nejsem pripojeny.
+// TODO - "watchdog timer" pro resolve/reject z TC 
+
 export class TangleDevice {
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
   #adopting;
   #updating;
+  #selected;
 
   constructor(connectorType = "default", reconnectionInterval = 10000) {
+    
+    if(!connectorType) {
+      connectorType = "default";
+    }
+    
     this.timeline = new TimeTrack();
 
     this.#uuidCounter = 0;
@@ -34,9 +45,6 @@ export class TangleDevice {
     this.#adopting = false;
     this.#updating = false;
 
-    // this.interface.on("#reconnected", e => {
-    //   this.#onReconnected(e);
-    // });
     this.interface.on("#connected", e => {
       this.#onConnected(e);
     });
@@ -87,9 +95,7 @@ export class TangleDevice {
       throw "InvalidSignature";
     }
 
-    // this.interface.unselect().finally(() => {
-      this.#ownerSignature = ownerSignature;
-    // });
+    this.#ownerSignature = ownerSignature;
   }
 
   /**
@@ -114,9 +120,7 @@ export class TangleDevice {
       throw "InvalidKey";
     }
 
-    // this.interface.unselect().finally(() => {
       this.#ownerKey = reg[0];
-    // });
   }
 
   /**
@@ -413,14 +417,10 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 10000) : this.interface.userSelect(criteria)).then(() => {
+    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria)).then(() => {
       return this.interface.connect(10000);
     });
-    // .then(() => {
-    //   return this.requestTimeline().catch(e => {
-    //     console.error("Timeline request failed.", e);
-    //   });
-    // });
+
   }
 
   disconnect() {
