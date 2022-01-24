@@ -87,9 +87,9 @@ export class TangleDevice {
       throw "InvalidSignature";
     }
 
-    this.interface.unselect().finally(() => {
+    // this.interface.unselect().finally(() => {
       this.#ownerSignature = ownerSignature;
-    });
+    // });
   }
 
   /**
@@ -114,9 +114,9 @@ export class TangleDevice {
       throw "InvalidKey";
     }
 
-    this.interface.unselect().finally(() => {
+    // this.interface.unselect().finally(() => {
       this.#ownerKey = reg[0];
-    });
+    // });
   }
 
   /**
