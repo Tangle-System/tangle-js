@@ -1,8 +1,9 @@
 import { sleep } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 
-/////////////////////////////////////////////////////////////////////////////////////
+import { io } from "./socketio.js";
 
+/////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleChandelierConnector {
   #interfaceReference;
@@ -14,13 +15,14 @@ export class TangleChandelierConnector {
 
     this.#selected = false;
     this.#connected = false;
+    this.socket;
   }
 
   userSelect(criteria) {
     this.#selected = true;
     return Promise.resolve();
   }
-  
+
   autoSelect(criteria, scan_period = 1000, timeout = 3000) {
     this.#selected = true;
     return Promise.resolve();
@@ -37,8 +39,20 @@ export class TangleChandelierConnector {
 
   connect(timeout) {
     if (this.#selected) {
-      this.#connected = true;
-      this.#interfaceReference.emit("#connected");
+      if (!this.#connected) {
+        this.#connected = true;
+
+        this.socket = io("https://test-lukas.loutaci.cz");
+
+        this.socket.on("connect", socket => {
+          console.log("connected");
+
+          // socket.join("sans-souci");
+
+          this.#interfaceReference.emit("#connected");
+        });
+      }
+
       return Promise.resolve();
     } else {
       return Promise.reject("NotSelected");
@@ -51,7 +65,11 @@ export class TangleChandelierConnector {
 
   disconnect() {
     if (this.#selected) {
-      this.#connected = false;
+      if (this.#connected) {
+        this.#connected = false;
+        this.socket.disconnect();
+      }
+
       this.#interfaceReference.emit("#disconnected");
       return Promise.resolve();
     } else {
@@ -61,6 +79,7 @@ export class TangleChandelierConnector {
 
   deliver(payload) {
     if (this.#connected) {
+      this.socket.emit("deliver", payload);
       return Promise.resolve();
     } else {
       return Promise.reject("Disconnected");
@@ -69,6 +88,7 @@ export class TangleChandelierConnector {
 
   transmit(payload) {
     if (this.#connected) {
+      this.socket.emit("transmit", payload);
       return Promise.resolve();
     } else {
       return Promise.reject("Disconnected");
