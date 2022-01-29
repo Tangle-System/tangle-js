@@ -138,7 +138,13 @@ export class TangleDevice {
   }
 
   connectRemoteControl() {
+    // TODO - scopovani dle apky
+    // TODO - authentifikace  
     this.socket = io("https://test-lukas.loutaci.cz");
+
+    this.socket.on("connect", () => {
+      console.log("Connected to remote control");
+    })
 
     this.socket.on("deliver", payload => {
       console.log("deliver", payload);
@@ -152,7 +158,7 @@ export class TangleDevice {
   }
 
   disconnectRemoteControl() {
-    this.socket.disconnect();
+    this.socket?.disconnect();
   }
 
   // valid UUIDs are in range [1..4294967295]

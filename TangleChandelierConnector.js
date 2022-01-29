@@ -15,7 +15,7 @@ export class TangleChandelierConnector {
 
     this.#selected = false;
     this.#connected = false;
-    this.socket;
+    this.socket = null;
   }
 
   userSelect(criteria) {
