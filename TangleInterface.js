@@ -127,7 +127,7 @@ export class TangleInterface {
 
     this.#queue = /** @type {Query[]} */ ([]);
     this.#processing = false;
-    this.#chunkSize = 5000;
+    this.#chunkSize = 8196;
 
     this.#reconection = false;
     this.#connecting = false;

@@ -437,11 +437,11 @@ export class TangleDevice {
   syncTngl(tngl_code, tngl_bytes = null) {
     //console.log("writeTngl()");
 
-    if (!tngl_code && !tngl_bytes) {
+    if (tngl_code === null && tngl_bytes === null) {
       return Promise.reject("Invalid");
     }
 
-    if (!tngl_bytes) {
+    if (tngl_bytes === null) {
       tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
     }
 
@@ -462,11 +462,11 @@ export class TangleDevice {
   writeTngl(tngl_code, tngl_bytes = null) {
     //console.log("writeTngl()");
 
-    if (!tngl_code && !tngl_bytes) {
+    if (tngl_code === null && tngl_bytes === null) {
       return Promise.reject("Invalid");
     }
 
-    if (!tngl_bytes) {
+    if (tngl_bytes === null) {
       tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
     }
 
