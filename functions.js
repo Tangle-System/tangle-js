@@ -1,4 +1,3 @@
-import { TnglCodeParser } from "./TangleParser.js";
 
 export function toBytes(value, byteCount) {
   var byteArray = [];
@@ -273,6 +272,7 @@ export function czechHackyToEnglish(string) {
     .replace(/Ď/g, "D")
     .replace(/Ň/g, "N");
 }
+
 
 // let secret = "sec-demo"; // the secret key
 // let enc = new TextEncoder("utf-8");

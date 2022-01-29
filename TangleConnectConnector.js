@@ -1,6 +1,5 @@
 import { sleep, toBytes } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
-import { TnglWriter } from "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -19,7 +18,9 @@ export class TangleConnectConnector {
 
     this.#promise = null;
 
+
     if (!("tangleConnect" in window)) {
+
       // simulate Tangle Connect
 
       var _connected = false;
@@ -29,202 +30,270 @@ export class TangleConnectConnector {
         return Math.random() < chance;
       }
 
+      // @ts-ignore
       window.tangleConnect = {};
 
+      // @ts-ignore
       window.tangleConnect.userSelect = async function (criteria, timeout = 60000) {
         if (_connected) {
+          // @ts-ignore
           await window.tangleConnect.disconnect();
         }
         await sleep(Math.random() * 5000); // userSelect logic
         if (_fail(0.5)) {
+          // @ts-ignore
           window.tangleConnect.reject("UserCanceledSelection");
           return;
         }
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
         _seleted = true;
+        // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
+      // @ts-ignore
       window.tangleConnect.autoSelect = async function (criteria, scan_period = 1000, timeout = 10000) {
         if (_connected) {
+          // @ts-ignore
           await window.tangleConnect.disconnect();
         }
         await sleep(Math.random() * 5000); // autoSelect logic
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
         _seleted = true;
+        // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
+      // @ts-ignore
       window.tangleConnect.selected = async function () {
         if (_seleted) {
+          // @ts-ignore
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
+          // @ts-ignore
           window.tangleConnect.resolve();
         }
       };
 
+      // @ts-ignore
       window.tangleConnect.unselect = async function () {
         if (_connected) {
+          // @ts-ignore
           await window.tangleConnect.disconnect();
         }
         await sleep(10); // unselect logic
         _seleted = false;
+        // @ts-ignore
         window.tangleConnect.resolve();
       };
 
+      // @ts-ignore
       window.tangleConnect.connect = async function (timeout) {
         if (!_seleted) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotSelected");
           return;
         }
         await sleep(Math.random() * 5000); // connecting logic
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("ConnectionFailed");
           return;
         }
         _connected = true;
+        // @ts-ignore
         window.tangleConnect.emit("#connected");
+        // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         // after connection the TangleConnect can any time emit #disconnect event.
         setTimeout(() => {
+          // @ts-ignore
           window.tangleConnect.emit("#disconnected");
           //}, Math.random() * 60000);
         }, 60000);
       };
 
+      // @ts-ignore
       window.tangleConnect.disconnect = async function () {
         if (_connected) {
           await sleep(100); // disconnecting logic
           _connected = false;
+          // @ts-ignore
           window.tangleConnect.emit("#disconnected");
         }
+        // @ts-ignore
         window.tangleConnect.resolve(); // always resolves even if there are internal errors
       };
 
+      // @ts-ignore
       window.tangleConnect.connected = async function () {
         if (_connected) {
+          // @ts-ignore
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
+          // @ts-ignore
           window.tangleConnect.resolve();
         }
       };
 
+      // @ts-ignore
       window.tangleConnect.deliver = async function () {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
         await sleep(25); // delivering logic
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("DeliverFailed");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.resolve();
       };
 
+      // @ts-ignore
       window.tangleConnect.transmit = async function () {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
         await sleep(10); // transmiting logic
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("TransmitFailed");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.resolve();
       };
 
+      // @ts-ignore
       window.tangleConnect.request = async function () {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
         await sleep(50); // requesting logic
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("RequestFailed");
           return;
         }
 
+        // @ts-ignore
         window.tangleConnect.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
       };
 
+      // @ts-ignore
       window.tangleConnect.readClock = async function () {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
         await sleep(50); // reading clock logic.
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("ClockReadFailed");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.resolve([0, 0, 0, 0]); // returns timestamp as an 32-bit signed number
       };
 
+      // @ts-ignore
       window.tangleConnect.writeClock = async function (bytes) {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
         await sleep(10); // writing clock logic.
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.reject("ClockWriteFailed");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.resolve();
       };
 
+      // @ts-ignore
       window.tangleConnect.updateFW = async function () {
         if (!_connected) {
+          // @ts-ignore
           window.tangleConnect.reject("DeviceNotConnected");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.emit("ota_status", "begin");
         await sleep(10000); // preparing FW logic.
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.emit("ota_status", "fail");
+          // @ts-ignore
           window.tangleConnect.reject("UpdateFailed");
           return;
         }
         for (let i = 1; i <= 100; i++) {
+          // @ts-ignore
           window.tangleConnect.emit("ota_progress", i);
           await sleep(25); // writing FW logic.
           if (_fail(0.01)) {
+            // @ts-ignore
             window.tangleConnect.emit("ota_status", "fail");
+            // @ts-ignore
             window.tangleConnect.reject("UpdateFailed");
             return;
           }
         }
         await sleep(1000); // finishing FW logic.
         if (_fail(0.1)) {
+          // @ts-ignore
           window.tangleConnect.emit("ota_status", "fail");
+          // @ts-ignore
           window.tangleConnect.reject("UpdateFailed");
           return;
         }
+        // @ts-ignore
         window.tangleConnect.emit("ota_status", "success");
+        // @ts-ignore
         window.tangleConnect.resolve();
       };
     }
 
+    // @ts-ignore
     window.tangleConnect.emit = (event, param) => {
       this.#interfaceReference.emit(event, param);
     };
 
-    // if ("tangleConnect" in window) {
-    //   // window.tangleConnect.resolve = (json_response) => {
-    //   //   this.resolve(json_response);
-    //   // }
-
-    //   // window.tangleConnect.resolve = this.#resolve;
-    //   // window.tangleConnect.reject = this.#reject;
-    // }
+    if ("tangleConnect" in window) {
+      // target="_blank" global handler
+      window.tangleConnect.hasOwnProperty('open') && /** @type {HTMLBodyElement} */ (document.querySelector('body')).addEventListener('click', function (e) {
+        e.preventDefault();
+        for (let el of e.path) {
+          if (el.tagName === "A" && el.getAttribute('target') === "_blank") {
+            e.preventDefault();
+            const url = el.getAttribute('href');
+            console.log(url)
+            window.tangleConnect.open(url)
+            break;
+          }
+        }
+      })
+    }
   }
 
   available() {
@@ -233,7 +302,9 @@ export class TangleConnectConnector {
 
   #applyTimeout(promise, timeout, message) {
     let id = setTimeout(() => {
+      // @ts-ignore
       window.alert(message, "Error: TC response timeouted");
+      // @ts-ignore
       window.tangleConnect.reject("ResponseTimeout");
     }, timeout);
     return promise.finally(() => {
@@ -245,11 +316,14 @@ export class TangleConnectConnector {
     console.time("ping_measure");
     for (let i = 0; i < 1000; i++) {
       this.#promise = new Promise((resolve, reject) => {
+        // @ts-ignore
         window.tangleConnect.resolve = resolve;
+        // @ts-ignore
         window.tangleConnect.reject = reject;
       });
 
       // console.log("ping")
+      // @ts-ignore
       window.tangleConnect.ping();
       await this.#promise;
       // console.log("pong")
@@ -306,12 +380,15 @@ criteria example:
     console.log(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = function (json) {
         resolve(json ? JSON.parse(json) : null);
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.userSelect(JSON.stringify(criteria), timeout);
 
     return this.#applyTimeout(this.#promise, timeout * 2, "userSelect");
@@ -335,13 +412,16 @@ criteria example:
     console.log(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = function (json) {
         resolve(json ? JSON.parse(json) : null);
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
     // ! for now autoselect calls userSelect
+    // @ts-ignore
     window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period, timeout);
 
     return this.#applyTimeout(this.#promise, timeout * 2.0, "autoSelect");
@@ -351,12 +431,15 @@ criteria example:
     console.log(`selected()`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = function (json) {
         resolve(json ? JSON.parse(json) : null);
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.selected();
 
     return this.#applyTimeout(this.#promise, 1000);
@@ -366,10 +449,13 @@ criteria example:
     console.log(`unselect()`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = resolve;
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.unselect();
 
     return this.#applyTimeout(this.#promise, 1000, "unselect");
@@ -389,12 +475,15 @@ criteria example:
     }
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = function (json) {
         resolve(json ? JSON.parse(json) : null);
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.connect(timeout);
 
     return this.#applyTimeout(this.#promise, timeout * 2.0, "connect");
@@ -404,12 +493,15 @@ criteria example:
     console.log(`connected()`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = function (json) {
         resolve(json ? JSON.parse(json) : null);
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.connected();
 
     return this.#applyTimeout(this.#promise, 1000, "connected");
@@ -420,10 +512,13 @@ criteria example:
     console.log(`disconnect()`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = resolve;
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.disconnect();
 
     return this.#applyTimeout(this.#promise, 1000, "disconnect");
@@ -435,10 +530,13 @@ criteria example:
     console.log(`deliver(payload=[${payload}])`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = resolve;
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.deliver(payload);
 
     return this.#applyTimeout(this.#promise, 5000, "deliver");
@@ -450,10 +548,13 @@ criteria example:
     console.log(`transmit(payload=[${payload}])`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = resolve;
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.transmit(payload);
 
     return this.#applyTimeout(this.#promise, 1000, "transmit");
@@ -465,12 +566,15 @@ criteria example:
     console.log(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = response => {
         resolve(new DataView(new Uint8Array(response).buffer));
       };
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.request(payload, read_response);
 
     return this.#applyTimeout(this.#promise, 5000, "request");
@@ -489,12 +593,15 @@ criteria example:
           // if the ASAP write fails, then try it once more
 
           this.#promise = new Promise((resolve, reject) => {
+            // @ts-ignore
             window.tangleConnect.resolve = resolve;
+            // @ts-ignore
             window.tangleConnect.reject = reject;
           });
 
           const timestamp = clock.millis();
           const bytes = toBytes(timestamp, 4);
+          // @ts-ignore
           window.tangleConnect.writeClock(bytes);
 
           // const timestamp = clock.millis();
@@ -503,6 +610,7 @@ criteria example:
           await this.#applyTimeout(this.#promise, 1000, "writeClock");
           console.log("Clock write success:", timestamp);
 
+          // @ts-ignore
           resolve();
           return;
         } catch (e) {
@@ -527,10 +635,13 @@ criteria example:
           // if the ASAP read fails, then try it once more
 
           this.#promise = new Promise((resolve, reject) => {
+            // @ts-ignore
             window.tangleConnect.resolve = resolve;
+            // @ts-ignore
             window.tangleConnect.reject = reject;
           });
 
+          // @ts-ignore
           window.tangleConnect.readClock();
 
           const bytes = await this.#applyTimeout(this.#promise, 5000, "readClock");
@@ -563,10 +674,13 @@ criteria example:
     console.log(`updateFW(firmware.length=${firmware.length})`);
 
     this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
       window.tangleConnect.resolve = resolve;
+      // @ts-ignore
       window.tangleConnect.reject = reject;
     });
 
+    // @ts-ignore
     window.tangleConnect.updateFW(firmware);
 
     return this.#applyTimeout(this.#promise, 60000, "updateFW");
@@ -575,10 +689,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
