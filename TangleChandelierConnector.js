@@ -1,11 +1,11 @@
-import { sleep } from "./functions.js";
+import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 
 import { io } from "./socketio.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-export class TangleChandelierConnector {
+export class TangleWebSocketsConnector {
   #interfaceReference;
   #selected;
   #connected;
@@ -29,7 +29,7 @@ export class TangleChandelierConnector {
   }
 
   selected() {
-    return Promise.resolve(this.#selected ? { fwVersion: "unknown" } : null);
+    return Promise.resolve(this.#selected ? { connector: "websockets" } : null);
   }
 
   unselect() {
@@ -43,6 +43,7 @@ export class TangleChandelierConnector {
         this.#connected = true;
 
         this.socket = io("https://test-lukas.loutaci.cz");
+        console.log(this.socket);
 
         this.socket.on("connect", socket => {
           console.log("connected");
@@ -50,6 +51,12 @@ export class TangleChandelierConnector {
           // socket.join("sans-souci");
 
           this.#interfaceReference.emit("#connected");
+        });
+
+        this.socket.on("disconnect", () => {
+          console.log("Disconnected from remote control");
+
+          this.#interfaceReference.emit("#disconnected");
         });
       }
 
@@ -60,7 +67,7 @@ export class TangleChandelierConnector {
   }
 
   connected() {
-    return Promise.resolve(this.#connected);
+    return Promise.resolve(this.#connected ? { connector: "websockets" } : null);
   }
 
   disconnect() {
@@ -69,8 +76,6 @@ export class TangleChandelierConnector {
         this.#connected = false;
         this.socket.disconnect();
       }
-
-      this.#interfaceReference.emit("#disconnected");
       return Promise.resolve();
     } else {
       return Promise.reject("NotSelected");
@@ -88,7 +93,7 @@ export class TangleChandelierConnector {
 
   transmit(payload) {
     if (this.#connected) {
-      this.socket.emit("transmit", payload);
+      this.socket.emit("transmit", payload); 
       return Promise.resolve();
     } else {
       return Promise.reject("Disconnected");
@@ -97,6 +102,7 @@ export class TangleChandelierConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
+      this.socket.emit("request", payload); 
       return Promise.resolve([]);
     } else {
       return Promise.reject("Disconnected");
@@ -104,16 +110,37 @@ export class TangleChandelierConnector {
   }
 
   setClock(clock) {
-    if (this.#connected) {
-      return Promise.resolve();
-    } else {
-      return Promise.reject("Disconnected");
-    }
+    // if (this.#connected) {
+
+    //   //const message = JSON.stringify({ clock_timestamp: clock.millis(), utc_timestamp: new Date().getTime() });
+    //   const payload = new Uint8Array([ ...toBytes(clock.millis(), 4), ...toBytes(new Date().getTime(), 4) ]);
+
+    //   this.socket.emit("setClock", payload);
+    //   return Promise.resolve();
+    // } else {
+    //   return Promise.reject("Disconnected");
+    // }
+
+    return Promise.reject("Not Supported");
   }
 
   getClock() {
+    // if (this.#connected) {
+    //   let clock = new TimeTrack(0);
+
+    //   //const message = JSON.stringify({ clock_timestamp: clock.millis(), utc_timestamp: new Date().getTime() });
+    //   const payload = new Uint8Array([ ...toBytes(clock.millis(), 4), ...toBytes(new Date().getTime(), 4) ]);
+
+    //   this.socket.emit("setClock", payload);
+    //   return Promise.resolve(clock);
+    // } else {
+    //   return Promise.reject("Disconnected");
+    // }
+
+    // ============= CLOCK HACK ==============
+
     if (this.#connected) {
-      return Promise.resolve(new TimeTrack(0));
+      return Promise.resolve(new TimeTrack(getClockTimestamp()));
     } else {
       return Promise.reject("Disconnected");
     }

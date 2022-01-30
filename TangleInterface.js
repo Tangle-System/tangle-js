@@ -3,7 +3,7 @@ import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
 import { TangleConnectConnector } from "./TangleConnectConnector.js";
-import { TangleChandelierConnector } from "./TangleChandelierConnector.js";
+import { TangleWebSocketsConnector } from "./TangleChandelierConnector.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
@@ -124,7 +124,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack();
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleChandelierConnector} */ (new TangleDummyConnector(this));
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (new TangleDummyConnector(this));
 
     this.#eventEmitter = createNanoEvents();
 
@@ -219,8 +219,8 @@ export class TangleInterface {
         this.connector = new TangleConnectConnector(this);
         break;
 
-      case "chandelier":
-        this.connector = new TangleChandelierConnector(this);
+      case "websockets":
+        this.connector = new TangleWebSocketsConnector(this);
         break;
 
       default:

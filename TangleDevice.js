@@ -1,4 +1,4 @@
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -139,12 +139,18 @@ export class TangleDevice {
 
   connectRemoteControl() {
     // TODO - scopovani dle apky
-    // TODO - authentifikace  
+    // TODO - authentifikace
     this.socket = io("https://test-lukas.loutaci.cz");
 
     this.socket.on("connect", () => {
       console.log("Connected to remote control");
-    })
+      window.alert("Connected to remote control");
+    });
+
+    this.socket.on("disconnect", () => {
+      console.log("Disconnected from remote control");
+      window.alert("Disconnected from remote control");
+    });
 
     this.socket.on("deliver", payload => {
       console.log("deliver", payload);
@@ -154,6 +160,29 @@ export class TangleDevice {
     this.socket.on("transmit", payload => {
       console.log("transmit", payload);
       this.interface.transmit(new Uint8Array(payload));
+    });
+
+    this.socket.on("request", payload => {
+      console.log("request", payload);
+      this.interface.request(new Uint8Array(payload));
+    });
+
+    // this.socket.on("setClock", payload => {
+    //   console.warn("setClock", payload);
+    // });
+
+    // ============= CLOCK HACK ==============
+
+    const hackClock = () => {
+      console.warn("overriding clock with UTC clock");
+      this.interface.clock.setMillis(getClockTimestamp());
+      this.syncClock();
+    };
+
+    hackClock();
+
+    this.interface.on("connected", () => {
+      hackClock();
     });
   }
 

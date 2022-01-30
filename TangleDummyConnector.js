@@ -72,7 +72,7 @@ criteria example:
   // are eligible.
 
   autoSelect(criteria, scan_period = 1000, timeout = 3000) {
-    console.log(`autoSelect(criteria=${criteria}, scan_period=${scan_period}, timeout=${timeout})`)
+    console.warn(`autoSelect(criteria=${criteria}, scan_period=${scan_period}, timeout=${timeout})`)
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -83,20 +83,20 @@ criteria example:
   }
 
   selected() {
-    console.log(`selected()`)
+    console.warn(`selected()`)
 
-    return Promise.resolve(this.#selected ? { fwVersion: "unknown" } : null);
+    return Promise.resolve(this.#selected ? { connector: "dummy" } : null);
   }
 
   unselect() {
-    console.log(`unselect()`)
+    console.warn(`unselect()`)
 
     this.#selected = false;
     return Promise.resolve();
   }
 
   connect(timeout) {
-    console.log(`connect(timeout=${timeout})`)
+    console.warn(`connect(timeout=${timeout})`)
 
     if (this.#selected) {
       this.#connected = true;
@@ -108,14 +108,14 @@ criteria example:
   }
 
   connected() {
-    console.log(`connected()`)
+    console.warn(`connected()`)
 
-    return Promise.resolve(this.#connected);
+    return Promise.resolve(this.#connected ? { connector: "dummy" } : null);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   disconnect() {
-    console.log(`disconnect()`)
+    console.warn(`disconnect()`)
 
     if (this.#selected) {
       this.#connected = false;
@@ -129,7 +129,7 @@ criteria example:
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    console.log(`deliver(payload=${payload})`)
+    console.warn(`deliver(payload=${payload})`)
 
     if (this.#connected) {
       return Promise.resolve();
@@ -141,7 +141,7 @@ criteria example:
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    console.log(`transmit(payload=${payload})`)
+    console.warn(`transmit(payload=${payload})`)
 
     if (this.#connected) {
       return Promise.resolve();
@@ -153,7 +153,7 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    console.log(`request(payload=${payload}, read_response=${read_response ? "true" : "false"})`)
+    console.warn(`request(payload=${payload}, read_response=${read_response ? "true" : "false"})`)
 
     if (this.#connected) {
       return Promise.resolve([]);
@@ -165,7 +165,7 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    console.log(`setClock(clock.millis()=${clock.millis()})`)
+    console.warn(`setClock(clock.millis()=${clock.millis()})`)
 
     if (this.#connected) {
       return Promise.resolve();
@@ -177,7 +177,7 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    console.log(`getClock()`)
+    console.warn(`getClock()`)
 
     if (this.#connected) {
       return Promise.resolve(new TimeTrack(0));
@@ -189,7 +189,7 @@ criteria example:
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
-    console.log(`updateFW(firmware=${firmware})`)
+    console.warn(`updateFW(firmware=${firmware})`)
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -229,7 +229,7 @@ criteria example:
   }
 
   destroy() {
-    console.log(`destroy()`)
+    console.warn(`destroy()`)
 
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
