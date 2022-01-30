@@ -171,19 +171,19 @@ export class TangleDevice {
     //   console.warn("setClock", payload);
     // });
 
-    // ============= CLOCK HACK ==============
+    // // ============= CLOCK HACK ==============
 
-    const hackClock = () => {
-      console.warn("overriding clock with UTC clock");
-      this.interface.clock.setMillis(getClockTimestamp());
-      this.syncClock();
-    };
+    // const hackClock = () => {
+    //   console.warn("overriding clock with UTC clock");
+    //   this.interface.clock.setMillis(getClockTimestamp());
+    //   this.syncClock();
+    // };
 
-    hackClock();
+    // hackClock();
 
-    this.interface.on("connected", () => {
-      hackClock();
-    });
+    // this.interface.on("connected", () => {
+    //   hackClock();
+    // });
   }
 
   disconnectRemoteControl() {

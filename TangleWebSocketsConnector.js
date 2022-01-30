@@ -144,10 +144,11 @@ export class TangleWebSocketsConnector {
     // ============= CLOCK HACK ==============
 
     if (this.#connected) {
-      return Promise.resolve(new TimeTrack(getClockTimestamp()));
+      return Promise.resolve(new TimeTrack(0));
     } else {
       return Promise.reject("Disconnected");
     }
+
   }
 
   updateFW(firmware) {
