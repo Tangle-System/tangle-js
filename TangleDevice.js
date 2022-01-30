@@ -550,7 +550,9 @@ export class TangleDevice {
     // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = is_lazy ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
+      const payload = is_lazy
+      ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] 
+      : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
