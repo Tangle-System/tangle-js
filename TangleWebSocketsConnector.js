@@ -85,7 +85,9 @@ export class TangleWebSocketsConnector {
   deliver(payload) {
     if (this.#connected) {
       this.socket.emit("deliver", payload);
-      return Promise.resolve();
+      return sleep(100).then(() => {
+        Promise.resolve();
+      });
     } else {
       return Promise.reject("Disconnected");
     }
@@ -94,7 +96,9 @@ export class TangleWebSocketsConnector {
   transmit(payload) {
     if (this.#connected) {
       this.socket.emit("transmit", payload); 
-      return Promise.resolve();
+      return sleep(100).then(() => {
+        Promise.resolve();
+      });
     } else {
       return Promise.reject("Disconnected");
     }
