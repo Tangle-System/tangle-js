@@ -3,7 +3,7 @@ import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
 import { TangleConnectConnector } from "./TangleConnectConnector.js";
-import { TangleWebSocketsConnector } from "./TangleChandelierConnector.js";
+import { TangleWebSocketsConnector } from "./TangleWebSocketsConnector.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
