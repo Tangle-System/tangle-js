@@ -43,7 +43,8 @@ export class TangleWebSocketsConnector {
         this.#connected = true;
 
         if (!this.socket) {
-          this.socket = io("https://tangle-remote-control.glitch.me/");
+          this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
+
 
           console.log(this.socket);
 
@@ -64,6 +65,14 @@ export class TangleWebSocketsConnector {
 
             this.#interfaceReference.emit("#disconnected");
           });
+
+          this.socket.on("connect_error", (error) => {
+            console.log('connect_error',error)
+            setTimeout(() => {
+              this.socket.connect();
+            }, 1000);
+          });
+
         } else {
           this.socket.connect();
         }
