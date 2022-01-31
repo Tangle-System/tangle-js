@@ -45,7 +45,6 @@ export class TangleWebSocketsConnector {
         if (!this.socket) {
           this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
 
-
           console.log(this.socket);
 
           this.socket.on("connect", socket => {

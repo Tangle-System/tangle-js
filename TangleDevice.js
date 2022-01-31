@@ -187,13 +187,6 @@ export class TangleDevice {
         this.interface.request(new Uint8Array(payload));
       });
 
-      this.socket.on("disconnect", () => {
-        console.log('disconnect')
-        setTimeout(() => {
-          this.socket.connect();
-        }, 1000);
-      });
-
       this.socket.on("connect_error", (error) => {
         console.log('connect_error',error)
         setTimeout(() => {
