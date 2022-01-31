@@ -153,12 +153,12 @@ export class TangleDevice {
 
       this.socket.on("connect", () => {
         console.log("> Connected to remote control");
-        window.alert("Connected to remote control");
+        // window.alert("Connected to remote control");
       });
 
       this.socket.on("disconnect", () => {
         console.log("> Disconnected from remote control");
-        window.alert("Disconnected from remote control");
+        // window.alert("Disconnected from remote control");
 
         // if (this.#reconnectRC) {
         //   console.log("Disconnected by its own... Reloading");
@@ -185,6 +185,12 @@ export class TangleDevice {
       this.socket.on("request", payload => {
         console.log("request", payload);
         this.interface.request(new Uint8Array(payload));
+      });
+
+      this.socket.on("connect_error", () => {
+        setTimeout(() => {
+          this.socket.connect();
+        }, 1000);
       });
 
       // this.socket.on("setClock", payload => {
