@@ -400,7 +400,7 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null) {
+  connect(devices = null, autoConnect = false) {
     //let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
     let criteria = /** @type {any} */ ([{}, { legacy: true }]);
 
