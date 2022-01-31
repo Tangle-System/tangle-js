@@ -149,7 +149,7 @@ export class TangleDevice {
     if (!this.socket) {
       // TODO - scopovani dle apky
       // TODO - authentifikace
-      this.socket = io("https://tangle-remote-control.glitch.me/");
+      this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
 
       this.socket.on("connect", () => {
         console.log("> Connected to remote control");
@@ -187,7 +187,15 @@ export class TangleDevice {
         this.interface.request(new Uint8Array(payload));
       });
 
-      this.socket.on("connect_error", () => {
+      this.socket.on("disconnect", () => {
+        console.log('disconnect')
+        setTimeout(() => {
+          this.socket.connect();
+        }, 1000);
+      });
+
+      this.socket.on("connect_error", (error) => {
+        console.log('connect_error',error)
         setTimeout(() => {
           this.socket.connect();
         }, 1000);
