@@ -11,10 +11,9 @@ import "./TnglWriter.js";
 // should not create more than one object!
 // the destruction of the TangleDevice is not well implemented
 
-
 // TODO - kdyz zavolam tangleDevice.connect(), kdyz jsem pripojeny, tak nechci aby se do interfacu poslal select
 // TODO - kdyz zavolam funkci connect a uz jsem pripojeny, tak vyslu event connected, pokud si myslim ze nejsem pripojeny.
-// TODO - "watchdog timer" pro resolve/reject z TC 
+// TODO - "watchdog timer" pro resolve/reject z TC
 
 export class TangleDevice {
   #uuidCounter;
@@ -25,11 +24,10 @@ export class TangleDevice {
   #selected;
 
   constructor(connectorType = "default", reconnectionInterval = 10000) {
-    
-    if(!connectorType) {
+    if (!connectorType) {
       connectorType = "default";
     }
-    
+
     this.timeline = new TimeTrack();
 
     this.#uuidCounter = 0;
@@ -120,7 +118,7 @@ export class TangleDevice {
       throw "InvalidKey";
     }
 
-      this.#ownerKey = reg[0];
+    this.#ownerKey = reg[0];
   }
 
   /**
@@ -275,7 +273,11 @@ export class TangleDevice {
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
-            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", { placeholder: "NARA", regex: /^[a-zA-Z0-9_ ]{1,11}$/, invalidText: "Název obsahuje nepovolené znaky" });
+            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
+              placeholder: "NARA",
+              regex: /^[a-zA-Z0-9_ ]{1,16}$/,
+              invalidText: "Název obsahuje nepovolené znaky",
+            });
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
             newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
@@ -370,7 +372,11 @@ export class TangleDevice {
             } else {
               console.warn("Adoption refused.");
               this.disconnect().finally(() => {
-                window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(() => { this.adopt(newDeviceName, newDeviceId, tnglCode) })
+                window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
+                  if (result) {
+                    this.adopt(newDeviceName, newDeviceId, tnglCode);
+                  }
+                });
                 throw "AdoptionRefused";
               });
             }
@@ -378,7 +384,11 @@ export class TangleDevice {
           .catch(e => {
             console.error(e);
             this.disconnect().finally(() => {
-              window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(() => { this.adopt(newDeviceName, newDeviceId, tnglCode) })
+              window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
+                if (result) {
+                  this.adopt(newDeviceName, newDeviceId, tnglCode);
+                }
+              });
               throw "AdoptionFailed";
             });
           });
@@ -420,7 +430,6 @@ export class TangleDevice {
     return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria)).then(() => {
       return this.interface.connect(10000);
     });
-
   }
 
   disconnect() {
