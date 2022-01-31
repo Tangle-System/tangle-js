@@ -13,15 +13,20 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_OTA_WRITE: 0, // legacy
   FLAG_OTA_END: 254, // legacy
   FLAG_OTA_RESET: 253, // legacy
-  FLAG_DEVICE_REBOOT: 5, // legacy
+  FLAG_DEVICE_REBOOT_REQUEST: 5, // legacy
 
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
-  FLAG_TNGL_FINGERPRINT_REQUEST: 242,
-  FLAG_TNGL_FINGERPRINT_RESPONSE: 243,
-  FLAG_TIMELINE_REQUEST: 245,
-  FLAG_TIMELINE_RESPONSE: 246,
+  FLAG_FW_VERSION_REQUEST : 234,
+  FLAG_FW_VERSION_RESPONSE : 235,
+  FLAG_ERASE_OWNER_REQUEST : 236,
+  FLAG_ERASE_OWNER_RESPONSE : 237,
+
+  FLAG_TNGL_FINGERPRINT_REQUEST : 242,
+  FLAG_TNGL_FINGERPRINT_RESPONSE : 243,
+  FLAG_TIMELINE_REQUEST : 245,
+  FLAG_TIMELINE_RESPONSE : 246,
 
   FLAG_CONNECT_REQUEST: 238,
   FLAG_CONNECT_RESPONSE: 239,
@@ -109,7 +114,9 @@ export class TangleInterface {
   #selecting;
   #disconnectQuery;
 
-  constructor(deviceReference) {
+  #reconnectionInterval;
+
+  constructor(deviceReference, reconnectionInterval = 10000) {
     this.#deviceReference = deviceReference;
 
     this.clock = new TimeTrack();
@@ -127,23 +134,11 @@ export class TangleInterface {
     this.#selecting = false;
     this.#disconnectQuery = null;
 
+    this.#reconnectionInterval = reconnectionInterval;
+
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
     });
-    this.#eventEmitter.on("#connected", e => {
-      this.#onConnected(e);
-    });
-
-    // auto clock sync loop
-    setInterval(() => {
-      this.connected().then(connected => {
-        if (connected) {
-          this.syncClock().catch(error => {
-            console.warn(error);
-          });
-        }
-      });
-    }, 10000);
 
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
@@ -393,11 +388,6 @@ export class TangleInterface {
     //   });
   }
 
-  #onConnected = event => {
-    console.log("> Device connected");
-    return this.#eventEmitter.emit("connected", { target: this.#deviceReference });
-  };
-
   disconnect() {
     this.#reconection = false;
 
@@ -422,20 +412,13 @@ export class TangleInterface {
     // }
     // this.#queue = [];
 
-    console.log("> Device disconnected");
-    this.#eventEmitter.emit("disconnected", { target: this.#deviceReference });
-
-    if (this.#reconection) {
-      console.log("Reconnecting in 1s...");
+    if (this.#reconection && this.#reconnectionInterval) {
+      console.log("Reconnecting...");
       setTimeout(() => {
         console.log("Reconnecting device");
-        return this.connect(5000)
-          .then(() => {
-            this.#eventEmitter.emit("#reconnected");
-          })
-          .catch(() => {
-            console.warn("Reconnection failed.");
-          });
+        return this.connect(this.#reconnectionInterval).catch(() => {
+          console.warn("Reconnection failed.");
+        });
       }, 1000);
     }
 
@@ -651,7 +634,7 @@ export class TangleInterface {
                 break;
 
               case Query.TYPE_EXECUTE:
-                let payload = new Uint8Array(this.#chunkSize);
+                let payload = new Uint8Array(65535);
                 let index = 0;
 
                 payload.set(item.a, index);
@@ -662,7 +645,7 @@ export class TangleInterface {
                   const next_item = this.#queue.shift();
 
                   // then check if I have toom to merge the payload bytes
-                  if (index + next_item.a.length <= payload.length) {
+                  if (index + next_item.a.length <= this.#chunkSize) {
                     payload.set(next_item.a, index);
                     index += next_item.a.length;
                   }

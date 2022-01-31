@@ -1,5 +1,4 @@
 
-
 export function toBytes(value, byteCount) {
   var byteArray = [];
   for (let index = 0; index < byteCount; index++) {
@@ -202,7 +201,7 @@ export function detectBluefy() {
 
 //////////////////////////////////////////////////////
 
-export function getTnglSignature(tngl_bytes, tngl_label) {
+export function computeTnglFingerprint(tngl_bytes, tngl_label) {
   let enc = new TextEncoder();
   let algorithm = { name: "HMAC", hash: "SHA-256" };
   let body = new Uint8Array(tngl_bytes);
@@ -213,10 +212,9 @@ export function getTnglSignature(tngl_bytes, tngl_label) {
       return crypto.subtle.sign(algorithm.name, key, body);
     })
     .then(signature => {
-      let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
-      console.log(digest);
-
-      return signature;
+      // let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
+      // console.log(digest);
+      return new Uint8Array(signature);
     });
 }
 
@@ -242,6 +240,39 @@ export function hexStringToUint8Array(hexString, arrayLength) {
 export function uint8ArrayToHexString(bytes) {
   return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, "0")).join("");
 }
+
+export function czechHackyToEnglish(string) {
+  return string
+    .replace(/č/g, "c")
+    .replace(/š/g, "s")
+    .replace(/ř/g, "r")
+    .replace(/ž/g, "z")
+    .replace(/ý/g, "y")
+    .replace(/á/g, "a")
+    .replace(/é/g, "e")
+    .replace(/í/g, "i")
+    .replace(/ó/g, "o")
+    .replace(/ú/g, "u")
+    .replace(/ů/g, "u")
+    .replace(/ě/g, "e")
+    .replace(/ť/g, "t")
+    .replace(/ď/g, "d")
+    .replace(/ň/g, "n")
+    .replace(/Š/g, "S")
+    .replace(/Ž/g, "Z")
+    .replace(/Ý/g, "Y")
+    .replace(/Á/g, "A")
+    .replace(/É/g, "E")
+    .replace(/Í/g, "I")
+    .replace(/Ó/g, "O")
+    .replace(/Ú/g, "U")
+    .replace(/Ů/g, "U")
+    .replace(/Ě/g, "E")
+    .replace(/Ť/g, "T")
+    .replace(/Ď/g, "D")
+    .replace(/Ň/g, "N");
+}
+
 
 // let secret = "sec-demo"; // the secret key
 // let enc = new TextEncoder("utf-8");
