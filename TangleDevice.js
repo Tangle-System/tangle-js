@@ -24,6 +24,8 @@ export class TangleDevice {
   #updating;
   #selected;
 
+  #reconnectRC;
+
   constructor(connectorType = "default", reconnectionInterval = 10000) {
     if (!connectorType) {
       connectorType = "default";
@@ -43,6 +45,8 @@ export class TangleDevice {
 
     this.#adopting = false;
     this.#updating = false;
+
+    this.#reconnectRC = false;
 
     this.interface.on("#connected", e => {
       this.#onConnected(e);
@@ -138,55 +142,75 @@ export class TangleDevice {
   }
 
   connectRemoteControl() {
-    // TODO - scopovani dle apky
-    // TODO - authentifikace
-    this.socket = io("https://remotecontrol.tangle.cz");
+    this.#reconnectRC = true;
 
-    this.socket.on("connect", () => {
-      console.log("Connected to remote control");
-      window.alert("Connected to remote control");
-    });
+    console.log("> Connecting to Remote Control")
 
-    this.socket.on("disconnect", () => {
-      console.log("Disconnected from remote control");
-      window.alert("Disconnected from remote control");
-    });
+    if (!this.socket) {
+      // TODO - scopovani dle apky
+      // TODO - authentifikace
+      this.socket = io("https://tangle-remote-control.glitch.me/");
 
-    this.socket.on("deliver", payload => {
-      console.log("deliver", payload);
-      this.interface.deliver(new Uint8Array(payload));
-    });
+      this.socket.on("connect", () => {
+        console.log("> Connected to remote control");
+        window.alert("Connected to remote control");
+      });
 
-    this.socket.on("transmit", payload => {
-      console.log("transmit", payload);
-      this.interface.transmit(new Uint8Array(payload));
-    });
+      this.socket.on("disconnect", () => {
+        console.log("> Disconnected from remote control");
+        window.alert("Disconnected from remote control");
 
-    this.socket.on("request", payload => {
-      console.log("request", payload);
-      this.interface.request(new Uint8Array(payload));
-    });
+        location.reload();
 
-    // this.socket.on("setClock", payload => {
-    //   console.warn("setClock", payload);
-    // });
+        // if (this.#reconnectRC) {
+        //   console.log("> Reconnecting Remote Control...");
 
-    // // ============= CLOCK HACK ==============
+        //   this.socket.connect();
+        // }
+      });
 
-    // const hackClock = () => {
-    //   console.warn("overriding clock with UTC clock");
-    //   this.interface.clock.setMillis(getClockTimestamp());
-    //   this.syncClock();
-    // };
+      this.socket.on("deliver", payload => {
+        console.log("deliver", payload);
+        this.interface.deliver(new Uint8Array(payload));
+      });
 
-    // hackClock();
+      this.socket.on("transmit", payload => {
+        console.log("transmit", payload);
+        this.interface.transmit(new Uint8Array(payload));
+      });
 
-    // this.interface.on("connected", () => {
-    //   hackClock();
-    // });
+      this.socket.on("request", payload => {
+        console.log("request", payload);
+        this.interface.request(new Uint8Array(payload));
+      });
+
+      // this.socket.on("setClock", payload => {
+      //   console.warn("setClock", payload);
+      // });
+
+      // // ============= CLOCK HACK ==============
+
+      // const hackClock = () => {
+      //   console.warn("overriding clock with UTC clock");
+      //   this.interface.clock.setMillis(getClockTimestamp());
+      //   this.syncClock();
+      // };
+
+      // hackClock();
+
+      // this.interface.on("connected", () => {
+      //   hackClock();
+      // });
+    } else {
+      this.socket.connect();
+    }
   }
 
   disconnectRemoteControl() {
+    console.log("> Disonnecting from the Remote Control")
+
+    this.#reconnectRC = false;
+
     this.socket?.disconnect();
   }
 
@@ -550,9 +574,7 @@ export class TangleDevice {
     // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = is_lazy
-      ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] 
-      : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
+      const payload = is_lazy ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 

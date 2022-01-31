@@ -42,22 +42,31 @@ export class TangleWebSocketsConnector {
       if (!this.#connected) {
         this.#connected = true;
 
-        this.socket = io("https://remotecontrol.tangle.cz");
-        console.log(this.socket);
+        if (!this.socket) {
+          this.socket = io("https://tangle-remote-control.glitch.me/");
 
-        this.socket.on("connect", socket => {
-          console.log("connected");
+          console.log(this.socket);
 
-          // socket.join("sans-souci");
+          this.socket.on("connect", socket => {
+            console.log("connected");
 
-          this.#interfaceReference.emit("#connected");
-        });
+            console.log("> Connected to remote control");
 
-        this.socket.on("disconnect", () => {
-          console.log("Disconnected from remote control");
+            // socket.join("sans-souci");
 
-          this.#interfaceReference.emit("#disconnected");
-        });
+            this.#interfaceReference.emit("#connected");
+          });
+
+          this.socket.on("disconnect", () => {
+            console.log("> Disconnected from remote control");
+
+            this.#connected = false;
+
+            this.#interfaceReference.emit("#disconnected");
+          });
+        } else {
+          this.socket.connect();
+        }
       }
 
       return Promise.resolve();
@@ -95,7 +104,7 @@ export class TangleWebSocketsConnector {
 
   transmit(payload) {
     if (this.#connected) {
-      this.socket.emit("transmit", payload); 
+      this.socket.emit("transmit", payload);
       return sleep(100).then(() => {
         Promise.resolve();
       });
@@ -106,7 +115,7 @@ export class TangleWebSocketsConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
-      this.socket.emit("request", payload); 
+      this.socket.emit("request", payload);
       return Promise.resolve([]);
     } else {
       return Promise.reject("Disconnected");
@@ -148,7 +157,6 @@ export class TangleWebSocketsConnector {
     } else {
       return Promise.reject("Disconnected");
     }
-
   }
 
   updateFW(firmware) {
