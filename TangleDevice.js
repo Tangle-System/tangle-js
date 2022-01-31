@@ -160,7 +160,7 @@ export class TangleDevice {
         console.log("> Disconnected from remote control");
         window.alert("Disconnected from remote control");
 
-        location.reload();
+        window.location.reload();
 
         // if (this.#reconnectRC) {
         //   console.log("> Reconnecting Remote Control...");
