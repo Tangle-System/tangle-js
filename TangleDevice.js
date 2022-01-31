@@ -140,7 +140,7 @@ export class TangleDevice {
   connectRemoteControl() {
     // TODO - scopovani dle apky
     // TODO - authentifikace
-    this.socket = io("https://test-lukas.loutaci.cz");
+    this.socket = io("https://remotecontrol.tangle.cz");
 
     this.socket.on("connect", () => {
       console.log("Connected to remote control");

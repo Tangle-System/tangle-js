@@ -42,7 +42,7 @@ export class TangleWebSocketsConnector {
       if (!this.#connected) {
         this.#connected = true;
 
-        this.socket = io("https://test-lukas.loutaci.cz");
+        this.socket = io("https://remotecontrol.tangle.cz");
         console.log(this.socket);
 
         this.socket.on("connect", socket => {
