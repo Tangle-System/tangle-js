@@ -182,10 +182,10 @@ export class TangleDevice {
         this.interface.transmit(new Uint8Array(payload));
       });
 
-      this.socket.on("request", payload => {
-        console.log("request", payload);
-        this.interface.request(new Uint8Array(payload));
-      });
+      // this.socket.on("request", payload => {
+      //   console.log("request", payload);
+      //   this.interface.request(new Uint8Array(payload));
+      // });
 
       this.socket.on("connect_error", (error) => {
         console.log('connect_error',error)

@@ -305,7 +305,7 @@ export class TangleConnectConnector {
       // @ts-ignore
       window.alert(message, "Error: TC response timeouted");
       // @ts-ignore
-      window.tangleConnect.reject("ResponseTimeout");
+      window.tangleConnect.reject("ResponseTimeout", message);
     }, timeout);
     return promise.finally(() => {
       clearTimeout(id);

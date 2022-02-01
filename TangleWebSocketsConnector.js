@@ -123,7 +123,7 @@ export class TangleWebSocketsConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
-      this.socket.emit("request", payload);
+      //this.socket.emit("request", payload);
       return Promise.resolve([]);
     } else {
       return Promise.reject("Disconnected");
