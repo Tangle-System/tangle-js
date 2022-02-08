@@ -683,7 +683,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.updateFW(firmware);
 
-    return this.#applyTimeout(this.#promise, 60000, "updateFW");
+    return this.#applyTimeout(this.#promise, 600000, "updateFW");
   }
 
   destroy() {
