@@ -23,7 +23,7 @@ export class TangleDevice {
   #updating;
   #selected;
 
-  constructor(connectorType = "default", reconnectionInterval = 10000) {
+  constructor(connectorType = "default", reconnectionInterval = 1000) {
     if (!connectorType) {
       connectorType = "default";
     }

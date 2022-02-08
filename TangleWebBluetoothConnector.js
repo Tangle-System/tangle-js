@@ -812,10 +812,10 @@ criteria example:
       });
     }
 
-    // web bluetooth cant really auto select bluetooth device. This is the closest you can get.
-    if (this.#selected() && criteria.ownerSignature === this.#criteria.ownerSignature) {
-      return Promise.resolve();
-    }
+    // // web bluetooth cant really auto select bluetooth device. This is the closest you can get.
+    // if (this.#selected() && criteria.ownerSignature === this.#criteria.ownerSignature) {
+    //   return Promise.resolve();
+    // }
 
     this.#criteria = criteria;
 

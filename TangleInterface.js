@@ -116,7 +116,7 @@ export class TangleInterface {
 
   #reconnectionInterval;
 
-  constructor(deviceReference, reconnectionInterval = 10000) {
+  constructor(deviceReference, reconnectionInterval = 1000) {
     this.#deviceReference = deviceReference;
 
     this.clock = new TimeTrack();
