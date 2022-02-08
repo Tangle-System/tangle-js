@@ -277,6 +277,7 @@ export class TangleDevice {
               placeholder: "NARA",
               regex: /^[a-zA-Z0-9_ ]{1,16}$/,
               invalidText: "Název obsahuje nepovolené znaky",
+              maxlength: 16
             });
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
