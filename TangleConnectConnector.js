@@ -521,7 +521,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.disconnect();
 
-    return this.#applyTimeout(this.#promise, 1000, "disconnect");
+    return this.#applyTimeout(this.#promise, 10000, "disconnect");
   }
 
   // deliver handles the communication with the Tangle network in a way
