@@ -18,15 +18,15 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
-  FLAG_FW_VERSION_REQUEST : 234,
-  FLAG_FW_VERSION_RESPONSE : 235,
-  FLAG_ERASE_OWNER_REQUEST : 236,
-  FLAG_ERASE_OWNER_RESPONSE : 237,
+  FLAG_FW_VERSION_REQUEST: 234,
+  FLAG_FW_VERSION_RESPONSE: 235,
+  FLAG_ERASE_OWNER_REQUEST: 236,
+  FLAG_ERASE_OWNER_RESPONSE: 237,
 
-  FLAG_TNGL_FINGERPRINT_REQUEST : 242,
-  FLAG_TNGL_FINGERPRINT_RESPONSE : 243,
-  FLAG_TIMELINE_REQUEST : 245,
-  FLAG_TIMELINE_RESPONSE : 246,
+  FLAG_TNGL_FINGERPRINT_REQUEST: 242,
+  FLAG_TNGL_FINGERPRINT_RESPONSE: 243,
+  FLAG_TIMELINE_REQUEST: 245,
+  FLAG_TIMELINE_RESPONSE: 246,
 
   FLAG_CONNECT_REQUEST: 238,
   FLAG_CONNECT_RESPONSE: 239,
@@ -103,6 +103,7 @@ export class TangleInterface {
   #deviceReference;
 
   #eventEmitter;
+  #wakeLock;
 
   #queue;
   #processing;
@@ -124,6 +125,7 @@ export class TangleInterface {
     this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector } */ (new TangleDummyConnector(this));
 
     this.#eventEmitter = createNanoEvents();
+    this.#wakeLock = null;
 
     this.#queue = /** @type {Query[]} */ ([]);
     this.#processing = false;
@@ -181,6 +183,30 @@ export class TangleInterface {
 
   emit(event, ...arg) {
     this.#eventEmitter.emit(event, ...arg);
+  }
+
+  requestWakeLock() {
+    console.log("> Activating wakeLock...");
+
+    if (!("wakeLock" in navigator)) {
+      return Promise.reject("WakeLock API not supported");
+    }
+
+    // @ts-ignore
+    return navigator.wakeLock.request().catch(err => {
+      console.error(`${err.name}, ${err.message}`);
+    });
+  }
+
+  releaseWakeLock() {
+    console.log("> Deactivating wakeLock...");
+
+    if (this.#wakeLock) {
+      this.#wakeLock.release();
+      this.#wakeLock = null;
+    }
+
+    return Promise.resolve();
   }
 
   assignConnector(connector_type) {
@@ -685,7 +711,6 @@ export class TangleInterface {
                   .then(response => {
                     item.resolve(response);
                   })
-
                   .catch(error => {
                     //console.warn(error);
                     item.reject(error);
@@ -706,16 +731,20 @@ export class TangleInterface {
               //   break;
 
               case Query.TYPE_FIRMWARE_UPDATE:
+                await this.requestWakeLock();
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
                     item.resolve(response);
                   })
-
                   .catch(error => {
                     //console.warn(error);
                     item.reject(error);
+                  })
+                  .finally(() => {
+                    this.releaseWakeLock();
                   });
+
                 break;
 
               default:

@@ -82,6 +82,14 @@ export class TangleDevice {
     }
   };
 
+  requestWakeLock() {
+    return this.interface.requestWakeLock();
+  }
+
+  releaseWakeLock() {
+    return this.interface.releaseWakeLock();
+  }
+
   setOwnerSignature(ownerSignature) {
     if (ownerSignature.length != 32) {
       throw "InvalidSignature";
@@ -278,7 +286,7 @@ export class TangleDevice {
               placeholder: "NARA",
               regex: /^[a-zA-Z0-9_ ]{1,16}$/,
               invalidText: "Název obsahuje nepovolené znaky",
-              maxlength: 16
+              maxlength: 16,
             });
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
@@ -410,7 +418,6 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true) {
-
     devices = null; // HACK to ignore names of the lamps
 
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
@@ -619,6 +626,8 @@ export class TangleDevice {
   updateNetworkFirmware(firmware) {
     this.#updating = true;
 
+    this.interface.requestWakeLock();
+
     return new Promise(async (resolve, reject) => {
       const chunk_size = 4976; // must be modulo 16
 
@@ -714,6 +723,7 @@ export class TangleDevice {
         this.disconnect();
       })
       .finally(() => {
+        this.interface.releaseWakeLock();
         this.#updating = false;
       });
   }
@@ -793,7 +803,7 @@ export class TangleDevice {
       console.log("> Got response:", response);
 
       let reader = new TnglReader(response);
-      
+
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TIMELINE_RESPONSE) {
         throw "InvalidResponseFlag";
       }
