@@ -18,9 +18,7 @@ export class TangleConnectConnector {
 
     this.#promise = null;
 
-
     if (!("tangleConnect" in window)) {
-
       // simulate Tangle Connect
 
       var _connected = false;
@@ -279,21 +277,22 @@ export class TangleConnectConnector {
       this.#interfaceReference.emit(event, param);
     };
 
-    if ("tangleConnect" in window) {
-      // target="_blank" global handler
-      window.tangleConnect.hasOwnProperty('open') && /** @type {HTMLBodyElement} */ (document.querySelector('body')).addEventListener('click', function (e) {
+    // target="_blank" global handler
+    // @ts-ignore
+    window.tangleConnect.hasOwnProperty("open") &&
+      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
         e.preventDefault();
         for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute('target') === "_blank") {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
             e.preventDefault();
-            const url = el.getAttribute('href');
-            console.log(url)
-            window.tangleConnect.open(url)
+            const url = el.getAttribute("href");
+            console.log(url);
+            // @ts-ignore
+            window.tangleConnect.open(url);
             break;
           }
         }
-      })
-    }
+      });
   }
 
   available() {
@@ -486,7 +485,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.connect(timeout);
 
-    return this.#applyTimeout(this.#promise, timeout * 2.0, "connect");
+    return this.#applyTimeout(this.#promise, timeout < 5000 ? 10000 : timeout * 2.0, "connect");
   }
 
   connected() {
