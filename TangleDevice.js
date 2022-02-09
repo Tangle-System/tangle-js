@@ -273,6 +273,7 @@ export class TangleDevice {
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
+            // @ts-ignore
             newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
               placeholder: "NARA",
               regex: /^[a-zA-Z0-9_ ]{1,16}$/,
@@ -281,6 +282,7 @@ export class TangleDevice {
             });
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
+            // @ts-ignore
             newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
           }
 
@@ -341,12 +343,16 @@ export class TangleDevice {
               return (
                 (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
                   .then(() => {
-                    return sleep(1000).then(() => {
-                      return this.interface.disconnect();
-                    });
+                    return sleep(1000)
+                      .then(() => {
+                        return this.rebootDevice();
+                      })
+                      .then(() => {
+                        return this.interface.disconnect();
+                      });
                   })
                   .then(() => {
-                    return sleep(5000).then(() => {
+                    return sleep(3000).then(() => {
                       return this.interface.connect(10000);
                     });
                   })
@@ -373,6 +379,7 @@ export class TangleDevice {
             } else {
               console.warn("Adoption refused.");
               this.disconnect().finally(() => {
+                // @ts-ignore
                 window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
                   if (result) {
                     this.adopt(newDeviceName, newDeviceId, tnglCode);
@@ -385,6 +392,7 @@ export class TangleDevice {
           .catch(e => {
             console.error(e);
             this.disconnect().finally(() => {
+              // @ts-ignore
               window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
                 if (result) {
                   this.adopt(newDeviceName, newDeviceId, tnglCode);
@@ -810,8 +818,15 @@ export class TangleDevice {
     });
   }
 
-  reboot() {
+  rebootNetwork() {
     console.log("> Rebooting network...");
+
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+    return this.interface.execute(payload, null);
+  }
+
+  rebootDevice() {
+    console.log("> Rebooting device...");
 
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.execute(payload, null);
