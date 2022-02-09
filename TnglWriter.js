@@ -1,5 +1,3 @@
-
-
 export class TnglWriter {
   constructor(buffer_size = 65535) {
     this._buffer = new ArrayBuffer(buffer_size);
@@ -12,7 +10,7 @@ export class TnglWriter {
     if (this._index + byteCount <= this._dataView.byteLength) {
       for (let i = 0; i < byteCount; i++) {
         this._dataView.setUint8(this._index++, value & 0xff);
-        value >>= 8;
+        value = Math.floor(value / Math.pow(2, 8));
       }
     } else {
       console.warn("End of the data");
@@ -20,16 +18,39 @@ export class TnglWriter {
     }
   }
 
-  // writeBytes(bytes) {
-  //   if (this._index + bytes.byteLength <= this._dataView.byteLength) {
-  //     for (let i = 0; i < bytes.byteLength; i++) {
-  //       this._dataView.setUint8(this._index++, bytes[i]);
-  //     }
-  //   } else {
-  //     console.warn("End of the data");
-  //     throw "Tried to write out of range";
-  //   }
-  // }
+  writeBytes(bytes, size) {
+    if (size === null) {
+      size = bytes.byteLength;
+    }
+
+    if (this._index + size <= this._dataView.byteLength) {
+      for (let i = 0; i < size; i++) {
+        if (i < bytes.byteLength) {
+          this._dataView.setUint8(this._index++, bytes[i]);
+        } else {
+          this._dataView.setUint8(this._index++, 0);
+        }
+      }
+    } else {
+      console.warn("End of the data");
+      throw "Tried to write out of range";
+    }
+  }
+
+  writeString(string, length) {
+    if (length === null) {
+      length = string.length;
+    }
+
+    if (this._index + length <= this._dataView.byteLength) {
+      for (let i = 0; i < length; i++) {
+        this._dataView.setUint8(this._index++, string.charCodeAt(i));
+      }
+    } else {
+      console.warn("End of the data");
+      throw "Tried to write out of range";
+    }
+  }
 
   writeFlag(value) {
     return this.writeValue(value, 1);
@@ -76,7 +97,7 @@ export class TnglWriter {
   }
 
   get bytes() {
-    return this._buffer;
+    return new DataView(this._buffer.slice(0, this._index));
   }
 
   get written() {

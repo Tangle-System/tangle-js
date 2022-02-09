@@ -60,6 +60,10 @@ export class TnglReader {
     }
   }
 
+  peekFlag() {
+    return this.peekValue(1, true);
+  }
+
   readFlag() {
     return this.readValue(1, true);
   }
