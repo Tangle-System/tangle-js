@@ -30,7 +30,7 @@ export class TangleDevice {
 
     this.timeline = new TimeTrack();
 
-    this.#uuidCounter = 0;
+    this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 
     this.#ownerSignature = null;
     this.#ownerKey = null;
@@ -136,9 +136,9 @@ export class TangleDevice {
     this.interface.assignConnector(connector_type);
   }
 
-  // valid UUIDs are in range [1..4294967295]
+  // valid UUIDs are in range [1..4294967295] (32-bit unsigned number)
   #getUUID() {
-    if (this.#uuidCounter >= 4294967295) {
+    if (this.#uuidCounter >= 0xffffffff) {
       this.#uuidCounter = 0;
     }
 
@@ -790,10 +790,10 @@ export class TangleDevice {
     const bytes = [DEVICE_FLAGS.FLAG_TIMELINE_REQUEST, ...numberToBytes(request_uuid, 4)];
 
     return this.interface.request(bytes, true).then(response => {
-      let reader = new TnglReader(response);
-
       console.log("> Got response:", response);
 
+      let reader = new TnglReader(response);
+      
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TIMELINE_RESPONSE) {
         throw "InvalidResponseFlag";
       }
