@@ -22,7 +22,7 @@ export class TangleConnectConnector {
       // simulate Tangle Connect
 
       var _connected = false;
-      var _seleted = false;
+      var _selected = false;
 
       function _fail(chance) {
         return Math.random() < chance;
@@ -48,7 +48,7 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
-        _seleted = true;
+        _selected = true;
         // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
@@ -65,14 +65,14 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
-        _seleted = true;
+        _selected = true;
         // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
       // @ts-ignore
       window.tangleConnect.selected = async function () {
-        if (_seleted) {
+        if (_selected) {
           // @ts-ignore
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
@@ -88,14 +88,14 @@ export class TangleConnectConnector {
           await window.tangleConnect.disconnect();
         }
         await sleep(10); // unselect logic
-        _seleted = false;
+        _selected = false;
         // @ts-ignore
         window.tangleConnect.resolve();
       };
 
       // @ts-ignore
       window.tangleConnect.connect = async function (timeout) {
-        if (!_seleted) {
+        if (!_selected) {
           // @ts-ignore
           window.tangleConnect.reject("DeviceNotSelected");
           return;
