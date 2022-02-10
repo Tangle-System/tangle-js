@@ -157,9 +157,9 @@ export class WebBLEConnection {
       })
       .then(() => {
         console.log("> Network notifications started");
-        this.#networkChar.addEventListener("characteristicvaluechanged", () => {
+        this.#networkChar.oncharacteristicvaluechanged = () => {
           this.#onNetworkNotification();
-        });
+        };
       })
       .catch(e => {
         console.warn(e);
@@ -184,9 +184,9 @@ export class WebBLEConnection {
       })
       .then(() => {
         console.log("> Device notifications started");
-        this.#networkChar.addEventListener("characteristicvaluechanged", () => {
+        this.#networkChar.oncharacteristicvaluechanged = () => {
           this.#onDeviceNotification();
-        });
+        };
       })
       .catch(e => {
         console.warn(e);
@@ -787,9 +787,10 @@ criteria example:
       // console.log(device);
 
       this.#webBTDevice = device;
-      this.#webBTDevice.addEventListener("gattserverdisconnected", () => {
+
+      this.#webBTDevice.ongattserverdisconnected = () => {
         this.#onDisconnected();
-      });
+      };
     });
   }
 
