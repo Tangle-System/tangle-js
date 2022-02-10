@@ -542,25 +542,38 @@ criteria example:
         // if (this.#criteria[i].namePrefix) {
         //   dont_add_tangle_uuid = true;
         //   dont_add_adoption_uuid = true;
+
+        //   // window.alert("namePrefix: " + this.#criteria[i].namePrefix);
+
         //   web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
         // }
 
         // if (this.#criteria[i].name) {
         //   dont_add_tangle_uuid = true;
         //   dont_add_adoption_uuid = true;
+
+        //   // window.alert("name: " + this.#criteria[i].name);
+
         //   web_ble_options.filters.push({ name: this.#criteria[i].name });
         // }
       }
 
       if (add_tangle_uuid && !dont_add_tangle_uuid) {
+        // window.alert("add_tangle_uuid");
+
         web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
       }
 
       if (add_adoption_uuid && !dont_add_adoption_uuid) {
+        // window.alert("add_adoption_uuid");
+
         web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
       }
 
       if (add_legacy_uuids) {
+
+        // window.alert("add_legacy_uuids");
+
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -570,6 +583,9 @@ criteria example:
       }
 
       if (add_all_devices) {
+
+        // window.alert("add_all_devices");
+
         web_ble_options.filters.push({ namePrefix: "A" });
         web_ble_options.filters.push({ namePrefix: "a" });
         web_ble_options.filters.push({ namePrefix: "B" });
