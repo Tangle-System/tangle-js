@@ -506,7 +506,6 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true) {
-
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
     if (devices && devices.length > 0) {
@@ -983,7 +982,7 @@ export class TangleDevice {
         })
         .catch(() => {})
         .then(() => {
-          return { mac: removed_device_mac };
+            return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
         });
     });
   }
