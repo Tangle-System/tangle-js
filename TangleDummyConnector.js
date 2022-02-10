@@ -67,8 +67,8 @@ criteria example:
       if (this.#connected) {
         await this.disconnect();
       }
-      await sleep(Math.random() * 2000); // userSelect logic
-      if (this.#fail(0.5)) {
+      await sleep(Math.random() * 1000); // userSelect logic
+      if (this.#fail(0.25)) {
         reject("UserCanceledSelection");
         return;
       }
@@ -101,7 +101,7 @@ criteria example:
       if (this.#connected) {
         await this.disconnect();
       }
-      await sleep(Math.random() * 2000); // autoSelect logic
+      await sleep(Math.random() * 1000); // autoSelect logic
       if (this.#fail(0.1)) {
         reject("SelectionFailed");
         return;
@@ -144,7 +144,7 @@ criteria example:
         reject("DeviceNotSelected");
         return;
       }
-      await sleep(Math.random() * 2000); // connecting logic
+      await sleep(Math.random() * 1000); // connecting logic
       if (this.#fail(0.1)) {
         reject("ConnectionFailed");
         return;
