@@ -973,12 +973,17 @@ export class TangleDevice {
 
       const removed_device_mac_bytes = reader.readBytes(6);
 
+      const removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
+        return ("0" + (byte & 0xff).toString(16)).slice(-2);
+      }).join(":");
+
       return this.rebootDevice()
         .then(() => {
           return this.disconnect();
         })
+        .catch(() => {})
         .then(() => {
-          return removed_device_mac_bytes;
+          return { mac: removed_device_mac };
         });
     });
   }
