@@ -519,6 +519,7 @@ criteria example:
       let add_all_devices = false;
       let add_tangle_uuid = false;
       let dont_add_tangle_uuid = false;
+      let dont_add_adoption_uuid = false;
       let add_legacy_uuids = false;
       let add_adoption_uuid = false;
 
@@ -536,15 +537,18 @@ criteria example:
 
         if (this.#criteria[i].ownerSignature) {
           add_tangle_uuid = true;
+          add_adoption_uuid = true;
         }
 
         if (this.#criteria[i].namePrefix) {
           dont_add_tangle_uuid = true;
+          dont_add_adoption_uuid = true;
           web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
         }
 
         if (this.#criteria[i].name) {
           dont_add_tangle_uuid = true;
+          dont_add_adoption_uuid = true;
           web_ble_options.filters.push({ name: this.#criteria[i].name });
         }
       }
@@ -553,7 +557,7 @@ criteria example:
         web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
       }
 
-      if (add_adoption_uuid) {
+      if (add_adoption_uuid && !dont_add_adoption_uuid) {
         web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
       }
 

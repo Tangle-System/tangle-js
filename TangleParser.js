@@ -602,7 +602,7 @@ export class TnglCompiler {
   }
 
   get tnglBytes() {
-    return new Uint8Array(this.#tnglWriter.bytes, 0, this.#tnglWriter.written);
+    return new Uint8Array(this.#tnglWriter.bytes.buffer, 0, this.#tnglWriter.written);
   }
 }
 
