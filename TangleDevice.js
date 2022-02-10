@@ -152,12 +152,12 @@ export class TangleDevice {
   connectRemoteControl() {
     this.#reconnectRC = true;
 
-    console.log("> Connecting to Remote Control")
+    console.log("> Connecting to Remote Control");
 
     if (!this.socket) {
       // TODO - scopovani dle apky
       // TODO - authentifikace
-      this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
+      this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ["websocket"] });
 
       this.socket.on("connect", () => {
         console.log("> Connected to remote control");
@@ -195,8 +195,8 @@ export class TangleDevice {
       //   this.interface.request(new Uint8Array(payload));
       // });
 
-      this.socket.on("connect_error", (error) => {
-        console.log('connect_error',error)
+      this.socket.on("connect_error", error => {
+        console.log("connect_error", error);
         setTimeout(() => {
           this.socket.connect();
         }, 1000);
@@ -225,7 +225,7 @@ export class TangleDevice {
   }
 
   disconnectRemoteControl() {
-    console.log("> Disonnecting from the Remote Control")
+    console.log("> Disonnecting from the Remote Control");
 
     this.#reconnectRC = false;
 
@@ -506,7 +506,6 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true) {
-    
     //devices = null; // HACK to ignore names of the lamps
 
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
@@ -535,12 +534,14 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria)).then(() => {
-      return this.interface.connect(10000);
-    }).catch(error => {
-      //@ts-ignore
-      window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.",);
-    });
+    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria))
+      .then(() => {
+        return this.interface.connect(10000);
+      })
+      .catch(error => {
+        //@ts-ignore
+        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+      });
   }
 
   disconnect() {
@@ -971,10 +972,15 @@ export class TangleDevice {
         throw "OwnerEraseFailed";
       }
 
-      const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
-      return this.interface.request(payload, false).then(() => {
-        return this.disconnect();
-      });
+      const removed_device_mac_bytes = reader.readBytes(6);
+
+      return this.rebootDevice()
+        .then(() => {
+          return this.disconnect();
+        })
+        .then(() => {
+          return removed_device_mac_bytes;
+        });
     });
   }
 
