@@ -419,7 +419,7 @@ export class TangleDevice {
 
   connect(devices = null, autoConnect = true) {
     
-    //devices = null; // HACK to ignore names of the lamps
+    devices = null; // HACK to ignore names of the lamps
 
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
