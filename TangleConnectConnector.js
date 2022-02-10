@@ -302,9 +302,9 @@ export class TangleConnectConnector {
   #applyTimeout(promise, timeout, message) {
     let id = setTimeout(() => {
       // @ts-ignore
-      window.alert(message, "Error: TC response timeouted");
+      // window.alert(message, "Error: TC response timeouted");
       // @ts-ignore
-      window.tangleConnect.reject("ResponseTimeout");
+      window.tangleConnect.reject("ResponseTimeout " + message);
     }, timeout);
     return promise.finally(() => {
       clearTimeout(id);
@@ -538,7 +538,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.deliver(payload);
 
-    return this.#applyTimeout(this.#promise, 5000, "deliver");
+    return this.#applyTimeout(this.#promise, 10000, "deliver");
   }
 
   // transmit handles the communication with the Tangle network in a way
@@ -556,7 +556,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.transmit(payload);
 
-    return this.#applyTimeout(this.#promise, 1000, "transmit");
+    return this.#applyTimeout(this.#promise, 10000, "transmit");
   }
 
   // request handles the requests on the Tangle network. The command request
@@ -576,7 +576,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.request(payload, read_response);
 
-    return this.#applyTimeout(this.#promise, 5000, "request");
+    return this.#applyTimeout(this.#promise, 10000, "request");
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -606,7 +606,7 @@ criteria example:
           // const timestamp = clock.millis();
           // window.tangleConnect.writeClock(timestamp);
 
-          await this.#applyTimeout(this.#promise, 1000, "writeClock");
+          await this.#applyTimeout(this.#promise, 5000, "writeClock");
           console.log("Clock write success:", timestamp);
 
           // @ts-ignore

@@ -3,6 +3,7 @@ import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
 import { TangleConnectConnector } from "./TangleConnectConnector.js";
+import { TangleWebSocketsConnector } from "./TangleWebSocketsConnector.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
@@ -73,17 +74,19 @@ export const NETWORK_FLAGS = Object.freeze({
 // Deffered object
 class Query {
   static TYPE_EXECUTE = 1;
-  static TYPE_USERSELECT = 2;
-  static TYPE_AUTOSELECT = 3;
-  static TYPE_SELECTED = 4;
-  static TYPE_UNSELECT = 5;
-  static TYPE_CONNECT = 6;
-  static TYPE_CONNECTED = 7;
-  static TYPE_DISCONNECT = 8;
-  static TYPE_REQUEST = 9;
-  static TYPE_SET_CLOCK = 10;
-  static TYPE_GET_CLOCK = 11;
-  static TYPE_FIRMWARE_UPDATE = 12;
+  static TYPE_DELIVER = 2;
+  static TYPE_TRANSMIT = 3;
+  static TYPE_USERSELECT = 4;
+  static TYPE_AUTOSELECT = 5;
+  static TYPE_SELECTED = 6;
+  static TYPE_UNSELECT = 7;
+  static TYPE_CONNECT = 8;
+  static TYPE_CONNECTED = 9;
+  static TYPE_DISCONNECT = 10;
+  static TYPE_REQUEST = 11;
+  static TYPE_SET_CLOCK = 12;
+  static TYPE_GET_CLOCK = 13;
+  static TYPE_FIRMWARE_UPDATE = 14;
 
   constructor(type, a = null, b = null, c = null, d = null) {
     this.type = type;
@@ -122,7 +125,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack();
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector } */ (new TangleDummyConnector(this));
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (new TangleDummyConnector(this));
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -240,6 +243,10 @@ export class TangleInterface {
 
       case "tangleconnect":
         this.connector = new TangleConnectConnector(this);
+        break;
+
+      case "websockets":
+        this.connector = new TangleWebSocketsConnector(this);
         break;
 
       default:
@@ -463,6 +470,18 @@ export class TangleInterface {
     // return this.connector.connected();
   }
 
+  deliver(bytes) {
+    const item = new Query(Query.TYPE_DELIVER, bytes);
+    this.#process(item);
+    return item.promise;
+  }
+
+  transmit(bytes) {
+    const item = new Query(Query.TYPE_TRANSMIT, bytes);
+    this.#process(item);
+    return item.promise;
+  }
+
   execute(bytes, bytes_label) {
     const item = new Query(Query.TYPE_EXECUTE, bytes, bytes_label);
 
@@ -659,8 +678,32 @@ export class TangleInterface {
                   });
                 break;
 
+              case Query.TYPE_DELIVER:
+                await this.connector
+                  .deliver(item.a)
+                  .then(() => {
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
+              case Query.TYPE_TRANSMIT:
+                await this.connector
+                  .transmit(item.a)
+                  .then(() => {
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
+                  });
+                break;
+
               case Query.TYPE_EXECUTE:
-                let payload = new Uint8Array(65535);
+                let payload = new Uint8Array(0xffff);
                 let index = 0;
 
                 payload.set(item.a, index);
@@ -675,6 +718,7 @@ export class TangleInterface {
                     payload.set(next_item.a, index);
                     index += next_item.a.length;
                   }
+
                   // if not, then return the item back into the queue
                   else {
                     this.#queue.unshift(next_item);
