@@ -394,6 +394,14 @@ criteria example:
             writer.writeUint32(request_uuid);
             writer.writeUint8(error_code);
 
+            // mac address
+            if (error_code == ERROR_CODE_SUCCESS) {
+              writer.writeBytes(
+                new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+                6,
+              );
+            }
+
             resolve(writer.bytes);
           }
           break;
