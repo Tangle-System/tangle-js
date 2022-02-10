@@ -935,8 +935,8 @@ export class TangleDevice {
   rebootDevice() {
     console.log("> Rebooting device...");
 
-    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
-    return this.interface.execute(payload, null);
+    const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+    return this.interface.request(payload, false);
   }
 
   removeOwner() {
