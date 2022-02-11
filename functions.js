@@ -196,7 +196,8 @@ export function detectAndroid() {
 }
 
 export function detectBluefy() {
-  return navigator.userAgent.toLowerCase().indexOf("android") == -1 && navigator.userAgent.toLowerCase().indexOf("windows") == -1;
+  // return navigator.userAgent.toLowerCase().indexOf("android") == -1 && navigator.userAgent.toLowerCase().indexOf("windows") == -1;
+  return navigator.userAgent.toLowerCase().indexOf("bluefy") == -1;
 }
 
 //////////////////////////////////////////////////////
