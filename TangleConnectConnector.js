@@ -18,13 +18,11 @@ export class TangleConnectConnector {
 
     this.#promise = null;
 
-
     if (!("tangleConnect" in window)) {
-
       // simulate Tangle Connect
 
       var _connected = false;
-      var _seleted = false;
+      var _selected = false;
 
       function _fail(chance) {
         return Math.random() < chance;
@@ -50,7 +48,7 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
-        _seleted = true;
+        _selected = true;
         // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
@@ -67,14 +65,14 @@ export class TangleConnectConnector {
           window.tangleConnect.reject("SelectionFailed");
           return;
         }
-        _seleted = true;
+        _selected = true;
         // @ts-ignore
         window.tangleConnect.resolve('{"connector":"tangleconnect"}');
       };
 
       // @ts-ignore
       window.tangleConnect.selected = async function () {
-        if (_seleted) {
+        if (_selected) {
           // @ts-ignore
           window.tangleConnect.resolve('{"connector":"tangleconnect"}');
         } else {
@@ -90,14 +88,14 @@ export class TangleConnectConnector {
           await window.tangleConnect.disconnect();
         }
         await sleep(10); // unselect logic
-        _seleted = false;
+        _selected = false;
         // @ts-ignore
         window.tangleConnect.resolve();
       };
 
       // @ts-ignore
       window.tangleConnect.connect = async function (timeout) {
-        if (!_seleted) {
+        if (!_selected) {
           // @ts-ignore
           window.tangleConnect.reject("DeviceNotSelected");
           return;
@@ -279,21 +277,22 @@ export class TangleConnectConnector {
       this.#interfaceReference.emit(event, param);
     };
 
-    if ("tangleConnect" in window) {
-      // target="_blank" global handler
-      window.tangleConnect.hasOwnProperty('open') && /** @type {HTMLBodyElement} */ (document.querySelector('body')).addEventListener('click', function (e) {
+    // target="_blank" global handler
+    // @ts-ignore
+    window.tangleConnect.hasOwnProperty("open") &&
+      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
         e.preventDefault();
         for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute('target') === "_blank") {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
             e.preventDefault();
-            const url = el.getAttribute('href');
-            console.log(url)
-            window.tangleConnect.open(url)
+            const url = el.getAttribute("href");
+            console.log(url);
+            // @ts-ignore
+            window.tangleConnect.open(url);
             break;
           }
         }
-      })
-    }
+      });
   }
 
   available() {
@@ -303,9 +302,9 @@ export class TangleConnectConnector {
   #applyTimeout(promise, timeout, message) {
     let id = setTimeout(() => {
       // @ts-ignore
-      window.alert(message, "Error: TC response timeouted");
+      // window.alert(message, "Error: TC response timeouted");
       // @ts-ignore
-      window.tangleConnect.reject("ResponseTimeout");
+      window.tangleConnect.reject("ResponseTimeout " + message);
     }, timeout);
     return promise.finally(() => {
       clearTimeout(id);
@@ -486,7 +485,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.connect(timeout);
 
-    return this.#applyTimeout(this.#promise, timeout * 2.0, "connect");
+    return this.#applyTimeout(this.#promise, timeout < 5000 ? 10000 : timeout * 2.0, "connect");
   }
 
   connected() {
@@ -521,7 +520,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.disconnect();
 
-    return this.#applyTimeout(this.#promise, 1000, "disconnect");
+    return this.#applyTimeout(this.#promise, 10000, "disconnect");
   }
 
   // deliver handles the communication with the Tangle network in a way
@@ -539,7 +538,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.deliver(payload);
 
-    return this.#applyTimeout(this.#promise, 5000, "deliver");
+    return this.#applyTimeout(this.#promise, 10000, "deliver");
   }
 
   // transmit handles the communication with the Tangle network in a way
@@ -557,7 +556,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.transmit(payload);
 
-    return this.#applyTimeout(this.#promise, 1000, "transmit");
+    return this.#applyTimeout(this.#promise, 10000, "transmit");
   }
 
   // request handles the requests on the Tangle network. The command request
@@ -577,7 +576,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.request(payload, read_response);
 
-    return this.#applyTimeout(this.#promise, 5000, "request");
+    return this.#applyTimeout(this.#promise, 10000, "request");
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -607,7 +606,7 @@ criteria example:
           // const timestamp = clock.millis();
           // window.tangleConnect.writeClock(timestamp);
 
-          await this.#applyTimeout(this.#promise, 1000, "writeClock");
+          await this.#applyTimeout(this.#promise, 5000, "writeClock");
           console.log("Clock write success:", timestamp);
 
           // @ts-ignore
@@ -683,7 +682,7 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.updateFW(firmware);
 
-    return this.#applyTimeout(this.#promise, 60000, "updateFW");
+    return this.#applyTimeout(this.#promise, 600000, "updateFW");
   }
 
   destroy() {

@@ -157,9 +157,9 @@ export class WebBLEConnection {
       })
       .then(() => {
         console.log("> Network notifications started");
-        this.#networkChar.addEventListener("characteristicvaluechanged", () => {
+        this.#networkChar.oncharacteristicvaluechanged = () => {
           this.#onNetworkNotification();
-        });
+        };
       })
       .catch(e => {
         console.warn(e);
@@ -184,9 +184,9 @@ export class WebBLEConnection {
       })
       .then(() => {
         console.log("> Device notifications started");
-        this.#networkChar.addEventListener("characteristicvaluechanged", () => {
+        this.#networkChar.oncharacteristicvaluechanged = () => {
           this.#onDeviceNotification();
-        });
+        };
       })
       .catch(e => {
         console.warn(e);
@@ -519,9 +519,9 @@ criteria example:
       let add_all_devices = false;
       let add_tangle_uuid = false;
       let dont_add_tangle_uuid = false;
+      let dont_add_adoption_uuid = false;
       let add_legacy_uuids = false;
       let add_adoption_uuid = false;
-
 
       for (let i = 0; i < this.#criteria.length; i++) {
         if (this.#criteria[i].adoptionFlag) { 
@@ -536,28 +536,44 @@ criteria example:
 
         if (this.#criteria[i].ownerSignature) {
           add_tangle_uuid = true;
+          add_adoption_uuid = true;
         }
 
-        if (this.#criteria[i].namePrefix) {
-          dont_add_tangle_uuid = true;
-          web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
-        }
+        // if (this.#criteria[i].namePrefix) {
+        //   dont_add_tangle_uuid = true;
+        //   dont_add_adoption_uuid = true;
 
-        if (this.#criteria[i].name) {
-          dont_add_tangle_uuid = true;
-          web_ble_options.filters.push({ name: this.#criteria[i].name });
-        }
+        //   // window.alert("namePrefix: " + this.#criteria[i].namePrefix);
+
+        //   web_ble_options.filters.push({ namePrefix: this.#criteria[i].namePrefix });
+        // }
+
+        // if (this.#criteria[i].name) {
+        //   dont_add_tangle_uuid = true;
+        //   dont_add_adoption_uuid = true;
+
+        //   // window.alert("name: " + this.#criteria[i].name);
+
+        //   web_ble_options.filters.push({ name: this.#criteria[i].name });
+        // }
       }
 
       if (add_tangle_uuid && !dont_add_tangle_uuid) {
+        // window.alert("add_tangle_uuid");
+
         web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
       }
 
-      if (add_adoption_uuid) {
+      if (add_adoption_uuid && !dont_add_adoption_uuid) {
+        // window.alert("add_adoption_uuid");
+
         web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
       }
 
       if (add_legacy_uuids) {
+
+        // window.alert("add_legacy_uuids");
+
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -567,6 +583,9 @@ criteria example:
       }
 
       if (add_all_devices) {
+
+        // window.alert("add_all_devices");
+
         web_ble_options.filters.push({ namePrefix: "A" });
         web_ble_options.filters.push({ namePrefix: "a" });
         web_ble_options.filters.push({ namePrefix: "B" });
@@ -783,9 +802,10 @@ criteria example:
       // console.log(device);
 
       this.#webBTDevice = device;
-      this.#webBTDevice.addEventListener("gattserverdisconnected", () => {
+
+      this.#webBTDevice.ongattserverdisconnected = () => {
         this.#onDisconnected();
-      });
+      };
     });
   }
 
@@ -812,10 +832,10 @@ criteria example:
       });
     }
 
-    // web bluetooth cant really auto select bluetooth device. This is the closest you can get.
-    if (this.#selected() && criteria.ownerSignature === this.#criteria.ownerSignature) {
-      return Promise.resolve();
-    }
+    // // web bluetooth cant really auto select bluetooth device. This is the closest you can get.
+    // if (this.#selected() && criteria.ownerSignature === this.#criteria.ownerSignature) {
+    //   return Promise.resolve();
+    // }
 
     this.#criteria = criteria;
 

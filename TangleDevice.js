@@ -1,10 +1,11 @@
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
+import { io } from "./socketio.js";
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -23,14 +24,16 @@ export class TangleDevice {
   #updating;
   #selected;
 
-  constructor(connectorType = "default", reconnectionInterval = 10000) {
+  #reconnectRC;
+
+  constructor(connectorType = "default", reconnectionInterval = 1000) {
     if (!connectorType) {
       connectorType = "default";
     }
 
     this.timeline = new TimeTrack();
 
-    this.#uuidCounter = 0;
+    this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 
     this.#ownerSignature = null;
     this.#ownerKey = null;
@@ -42,6 +45,8 @@ export class TangleDevice {
 
     this.#adopting = false;
     this.#updating = false;
+
+    this.#reconnectRC = false;
 
     this.interface.on("#connected", e => {
       this.#onConnected(e);
@@ -81,6 +86,14 @@ export class TangleDevice {
       this.interface.emit("disconnected", { target: this });
     }
   };
+
+  requestWakeLock() {
+    return this.interface.requestWakeLock();
+  }
+
+  releaseWakeLock() {
+    return this.interface.releaseWakeLock();
+  }
 
   setOwnerSignature(ownerSignature) {
     if (ownerSignature.length != 32) {
@@ -136,9 +149,92 @@ export class TangleDevice {
     this.interface.assignConnector(connector_type);
   }
 
-  // valid UUIDs are in range [1..4294967295]
+  connectRemoteControl() {
+    this.#reconnectRC = true;
+
+    console.log("> Connecting to Remote Control");
+
+    if (!this.socket) {
+      // TODO - scopovani dle apky
+      // TODO - authentifikace
+      this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ["websocket"] });
+
+      this.socket.on("connect", () => {
+        console.log("> Connected to remote control");
+        window.alert("Connected to remote control");
+      });
+
+      this.socket.on("disconnect", () => {
+        console.log("> Disconnected from remote control");
+        window.alert("Disconnected from remote control");
+
+        // if (this.#reconnectRC) {
+        //   console.log("Disconnected by its own... Reloading");
+        //   window.location.reload();
+        // }
+
+        // if (this.#reconnectRC) {
+        //   console.log("> Reconnecting Remote Control...");
+
+        //   this.socket.connect();
+        // }
+      });
+
+      this.socket.on("deliver", payload => {
+        console.log("deliver", payload);
+        this.interface.deliver(new Uint8Array(payload));
+      });
+
+      this.socket.on("transmit", payload => {
+        console.log("transmit", payload);
+        this.interface.transmit(new Uint8Array(payload));
+      });
+
+      // this.socket.on("request", payload => {
+      //   console.log("request", payload);
+      //   this.interface.request(new Uint8Array(payload));
+      // });
+
+      this.socket.on("connect_error", error => {
+        console.log("connect_error", error);
+        setTimeout(() => {
+          this.socket.connect();
+        }, 1000);
+      });
+
+      // this.socket.on("setClock", payload => {
+      //   console.warn("setClock", payload);
+      // });
+
+      // // ============= CLOCK HACK ==============
+
+      // const hackClock = () => {
+      //   console.warn("overriding clock with UTC clock");
+      //   this.interface.clock.setMillis(getClockTimestamp());
+      //   this.syncClock();
+      // };
+
+      // hackClock();
+
+      // this.interface.on("connected", () => {
+      //   hackClock();
+      // });
+    } else {
+      this.socket.connect();
+    }
+  }
+
+  disconnectRemoteControl() {
+    console.log("> Disonnecting from the Remote Control");
+
+    this.#reconnectRC = false;
+
+    this.socket?.disconnect();
+  }
+
+  // valid UUIDs are in range [1..4294967295] (32-bit unsigned number)
   #getUUID() {
-    if (this.#uuidCounter >= 4294967295) {
+    if (this.#uuidCounter >= 0xffffffff) {
       this.#uuidCounter = 0;
     }
 
@@ -273,13 +369,16 @@ export class TangleDevice {
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
+            // @ts-ignore
             newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
               placeholder: "NARA",
               regex: /^[a-zA-Z0-9_ ]{1,16}$/,
               invalidText: "Název obsahuje nepovolené znaky",
+              maxlength: 16,
             });
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
+            // @ts-ignore
             newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
           }
 
@@ -340,12 +439,16 @@ export class TangleDevice {
               return (
                 (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
                   .then(() => {
-                    return sleep(1000).then(() => {
-                      return this.interface.disconnect();
-                    });
+                    return sleep(1000)
+                      .then(() => {
+                        return this.rebootDevice();
+                      })
+                      .then(() => {
+                        return this.interface.disconnect();
+                      });
                   })
                   .then(() => {
-                    return sleep(5000).then(() => {
+                    return sleep(3000).then(() => {
                       return this.interface.connect(10000);
                     });
                   })
@@ -372,6 +475,7 @@ export class TangleDevice {
             } else {
               console.warn("Adoption refused.");
               this.disconnect().finally(() => {
+                // @ts-ignore
                 window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
                   if (result) {
                     this.adopt(newDeviceName, newDeviceId, tnglCode);
@@ -384,6 +488,7 @@ export class TangleDevice {
           .catch(e => {
             console.error(e);
             this.disconnect().finally(() => {
+              // @ts-ignore
               window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
                 if (result) {
                   this.adopt(newDeviceName, newDeviceId, tnglCode);
@@ -428,9 +533,14 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria)).then(() => {
-      return this.interface.connect(10000);
-    });
+    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria))
+      .then(() => {
+        return this.interface.connect(10000);
+      })
+      .catch(error => {
+        //@ts-ignore
+        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+      });
   }
 
   disconnect() {
@@ -493,11 +603,11 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
-  emitEvent(event_label, device_ids = [0xff], force_delivery = true) {
+  emitEvent(event_label, device_ids = [0xff], force_delivery = true, is_lazy = true) {
     // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id];
+      const payload = is_lazy ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
@@ -511,11 +621,13 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
-  emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+  emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // console.log("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id];
+      const payload = is_lazy
+        ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id]
+        : [NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
@@ -529,11 +641,13 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: "#00aaff"
-  emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+  emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // console.log("emitColorEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), device_id];
+      const payload = is_lazy
+        ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), device_id]
+        : [NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT, ...colorToBytes(event_value), ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
@@ -548,11 +662,13 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 100.0
   // !!! PARAMETER CHANGE !!!
-  emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+  emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // console.log("emitPercentageEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id];
+      const payload = is_lazy
+        ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id]
+        : [NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
@@ -567,11 +683,13 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: "label"
   // !!! PARAMETER CHANGE !!!
-  emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false) {
+  emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // console.log("emitLabelEvent(id=" + device_ids + ")");
 
     const func = device_id => {
-      const payload = [NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), device_id];
+      const payload = is_lazy
+        ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), device_id]
+        : [NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT, ...labelToBytes(event_value), ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
       return this.interface.execute(payload, force_delivery ? null : "E" + event_label + device_id);
     };
 
@@ -607,6 +725,8 @@ export class TangleDevice {
 
   updateNetworkFirmware(firmware) {
     this.#updating = true;
+
+    this.interface.requestWakeLock();
 
     return new Promise(async (resolve, reject) => {
       const chunk_size = 4976; // must be modulo 16
@@ -703,6 +823,7 @@ export class TangleDevice {
         this.disconnect();
       })
       .finally(() => {
+        this.interface.releaseWakeLock();
         this.#updating = false;
       });
   }
@@ -779,9 +900,9 @@ export class TangleDevice {
     const bytes = [DEVICE_FLAGS.FLAG_TIMELINE_REQUEST, ...numberToBytes(request_uuid, 4)];
 
     return this.interface.request(bytes, true).then(response => {
-      let reader = new TnglReader(response);
-
       console.log("> Got response:", response);
+
+      let reader = new TnglReader(response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TIMELINE_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -807,11 +928,18 @@ export class TangleDevice {
     });
   }
 
-  reboot() {
+  rebootNetwork() {
     console.log("> Rebooting network...");
 
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.execute(payload, null);
+  }
+
+  rebootDevice() {
+    console.log("> Rebooting device...");
+
+    const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+    return this.interface.request(payload, false);
   }
 
   removeOwner() {
@@ -843,10 +971,20 @@ export class TangleDevice {
         throw "OwnerEraseFailed";
       }
 
-      const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
-      return this.interface.request(payload, false).then(() => {
-        return this.disconnect();
-      });
+      const removed_device_mac_bytes = reader.readBytes(6);
+
+      const removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
+        return ("0" + (byte & 0xff).toString(16)).slice(-2);
+      }).join(":");
+
+      return this.rebootDevice()
+        .then(() => {
+          return this.disconnect();
+        })
+        .catch(() => {})
+        .then(() => {
+            return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
+        });
     });
   }
 
