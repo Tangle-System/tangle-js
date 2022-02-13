@@ -18,6 +18,6 @@ function injectScript(src) {
   document.head.appendChild(script);
 }
 
-
+injectScript("code_theme.js");
 injectScript("code.js");
 // injectScript("control.js");
