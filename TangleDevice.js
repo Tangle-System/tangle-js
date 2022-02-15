@@ -448,7 +448,7 @@ export class TangleDevice {
                       });
                   })
                   .then(() => {
-                    return sleep(3000).then(() => {
+                    return sleep(3500).then(() => {
                       return this.interface.connect(10000);
                     });
                   })

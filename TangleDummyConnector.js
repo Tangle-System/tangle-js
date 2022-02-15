@@ -12,17 +12,22 @@ export class TangleDummyConnector {
   #interfaceReference;
   #selected;
   #connected;
+  #enableErrors;
 
-  constructor(interfaceReference) {
+  constructor(interfaceReference, enableErrors = false) {
     this.#interfaceReference = interfaceReference;
+    this.#enableErrors = enableErrors;
 
     this.#selected = false;
     this.#connected = false;
   }
 
   #fail(chance) {
-    //return Math.random() < chance;
-    return false; // deactivate fail function
+    if (this.#enableErrors) {
+      return Math.random() < chance;
+    } else {
+      return false; // deactivate fail function
+    }
   }
 
   /*
@@ -396,10 +401,7 @@ criteria example:
 
             // mac address
             if (error_code == ERROR_CODE_SUCCESS) {
-              writer.writeBytes(
-                new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
-                6,
-              );
+              writer.writeBytes(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 6);
             }
 
             resolve(writer.bytes);
