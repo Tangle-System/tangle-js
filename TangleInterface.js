@@ -230,7 +230,11 @@ export class TangleInterface {
 
     switch (connector_type) {
       case "dummy":
-        this.connector = new TangleDummyConnector(this);
+        this.connector = new TangleDummyConnector(this, false);
+        break;
+
+      case "edummy":
+        this.connector = new TangleDummyConnector(this, true);
         break;
 
       case "webbluetooth":
