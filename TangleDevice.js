@@ -972,17 +972,19 @@ export class TangleDevice {
 
       const removed_device_mac_bytes = reader.readBytes(6);
 
-      const removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
-        return ("0" + (byte & 0xff).toString(16)).slice(-2);
-      }).join(":");
-
       return this.rebootDevice()
         .then(() => {
           return this.disconnect();
         })
         .catch(() => {})
         .then(() => {
-            return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
+          let removed_device_mac = "00:00:00:00:00:00";
+          if (removed_device_mac_bytes.length >= 6) {
+            removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
+              return ("0" + (byte & 0xff).toString(16)).slice(-2);
+            }).join(":");
+          }
+          return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
         });
     });
   }
