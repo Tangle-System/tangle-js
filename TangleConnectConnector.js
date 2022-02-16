@@ -146,7 +146,7 @@ export class TangleConnectConnector {
       window.tangleConnect.deliver = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(25); // delivering logic
@@ -163,7 +163,7 @@ export class TangleConnectConnector {
       window.tangleConnect.transmit = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(10); // transmiting logic
@@ -180,7 +180,7 @@ export class TangleConnectConnector {
       window.tangleConnect.request = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(50); // requesting logic
@@ -198,7 +198,7 @@ export class TangleConnectConnector {
       window.tangleConnect.readClock = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(50); // reading clock logic.
@@ -215,7 +215,7 @@ export class TangleConnectConnector {
       window.tangleConnect.writeClock = async function (bytes) {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(10); // writing clock logic.
@@ -232,7 +232,7 @@ export class TangleConnectConnector {
       window.tangleConnect.updateFW = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         // @ts-ignore

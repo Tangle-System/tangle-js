@@ -82,7 +82,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
     });
   }
 
@@ -112,7 +112,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
     });
   }
 
@@ -121,7 +121,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#selected) {
-        resolve('{"connector":"dummy"}');
+        resolve({ connector: "dummy" });
       } else {
         resolve();
       }
@@ -156,7 +156,7 @@ criteria example:
       }
       this.#connected = true;
       this.#interfaceReference.emit("#connected");
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
 
       /**  
         // after connection the connector can any time emit #disconnect event.
@@ -187,7 +187,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
-        resolve('{"connector":"dummy"}');
+        resolve({ connector: "dummy" });
       } else {
         resolve();
       }
@@ -201,7 +201,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(25); // delivering logic
@@ -220,7 +220,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(10); // transmiting logic
@@ -242,7 +242,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(50); // requesting logic
@@ -444,7 +444,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(10); // writing clock logic.
@@ -463,7 +463,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(50); // reading clock logic.
@@ -483,7 +483,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       this.#interfaceReference.emit("ota_status", "begin");
