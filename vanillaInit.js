@@ -1,7 +1,7 @@
 import { TangleDevice } from "./TangleDevice.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglCodeParser } from "./TangleParser.js";
-import { uint8ArrayToHexString, computeTnglFingerprint } from "./functions.js";
+import { uint8ArrayToHexString, computeTnglFingerprint, enableDebugMode, deactivateDebugMode } from "./functions.js";
 import TangleMsgBox from "../webcomponents/dialog-component.js";
 import "../../control.js";
 
@@ -11,6 +11,8 @@ window.TnglCodeParser = TnglCodeParser;
 window.uint8ArrayToHexString = uint8ArrayToHexString;
 window.computeTnglFingerprint = computeTnglFingerprint;
 window.TangleMsgBox = TangleMsgBox;
+window.enableDebugMode = enableDebugMode;
+window.deactivateDebugMode = deactivateDebugMode;
 
 function injectScript(src) {
   const script = document.createElement("script");
