@@ -426,6 +426,17 @@ class NoSleep {
 export const noSleep = new NoSleep();
 window.noSleep = noSleep
 
+export function enableDebugMode() {
+  var script = document.createElement('script'); script.src = "//cdn.jsdelivr.net/npm/eruda"; document.body.appendChild(script); script.onload = function () { eruda.init() }
+}
+
+export function deactivateDebugMode() {
+  if ('eruda' in window) {
+    if (window.eruda.hasOwnProperty('destroy')) {
+      window.eruda.destroy();
+    }
+  }
+}
 
 
 // let secret = "sec-demo"; // the secret key
