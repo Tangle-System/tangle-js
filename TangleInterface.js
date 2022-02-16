@@ -197,7 +197,7 @@ export class TangleInterface {
   releaseWakeLock() {
     console.log("> Deactivating wakeLock...");
 
-    noSleep.disable()
+    noSleep.disable();
 
     return Promise.resolve();
   }
@@ -247,6 +247,10 @@ export class TangleInterface {
         throw "UnknownConnector";
         break;
     }
+  }
+
+  reconnection(enable) {
+    this.#reconection = enable;
   }
 
   userSelect(criteria, timeout = 60000) {

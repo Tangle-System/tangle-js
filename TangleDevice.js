@@ -439,13 +439,9 @@ export class TangleDevice {
               return (
                 (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
                   .then(() => {
-                    return sleep(1000)
-                      .then(() => {
-                        return this.rebootDevice();
-                      })
-                      .then(() => {
-                        return this.interface.disconnect();
-                      });
+                    return sleep(1000).then(() => {
+                      return this.rebootAndDisconnectDevice();
+                    });
                   })
                   .then(() => {
                     return sleep(3500).then(() => {
@@ -941,6 +937,16 @@ export class TangleDevice {
     return this.interface.request(payload, false);
   }
 
+  rebootAndDisconnectDevice() {
+    console.log("> Rebooting and disconnecting device...");
+
+    this.interface.reconnection(false);
+
+    return this.rebootDevice().then(() => {
+      return this.interface.disconnect();
+    });
+  }
+
   removeOwner() {
     console.log("> Removing owner...");
 
@@ -972,10 +978,7 @@ export class TangleDevice {
 
       const removed_device_mac_bytes = reader.readBytes(6);
 
-      return this.rebootDevice()
-        .then(() => {
-          return this.disconnect();
-        })
+      return this.rebootAndDisconnectDevice()
         .catch(() => {})
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
