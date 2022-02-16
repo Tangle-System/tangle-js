@@ -471,6 +471,7 @@ export class TangleWebBluetoothConnector {
   #connection;
   #reconection;
   #criteria;
+  #connectedGuard;
 
   constructor(interfaceReference) {
     this.#interfaceReference = interfaceReference;
@@ -492,6 +493,16 @@ export class TangleWebBluetoothConnector {
     this.#connection = new WebBLEConnection(interfaceReference);
     this.#reconection = false;
     this.#criteria = {};
+
+    this.#connectedGuard = false;
+
+    this.#interfaceReference.on("#connected", () => {
+      this.#connectedGuard = true;
+    });
+
+    this.#interfaceReference.on("#disconnected", () => {
+      this.#connectedGuard = false;
+    });
   }
 
   /*
@@ -924,8 +935,13 @@ criteria example:
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
   connect(timeout = 5000) {
-    this.#reconection = true;
+    if (timeout <= 0) {
+      console.log("> Connect timeout have expired");
+      return Promise.reject("ConnectionFailed");
+    }
+
     const start = new Date().getTime();
+    this.#reconection = true;
 
     if (!this.#selected()) {
       return Promise.reject("DeviceNotSelected");
@@ -936,10 +952,13 @@ criteria example:
       return Promise.resolve();
     }
 
-    if (timeout <= 0) {
-      console.log("> Connect timeout have expired");
-      return Promise.reject("ConnectionFailed");
-    }
+    const timeout_handle = setTimeout(
+      () => {
+        console.warn("Timeout triggered");
+        this.disconnect();
+      },
+      timeout < 5000 ? 5000 : timeout,
+    );
 
     console.log("> Connecting to Bluetooth device...");
     return this.#webBTDevice.gatt
@@ -948,6 +967,7 @@ criteria example:
         this.#connection.reset();
 
         console.log("> Getting the Bluetooth Service UUID...");
+
         return (
           server
             .getPrimaryServices()
@@ -1006,6 +1026,8 @@ criteria example:
                 throw "ConnectionFailed";
               }
 
+              clearTimeout(timeout_handle);
+
               console.log("> Getting the Bluetooth Service...");
               return server.getPrimaryService(service_uuid);
             })
@@ -1018,11 +1040,15 @@ criteria example:
       })
       .then(() => {
         console.log("> Bluetooth Device Connected");
-        this.#interfaceReference.emit("#connected");
+        if (!this.#connectedGuard) {
+          this.#interfaceReference.emit("#connected");
+        }
         return { connector: "webbluetooth" };
       })
       .catch(error => {
         console.warn(error.name);
+
+        clearTimeout(timeout_handle);
 
         // If the device is far away, sometimes this "NetworkError" happends
         if (error.name == "NetworkError") {
@@ -1051,9 +1077,7 @@ criteria example:
   }
 
   #disconnect() {
-    this.#webBTDevice.gatt.disconnect().catch(e => {
-      console.warn(e);
-    });
+    this.#webBTDevice.gatt.disconnect();
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -1081,7 +1105,9 @@ criteria example:
   #onDisconnected = event => {
     console.log("> Bluetooth Device disconnected");
     this.#connection.reset();
-    this.#interfaceReference.emit("#disconnected");
+    if (this.#connectedGuard) {
+      this.#interfaceReference.emit("#disconnected");
+    }
   };
 
   // deliver handles the communication with the Tangle network in a way

@@ -14,7 +14,7 @@ export class TangleDummyConnector {
   #connected;
   #enableErrors;
 
-  constructor(interfaceReference, enableErrors = false) {
+  constructor(interfaceReference, enableErrors = false, ) {
     this.#interfaceReference = interfaceReference;
     this.#enableErrors = enableErrors;
 
