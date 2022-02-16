@@ -393,7 +393,7 @@ class NoSleep {
       return playPromise
         .then((res) => {
           this.enabled = true;
-          return res;
+          // return res;
         })
         .catch((err) => {
           this.enabled = false;
