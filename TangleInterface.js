@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep } from "./functions.js";
+import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -206,7 +206,7 @@ export class TangleInterface {
     this.connector.destroy();
 
     if (connector_type == "default") {
-      if ("tangleConnect" in window) {
+      if (detectTangleConnect()) {
         this.connector = new TangleConnectConnector(this);
       } else if (navigator.bluetooth) {
         this.connector = new TangleWebBluetoothConnector(this);

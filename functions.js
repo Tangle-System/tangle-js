@@ -200,6 +200,10 @@ export function detectBluefy() {
   return navigator.userAgent.toLowerCase().indexOf("bluefy") > -1;
 }
 
+export function detectTangleConnect() {
+  return "tangleConnect" in window;
+}
+
 //////////////////////////////////////////////////////
 
 export function computeTnglFingerprint(tngl_bytes, tngl_label) {
