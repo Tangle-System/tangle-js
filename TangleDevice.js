@@ -374,12 +374,12 @@ export class TangleDevice {
           "Vochomurka",
           "Kubula",
           "Locika",
-          "Otesánek",
+          "Otesanek",
           "Petr Pan",
           "Snehurka",
           "Smoulinka",
           "Vila Amalka",
-          "Zlatá rybka",
+          "Zlata rybka",
           "Zvonilka"
         ];
 
