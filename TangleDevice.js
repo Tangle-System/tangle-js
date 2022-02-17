@@ -533,8 +533,10 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .catch(error => {
-        //@ts-ignore
-        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        if (error !== "UserCanceledSelection") {
+          //@ts-ignore
+          window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        }
       });
   }
 
