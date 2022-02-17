@@ -365,6 +365,22 @@ export class TangleDevice {
           "Kokoska",
           "Marlenka",
           "Bobinka",
+          "Louskacek",
+          "Bila pani",
+          "Bob",
+          "Bobek",
+          "Brouk Pytlik",
+          "Kremilek",
+          "Vochomurka",
+          "Kubula",
+          "Locika",
+          "Otesánek",
+          "Petr Pan",
+          "Snehurka",
+          "Smoulinka",
+          "Vila Amalka",
+          "Zlatá rybka",
+          "Zvonilka"
         ];
 
         try {
