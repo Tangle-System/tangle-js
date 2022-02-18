@@ -365,6 +365,22 @@ export class TangleDevice {
           "Kokoska",
           "Marlenka",
           "Bobinka",
+          "Louskacek",
+          "Bila pani",
+          "Bob",
+          "Bobek",
+          "Brouk Pytlik",
+          "Kremilek",
+          "Vochomurka",
+          "Kubula",
+          "Locika",
+          "Otesanek",
+          "Petr Pan",
+          "Snehurka",
+          "Smoulinka",
+          "Vila Amalka",
+          "Zlata rybka",
+          "Zvonilka"
         ];
 
         try {
@@ -439,16 +455,12 @@ export class TangleDevice {
               return (
                 (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
                   .then(() => {
-                    return sleep(1000)
-                      .then(() => {
-                        return this.rebootDevice();
-                      })
-                      .then(() => {
-                        return this.interface.disconnect();
-                      });
+                    return sleep(1000).then(() => {
+                      return this.rebootAndDisconnectDevice();
+                    });
                   })
                   .then(() => {
-                    return sleep(3000).then(() => {
+                    return sleep(3500).then(() => {
                       return this.interface.connect(10000);
                     });
                   })
@@ -538,8 +550,10 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .catch(error => {
-        //@ts-ignore
-        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        if (error !== "UserCanceledSelection") {
+          //@ts-ignore
+          window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        }
       });
   }
 
@@ -942,6 +956,16 @@ export class TangleDevice {
     return this.interface.request(payload, false);
   }
 
+  rebootAndDisconnectDevice() {
+    console.log("> Rebooting and disconnecting device...");
+
+    this.interface.reconnection(false);
+
+    return this.rebootDevice().then(() => {
+      return this.interface.disconnect();
+    });
+  }
+
   removeOwner() {
     console.log("> Removing owner...");
 
@@ -973,17 +997,16 @@ export class TangleDevice {
 
       const removed_device_mac_bytes = reader.readBytes(6);
 
-      const removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
-        return ("0" + (byte & 0xff).toString(16)).slice(-2);
-      }).join(":");
-
-      return this.rebootDevice()
-        .then(() => {
-          return this.disconnect();
-        })
+      return this.rebootAndDisconnectDevice()
         .catch(() => {})
         .then(() => {
-            return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
+          let removed_device_mac = "00:00:00:00:00:00";
+          if (removed_device_mac_bytes.length >= 6) {
+            removed_device_mac = Array.from(removed_device_mac_bytes, function (byte) {
+              return ("0" + (byte & 0xff).toString(16)).slice(-2);
+            }).join(":");
+          }
+          return { mac: removed_device_mac !== "00:00:00:00:00:00" ? removed_device_mac : null };
         });
     });
   }

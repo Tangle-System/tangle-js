@@ -12,17 +12,22 @@ export class TangleDummyConnector {
   #interfaceReference;
   #selected;
   #connected;
+  #enableErrors;
 
-  constructor(interfaceReference) {
+  constructor(interfaceReference, enableErrors = false, ) {
     this.#interfaceReference = interfaceReference;
+    this.#enableErrors = enableErrors;
 
     this.#selected = false;
     this.#connected = false;
   }
 
   #fail(chance) {
-    //return Math.random() < chance;
-    return false; // deactivate fail function
+    if (this.#enableErrors) {
+      return Math.random() < chance;
+    } else {
+      return false; // deactivate fail function
+    }
   }
 
   /*
@@ -77,7 +82,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
     });
   }
 
@@ -107,7 +112,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
     });
   }
 
@@ -116,7 +121,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#selected) {
-        resolve('{"connector":"dummy"}');
+        resolve({ connector: "dummy" });
       } else {
         resolve();
       }
@@ -151,7 +156,7 @@ criteria example:
       }
       this.#connected = true;
       this.#interfaceReference.emit("#connected");
-      resolve('{"connector":"dummy"}');
+      resolve({ connector: "dummy" });
 
       /**  
         // after connection the connector can any time emit #disconnect event.
@@ -182,7 +187,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
-        resolve('{"connector":"dummy"}');
+        resolve({ connector: "dummy" });
       } else {
         resolve();
       }
@@ -196,7 +201,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(25); // delivering logic
@@ -215,7 +220,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(10); // transmiting logic
@@ -237,7 +242,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(50); // requesting logic
@@ -396,10 +401,7 @@ criteria example:
 
             // mac address
             if (error_code == ERROR_CODE_SUCCESS) {
-              writer.writeBytes(
-                new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
-                6,
-              );
+              writer.writeBytes(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 6);
             }
 
             resolve(writer.bytes);
@@ -442,7 +444,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(10); // writing clock logic.
@@ -461,7 +463,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       await sleep(50); // reading clock logic.
@@ -481,7 +483,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
-        reject("DeviceNotConnected");
+        reject("DeviceDisconnected");
         return;
       }
       this.#interfaceReference.emit("ota_status", "begin");

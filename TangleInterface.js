@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy } from "./functions.js";
+import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -191,23 +191,13 @@ export class TangleInterface {
   requestWakeLock() {
     console.log("> Activating wakeLock...");
 
-    if (!("wakeLock" in navigator)) {
-      return Promise.reject("WakeLock API not supported");
-    }
-
-    // @ts-ignore
-    return navigator.wakeLock.request().catch(err => {
-      console.error(`${err.name}, ${err.message}`);
-    });
+    return noSleep.enable();
   }
 
   releaseWakeLock() {
     console.log("> Deactivating wakeLock...");
 
-    if (this.#wakeLock) {
-      this.#wakeLock.release();
-      this.#wakeLock = null;
-    }
+    noSleep.disable();
 
     return Promise.resolve();
   }
@@ -216,7 +206,7 @@ export class TangleInterface {
     this.connector.destroy();
 
     if (connector_type == "default") {
-      if ("tangleConnect" in window) {
+      if (detectTangleConnect()) {
         this.connector = new TangleConnectConnector(this);
       } else if (navigator.bluetooth) {
         this.connector = new TangleWebBluetoothConnector(this);
@@ -230,7 +220,11 @@ export class TangleInterface {
 
     switch (connector_type) {
       case "dummy":
-        this.connector = new TangleDummyConnector(this);
+        this.connector = new TangleDummyConnector(this, false);
+        break;
+
+      case "edummy":
+        this.connector = new TangleDummyConnector(this, true);
         break;
 
       case "webbluetooth":
@@ -253,6 +247,10 @@ export class TangleInterface {
         throw "UnknownConnector";
         break;
     }
+  }
+
+  reconnection(enable) {
+    this.#reconection = enable;
   }
 
   userSelect(criteria, timeout = 60000) {
