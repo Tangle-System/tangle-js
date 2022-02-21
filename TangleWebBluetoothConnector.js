@@ -65,12 +65,12 @@ export class WebBLEConnection {
     */
     this.#writing = false;
 
-    this.#uuidCounter = 0;
+    this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
   }
 
   #getUUID() {
     // valid UUIDs are in range [1..4294967295] (32 bit number)
-    if (this.#uuidCounter >= 4294967295) {
+    if (this.#uuidCounter >= 0xffffffff) {
       this.#uuidCounter = 0;
     }
 
@@ -636,6 +636,7 @@ criteria example:
       if (add_legacy_uuids) {
         // window.alert("add_legacy_uuids");
 
+        web_ble_options.filters.push({ name: "Nara Alpha" });
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -730,6 +731,7 @@ criteria example:
           if (!legacy_filters_applied) {
             legacy_filters_applied = true;
 
+            web_ble_options.filters.push({ name: "Nara Alpha" });
             web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
