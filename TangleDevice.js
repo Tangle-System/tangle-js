@@ -941,6 +941,7 @@ export class TangleDevice {
     });
   }
 
+  // Code.device.interface.execute([240,1,0,0,0,5],null)
   rebootNetwork() {
     console.log("> Rebooting network...");
 
@@ -1093,4 +1094,14 @@ export class TangleDevice {
   //   const payload = [NETWORK_FLAGS.FLAG_DEVICE_ID, id];
   //   return this.connector.request(payload);
   // }
+
+  // datarate in bits per second
+  setNetworkDatarate(datarate) {
+    console.log("> Setting network datarate...");
+
+    const request_uuid = this.#getUUID();
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(9, 4), DEVICE_FLAGS.FLAG_CHANGE_DATARATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(datarate, 4)];
+
+    return this.interface.execute(payload, null);
+  }
 }
