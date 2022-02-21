@@ -742,7 +742,8 @@ export class TangleDevice {
     this.interface.requestWakeLock();
 
     return new Promise(async (resolve, reject) => {
-      const chunk_size = 4976; // must be modulo 16
+      const chunk_size = 3984; // must be modulo 16
+      // const chunk_size = 992; // must be modulo 16
 
       let index_from = 0;
       let index_to = chunk_size;
@@ -816,7 +817,7 @@ export class TangleDevice {
           await this.interface.execute(network_bytes, null);
         }
 
-        await sleep(1000);
+        await sleep(5000);
 
         console.log("Rebooting whole network...");
 
