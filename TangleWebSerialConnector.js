@@ -1,7 +1,7 @@
-import { sleep, toBytes, numberToBytes } from "./functions.js";
+import { sleep, toBytes, numberToBytes, crc8, crc32 } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
-
+import { TnglWriter } from "./TnglWriter.js";
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -50,6 +50,8 @@ export class TangleWebSerialConnector {
 
   #divisor;
 
+  #readCallback;
+
   constructor(interfaceReference) {
     this.#interfaceReference = interfaceReference;
 
@@ -68,6 +70,13 @@ export class TangleWebSerialConnector {
     this.#receiveTextDecoderDone = null;
 
     this.#divisor = 8;
+
+    this.#readCallback = null;
+
+    this.UNKNOWN_PACKET = 0;
+    this.NETWORK_PACKET = 1;
+    this.DEVICE_PACKET = 2;
+    this.CLOCK_PACKET = 3;
   }
 
   /**
@@ -80,17 +89,22 @@ export class TangleWebSerialConnector {
 
     while (true) {
       // try {
-        const { value, done } = await this.#receiveStreamReader.read();
+      let { value, done } = await this.#receiveStreamReader.read();
 
-        if (value) {
-          this.#interfaceReference.emit("receive", { target: this, payload: value });
-        }
+      if (this.#readCallback) {
+        value = this.#readCallback(value);
+      }
 
-        if (done) {
-          this.#receiveStreamReader.releaseLock();
-          console.log("Reader done");
-          break;
-        }
+      if (value && value.length !== 0) {
+        console.log(`${value}`);
+        this.#interfaceReference.emit("receive", { target: this, payload: value });
+      }
+
+      if (done) {
+        this.#receiveStreamReader.releaseLock();
+        console.log("Reader done");
+        break;
+      }
       // } catch (e) {
       //   console.error(e);
       //   error = e;
@@ -221,10 +235,13 @@ criteria example:
 
         this.#run();
 
-        return this.#writeNetwork([]).finally(() => {
-          this.#connected = true;
-          this.#interfaceReference.emit("#connected");
-        });      
+        return this.#write(this.UNKNOWN_PACKET, []).finally(() => {
+          return sleep(1000).then(() => {
+            console.log("> Serial Connector Connected");
+            this.#connected = true;
+            this.#interfaceReference.emit("#connected");
+          });
+        });
       })
       .catch(error => {
         return this.disconnect().then(() => {
@@ -264,46 +281,93 @@ criteria example:
 
     return this.#serialPort.close().finally(() => {
       this.#connected = false;
-      this.#interfaceReference.emit("#disconnected");
+    });
+  }
+
+  // serial_connector_packet_type_t packet_type;
+  // uint32_t packet_size;
+  // uint32_t packet_receive_timeout;
+  // uint32_t packet_crc32;
+  // uint32_t header_crc32;
+
+  // enum serial_connector_packet_type_t : uint32_t {
+  //   UNKNOWN_PACKET = 0,
+  //   NETWORK_PACKET = 1,
+  //   DEVICE_PACKET = 2,
+  //   CLOCK_PACKET = 3
+  // };
+
+  #write(packet_type, payload) {
+    const header_writer = new TnglWriter(32);
+    const timeout = 25 + payload.length / this.#divisor;
+
+    header_writer.writeUint32(packet_type);
+    header_writer.writeUint32(payload.length);
+    header_writer.writeUint32(timeout);
+    header_writer.writeUint32(crc32(payload));
+    header_writer.writeUint32(crc32(new Uint8Array(header_writer.bytes.buffer)));
+
+    const stream_writer = this.#transmitStream.getWriter();
+
+    return new Promise((resolve, reject) => {
+      const timeout_handle = setTimeout(
+        () => {
+          console.error("ResponseTimeout");
+          this.#readCallback = null;
+          stream_writer.releaseLock();
+          reject("ResponseTimeout");
+          //resolve();
+        },
+        timeout < 5000 ? 10000 : timeout * 2,
+      );
+
+      this.#readCallback = message => {
+        if (message.match(/>>>SUCCESS<<</)) {
+          message = message.replace(/>>>SUCCESS<<</, "");
+          this.#readCallback = null;
+          clearInterval(timeout_handle);
+          setInterval(() => {
+            stream_writer.releaseLock();
+            resolve();
+          }, 10);
+        } else if (message.match(/>>>FAIL<<</)) {
+          message = message.replace(/>>>FAIL<<</, "");
+          console.error("Serial write fail code detected");
+          this.#readCallback = null;
+          clearInterval(timeout_handle);
+          stream_writer.releaseLock();
+          //try to write it once more
+          console.log("Trying to recover...");
+          sleep(100).then(() => {
+            resolve(this.#write(packet_type, payload));
+          });
+        }
+
+        return message;
+      };
+
+      return stream_writer
+        .write(new Uint8Array(header_writer.bytes.buffer))
+        .then(() => {
+          return stream_writer.write(new Uint8Array(payload));
+        })
+        .catch(error => {
+          stream_writer.releaseLock();
+          reject(error);
+        });
     });
   }
 
   #writeNetwork(payload) {
-    return new Promise(async (resolve, reject) => {
-      const bytes = [...toBytes(123456789, 4), ...toBytes(payload.length, 4), ...payload];
-      const timeout = 25 + payload.length / this.#divisor;
-
-      try {
-        const writer = this.#transmitStream.getWriter();
-        writer.write(new Uint8Array(bytes)).then(() => {
-          setTimeout(() => {
-            writer.releaseLock();
-            resolve();
-          }, timeout);
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
+    return this.#write(this.NETWORK_PACKET, payload);
   }
 
   #writeDevice(payload) {
-    return new Promise(async (resolve, reject) => {
-      const bytes = [...toBytes(555555555, 4), ...toBytes(payload.length, 4), ...payload];
-      const timeout = 25 + payload.length / this.#divisor;
+    return this.#write(this.DEVICE_PACKET, payload);
+  }
 
-      try {
-        const writer = this.#transmitStream.getWriter();
-        writer.write(new Uint8Array(bytes)).then(() => {
-          setTimeout(() => {
-            writer.releaseLock();
-            resolve();
-          }, timeout);
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
+  #writeClock(payload) {
+    return this.#write(this.CLOCK_PACKET, payload);
   }
 
   // deliver handles the communication with the Tangle network in a way
@@ -343,7 +407,20 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    return Promise.reject();
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+      return;
+    }
+
+    if (!payload) {
+      return Promise.resolve();
+    }
+
+    if (read_response) {
+      return Promise.reject("NotImplemented");
+    }
+
+    return this.#writeDevice(payload);
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -351,17 +428,25 @@ criteria example:
   setClock(clock) {
     // console.log(`setClock(clock.millis()=${clock.millis()})`);
 
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+    }
+
     return new Promise(async (resolve, reject) => {
-      if (!this.#connected) {
-        reject("DeviceDisconnected");
-        return;
+      for (let index = 0; index < 3; index++) {
+        try {
+          await this.#writeClock([...toBytes(clock.millis(), 4)]);
+          console.log("Clock write success");
+          resolve();
+          return;
+        } catch (e) {
+          console.warn("Clock write failed");
+          await sleep(1000);
+        }
       }
-      await sleep(10); // writing clock logic.
-      // if (this.#fail(0.1)) {
-      //   reject("ClockWriteFailed");
-      //   return;
-      // }
-      resolve();
+
+      reject("ClockWriteFailed");
+      return;
     });
   }
 
@@ -370,26 +455,14 @@ criteria example:
   getClock() {
     // console.log(`getClock()`);
 
-    return new Promise(async (resolve, reject) => {
-      if (!this.#connected) {
-        reject("DeviceDisconnected");
-        return;
-      }
-      await sleep(50); // reading clock logic.
-      // if (this.#fail(0.1)) {
-      //   reject("ClockReadFailed");
-      //   return;
-      // }
-
-      resolve(new TimeTrack(0));
-    });
+    return Promise.reject("NotImplemented");
   }
 
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
     // console.log(`updateFW(firmware=${firmware})`);
-    
+
     if (!this.#serialPort) {
       console.warn("Serial Port is null");
       return Promise.reject("UpdateFailed");
@@ -475,6 +548,8 @@ criteria example:
           const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
           await this.#writeDevice(bytes);
         }
+
+        await sleep(3000);
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();

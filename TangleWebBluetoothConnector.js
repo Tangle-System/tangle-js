@@ -711,6 +711,7 @@ criteria example:
         web_ble_options.filters.push({ namePrefix: "7" });
         web_ble_options.filters.push({ namePrefix: "8" });
         web_ble_options.filters.push({ namePrefix: "9" });
+        web_ble_options.filters.push({ namePrefix: "@" });
       }
     }
 
