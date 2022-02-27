@@ -206,7 +206,7 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-    console.log("> Assigning connector...");
+    console.log(`> Assigning ${connector_type} connector...`);
 
     if (this.connector.type === connector_type) {
       console.warn("Trying to reassign current connector.");
