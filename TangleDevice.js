@@ -107,6 +107,7 @@ export class TangleDevice {
     }
 
     this.#ownerSignature = ownerSignature;
+    return true;
   }
 
   /**
@@ -132,6 +133,7 @@ export class TangleDevice {
     }
 
     this.#ownerKey = reg[0];
+    return true;
   }
 
   /**
