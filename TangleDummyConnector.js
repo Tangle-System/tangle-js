@@ -518,12 +518,13 @@ criteria example:
   destroy() {
     console.log(`destroy()`);
 
-    //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
-    return this.disconnect()
-      .catch(() => {})
-      .then(() => {
-        return this.unselect();
-      })
-      .catch(() => {});
+    // return this.disconnect()
+    //   .catch(() => {})
+    //   .then(() => {
+    //     return this.unselect();
+    //   })
+    //   .catch(() => {});
+
+    return Promise.resolve();
   }
 }
