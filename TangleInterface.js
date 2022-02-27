@@ -129,7 +129,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack();
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (new TangleDummyConnector(this));
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (null);
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -208,14 +208,17 @@ export class TangleInterface {
   assignConnector(connector_type) {
     console.log(`> Assigning ${connector_type} connector...`);
 
-    if (this.connector.type === connector_type) {
+    if ((!this.connector && connector_type === "none") || (this.connector.type === connector_type)) {
       console.warn("Trying to reassign current connector.");
       return Promise.resolve();
     }
 
     return this.destroyConnector().then(() => {
       switch (connector_type) {
-        
+        case "none":
+          this.connector = null;
+          break;
+
         case "default":
           if (detectTangleConnect()) {
             this.connector = new TangleConnectConnector(this);

@@ -39,7 +39,8 @@ export class TangleDevice {
     this.#ownerKey = null;
 
     this.interface = new TangleInterface(this, reconnectionInterval);
-    if (connectorType != "dummy") {
+    
+    if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
     }
 
