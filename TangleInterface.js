@@ -213,53 +213,55 @@ export class TangleInterface {
       return Promise.resolve();
     }
 
-    return this.destroyConnector().then(() => {
-      switch (connector_type) {
-        case "none":
-          this.connector = null;
-          break;
+    return this.destroyConnector()
+      .catch(() => {})
+      .then(() => {
+        switch (connector_type) {
+          case "none":
+            this.connector = null;
+            break;
 
-        case "default":
-          if (detectTangleConnect()) {
-            this.connector = new TangleConnectConnector(this);
-          } else if (navigator.bluetooth) {
+          case "default":
+            if (detectTangleConnect()) {
+              this.connector = new TangleConnectConnector(this);
+            } else if (navigator.bluetooth) {
+              this.connector = new TangleWebBluetoothConnector(this);
+            } else if (navigator.serial) {
+              this.connector = new TangleWebSerialConnector(this);
+            } else {
+              this.connector = new TangleDummyConnector(this);
+            }
+            break;
+
+          case "dummy":
+            this.connector = new TangleDummyConnector(this, false);
+            break;
+
+          case "edummy":
+            this.connector = new TangleDummyConnector(this, true);
+            break;
+
+          case "webbluetooth":
             this.connector = new TangleWebBluetoothConnector(this);
-          } else if (navigator.serial) {
+            break;
+
+          case "webserial":
             this.connector = new TangleWebSerialConnector(this);
-          } else {
-            this.connector = new TangleDummyConnector(this);
-          }
-          break;
+            break;
 
-        case "dummy":
-          this.connector = new TangleDummyConnector(this, false);
-          break;
+          case "tangleconnect":
+            this.connector = new TangleConnectConnector(this);
+            break;
 
-        case "edummy":
-          this.connector = new TangleDummyConnector(this, true);
-          break;
+          case "websockets":
+            this.connector = new TangleWebSocketsConnector(this);
+            break;
 
-        case "webbluetooth":
-          this.connector = new TangleWebBluetoothConnector(this);
-          break;
-
-        case "webserial":
-          this.connector = new TangleWebSerialConnector(this);
-          break;
-
-        case "tangleconnect":
-          this.connector = new TangleConnectConnector(this);
-          break;
-
-        case "websockets":
-          this.connector = new TangleWebSocketsConnector(this);
-          break;
-
-        default:
-          throw "UnknownConnector";
-          break;
-      }
-    });
+          default:
+            throw "UnknownConnector";
+            break;
+        }
+      });
   }
 
   reconnection(enable) {
@@ -599,7 +601,7 @@ export class TangleInterface {
           while (this.#queue.length > 0) {
             const item = this.#queue.shift();
 
-            if(this.connector === null) {
+            if (this.connector === null) {
               item.reject("ConnectorNotAssigned");
               continue;
             }
