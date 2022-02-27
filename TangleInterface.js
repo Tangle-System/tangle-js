@@ -90,6 +90,7 @@ class Query {
   static TYPE_SET_CLOCK = 12;
   static TYPE_GET_CLOCK = 13;
   static TYPE_FIRMWARE_UPDATE = 14;
+  static TYPE_DESTROY = 15;
 
   constructor(type, a = null, b = null, c = null, d = null) {
     this.type = type;
@@ -206,50 +207,57 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-    this.connector.destroy();
+    console.log("> Assigning connector...");
 
-    if (connector_type == "default") {
-      if (detectTangleConnect()) {
-        this.connector = new TangleConnectConnector(this);
-      } else if (navigator.bluetooth) {
-        this.connector = new TangleWebBluetoothConnector(this);
-      } else if (navigator.serial) {
-        this.connector = new TangleWebSerialConnector(this);
-      } else {
-        this.connector = new TangleDummyConnector(this);
+    if (this.connector.type === connector_type) {
+      console.warn("Trying to reassign current connector.");
+      return Promise.resolve();
+    }
+
+    return this.#destroy().then(() => {
+      switch (connector_type) {
+        
+        case "default":
+          if (detectTangleConnect()) {
+            this.connector = new TangleConnectConnector(this);
+          } else if (navigator.bluetooth) {
+            this.connector = new TangleWebBluetoothConnector(this);
+          } else if (navigator.serial) {
+            this.connector = new TangleWebSerialConnector(this);
+          } else {
+            this.connector = new TangleDummyConnector(this);
+          }
+          break;
+
+        case "dummy":
+          this.connector = new TangleDummyConnector(this, false);
+          break;
+
+        case "edummy":
+          this.connector = new TangleDummyConnector(this, true);
+          break;
+
+        case "webbluetooth":
+          this.connector = new TangleWebBluetoothConnector(this);
+          break;
+
+        case "webserial":
+          this.connector = new TangleWebSerialConnector(this);
+          break;
+
+        case "tangleconnect":
+          this.connector = new TangleConnectConnector(this);
+          break;
+
+        case "websockets":
+          this.connector = new TangleWebSocketsConnector(this);
+          break;
+
+        default:
+          throw "UnknownConnector";
+          break;
       }
-      return;
-    }
-
-    switch (connector_type) {
-      case "dummy":
-        this.connector = new TangleDummyConnector(this, false);
-        break;
-
-      case "edummy":
-        this.connector = new TangleDummyConnector(this, true);
-        break;
-
-      case "webbluetooth":
-        this.connector = new TangleWebBluetoothConnector(this);
-        break;
-
-      case "webserial":
-        this.connector = new TangleWebSerialConnector(this);
-        break;
-
-      case "tangleconnect":
-        this.connector = new TangleConnectConnector(this);
-        break;
-
-      case "websockets":
-        this.connector = new TangleWebSocketsConnector(this);
-        break;
-
-      default:
-        throw "UnknownConnector";
-        break;
-    }
+    });
   }
 
   reconnection(enable) {
@@ -557,6 +565,21 @@ export class TangleInterface {
     return item.promise;
   }
 
+  #destroy() {
+    const item = new Query(Query.TYPE_DESTROY);
+
+    for (let i = 0; i < this.#queue.length; i++) {
+      if (this.#queue[i].type === Query.TYPE_DESTROY) {
+        this.#queue[i].reject("Multiple Connector destroy()");
+        this.#queue.splice(i, 1);
+        break;
+      }
+    }
+
+    this.#process(item);
+    return item.promise;
+  }
+
   // starts a "thread" that is processing the commands from queue
   #process(item) {
     if (item) {
@@ -788,6 +811,19 @@ export class TangleInterface {
                   })
                   .finally(() => {
                     this.releaseWakeLock();
+                  });
+
+                break;
+
+              case Query.TYPE_DESTROY:
+                await this.connector
+                  .destroy()
+                  .then(device => {
+                    item.resolve(device);
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    item.reject(error);
                   });
 
                 break;

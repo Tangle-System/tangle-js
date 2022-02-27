@@ -14,7 +14,9 @@ export class TangleDummyConnector {
   #connected;
   #enableErrors;
 
-  constructor(interfaceReference, enableErrors = false, ) {
+  constructor(interfaceReference, enableErrors = false) {
+    this.type = enableErrors ? "edummy" : "dummy";
+    
     this.#interfaceReference = interfaceReference;
     this.#enableErrors = enableErrors;
 
@@ -82,7 +84,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve({ connector: "dummy" });
+      resolve({ connector: this.type });
     });
   }
 
@@ -112,7 +114,7 @@ criteria example:
         return;
       }
       this.#selected = true;
-      resolve({ connector: "dummy" });
+      resolve({ connector: this.type });
     });
   }
 
@@ -121,7 +123,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#selected) {
-        resolve({ connector: "dummy" });
+        resolve({ connector: this.type });
       } else {
         resolve();
       }
@@ -156,7 +158,7 @@ criteria example:
       }
       this.#connected = true;
       this.#interfaceReference.emit("#connected");
-      resolve({ connector: "dummy" });
+      resolve({ connector: this.type });
 
       /**  
         // after connection the connector can any time emit #disconnect event.
@@ -187,7 +189,7 @@ criteria example:
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
-        resolve({ connector: "dummy" });
+        resolve({ connector: this.type });
       } else {
         resolve();
       }

@@ -474,6 +474,8 @@ export class TangleWebBluetoothConnector {
   #connectedGuard;
 
   constructor(interfaceReference) {
+    this.type = "webbluetooth";
+
     this.#interfaceReference = interfaceReference;
 
     this.FW_PRE_0_7_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
@@ -875,7 +877,7 @@ criteria example:
           this.#onDisconnected();
         };
 
-        return { connector: "webbluetooth" };
+        return { connector: this.type };
       });
   }
 
@@ -932,7 +934,7 @@ criteria example:
   }
 
   selected() {
-    return Promise.resolve(this.#selected() ? { connector: "webbluetooth" } : null);
+    return Promise.resolve(this.#selected() ? { connector: this.type } : null);
   }
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
@@ -1076,7 +1078,7 @@ criteria example:
 
   // connected() is an interface function that needs to return a Promise
   connected() {
-    return Promise.resolve(this.#connected() ? { connector: "webbluetooth" } : null);
+    return Promise.resolve(this.#connected() ? { connector: this.type } : null);
   }
 
   #disconnect() {

@@ -35,8 +35,8 @@ export class TangleDevice {
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 
-    this.#ownerSignature = null;
-    this.#ownerKey = null;
+    this.#ownerSignature = "00000000000000000000000000000000";
+    this.#ownerKey = "00000000000000000000000000000000";
 
     this.interface = new TangleInterface(this, reconnectionInterval);
     if (connectorType != "dummy") {
@@ -145,8 +145,15 @@ export class TangleDevice {
     return this.#ownerKey;
   }
 
-  assignConnector(connector_type) {
+  setConnector(connector_type) {
     this.interface.assignConnector(connector_type);
+  }
+
+  /**
+   * @alias this.setConnector
+   */
+  assignConnector(connector_type) {
+    return this.setConnector(connector_type);
   }
 
   connectRemoteControl() {
@@ -748,7 +755,7 @@ export class TangleDevice {
         //@ts-ignore
         .then(result => {
           if (result) {
-            return this.setNetworkDatarate(2000000).catch(()=>{
+            return this.setNetworkDatarate(2000000).catch(() => {
               window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
             });
           } else {

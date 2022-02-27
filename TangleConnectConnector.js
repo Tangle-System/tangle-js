@@ -14,6 +14,8 @@ export class TangleConnectConnector {
   // #reject; // function that will reject current promise
 
   constructor(interfaceReference) {
+    this.type = "tangleconnect"
+    
     this.#interfaceReference = interfaceReference;
 
     this.#promise = null;

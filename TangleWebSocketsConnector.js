@@ -11,6 +11,8 @@ export class TangleWebSocketsConnector {
   #connected;
 
   constructor(interfaceReference) {
+    this.type = "websockets";
+
     this.#interfaceReference = interfaceReference;
 
     this.#selected = false;
@@ -20,16 +22,16 @@ export class TangleWebSocketsConnector {
 
   userSelect(criteria) {
     this.#selected = true;
-    return Promise.resolve();
+    return Promise.resolve({ connector: this.type });
   }
 
   autoSelect(criteria, scan_period = 1000, timeout = 3000) {
     this.#selected = true;
-    return Promise.resolve();
+    return Promise.resolve({ connector: this.type });
   }
 
   selected() {
-    return Promise.resolve(this.#selected ? { connector: "websockets" } : null);
+    return Promise.resolve(this.#selected ? { connector: this.type } : null);
   }
 
   unselect() {
@@ -77,14 +79,14 @@ export class TangleWebSocketsConnector {
         }
       }
 
-      return Promise.resolve();
+      return Promise.resolve({ connector: this.type });
     } else {
       return Promise.reject("NotSelected");
     }
   }
 
   connected() {
-    return Promise.resolve(this.#connected ? { connector: "websockets" } : null);
+    return Promise.resolve(this.#connected ? { connector: this.type } : null);
   }
 
   disconnect() {

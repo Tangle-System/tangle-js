@@ -53,6 +53,8 @@ export class TangleWebSerialConnector {
   #readCallback;
 
   constructor(interfaceReference) {
+    this.type = "webserial";
+
     this.#interfaceReference = interfaceReference;
 
     this.PORT_OPTIONS = { baudRate: 1000000, dataBits: 8, stopBits: 1, parity: "none" };
@@ -176,6 +178,7 @@ criteria example:
 
     return navigator.serial.requestPort().then(port => {
       this.#serialPort = port;
+      return Promise.resolve({ connector: this.type });
     });
   }
 
@@ -198,7 +201,7 @@ criteria example:
   }
 
   selected() {
-    return Promise.resolve(this.#serialPort ? { connector: "webserial" } : null);
+    return Promise.resolve(this.#serialPort ? { connector: this.type } : null);
   }
 
   unselect() {
@@ -240,6 +243,7 @@ criteria example:
             console.log("> Serial Connector Connected");
             this.#connected = true;
             this.#interfaceReference.emit("#connected");
+            return Promise.resolve({ connector: this.type });
           });
         });
       })
@@ -251,7 +255,7 @@ criteria example:
   }
 
   connected() {
-    return Promise.resolve(this.#connected ? { connector: "webserial" } : null);
+    return Promise.resolve(this.#connected ? { connector: this.type } : null);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
