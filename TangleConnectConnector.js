@@ -1,4 +1,4 @@
-import { sleep, toBytes } from "./functions.js";
+import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
 
@@ -14,7 +14,7 @@ export class TangleConnectConnector {
   // #reject; // function that will reject current promise
 
   constructor(interfaceReference) {
-    this.type = "tangleconnect"
+    this.type = "tangleconnect";
 
     this.#interfaceReference = interfaceReference;
 
@@ -299,7 +299,7 @@ export class TangleConnectConnector {
   }
 
   available() {
-    return "tangleConnect" in window;
+    return detectTangleConnect();
   }
 
   #applyTimeout(promise, timeout, message) {
@@ -691,10 +691,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }
