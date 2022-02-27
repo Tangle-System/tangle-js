@@ -816,6 +816,7 @@ export class TangleInterface {
                 break;
 
               case Query.TYPE_DESTROY:
+                this.#reconection = false;
                 await this.connector
                   .destroy()
                   .then(device => {
