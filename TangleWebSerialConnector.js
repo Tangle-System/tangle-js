@@ -229,9 +229,9 @@ criteria example:
 
         // this.receiver.attach(this.serialPort.readable);
         this.#receiveStream = this.#serialPort.readable;
-        let textDecoder = new TextDecoderStream();
+        let textDecoder = new window.TextDecoderStream();
         this.#receiveTextDecoderDone = this.#receiveStream.pipeTo(textDecoder.writable);
-        this.#receiveStream = textDecoder.readable.pipeThrough(new TransformStream(new LineBreakTransformer()));
+        this.#receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
         //.pipeThrough(new TransformStream(new JSONTransformer()));
 
         this.#receiveStreamReader = this.#receiveStream.getReader();
