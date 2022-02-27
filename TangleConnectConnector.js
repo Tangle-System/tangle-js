@@ -15,7 +15,7 @@ export class TangleConnectConnector {
 
   constructor(interfaceReference) {
     this.type = "tangleconnect"
-    
+
     this.#interfaceReference = interfaceReference;
 
     this.#promise = null;
@@ -27,7 +27,8 @@ export class TangleConnectConnector {
       var _selected = false;
 
       function _fail(chance) {
-        return Math.random() < chance;
+        //return Math.random() < chance;
+        return false;
       }
 
       // @ts-ignore

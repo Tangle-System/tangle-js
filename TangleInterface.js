@@ -160,8 +160,7 @@ export class TangleInterface {
       //   }
       // });
 
-      this.#reconection = false;
-      this.connector.destroy(); // dodelat .destroy() v tangleConnectConnectoru
+      this.destroyConnector(); // dodelat .destroy() v tangleConnectConnectoru
     });
   }
 
@@ -214,7 +213,7 @@ export class TangleInterface {
       return Promise.resolve();
     }
 
-    return this.#destroy().then(() => {
+    return this.destroyConnector().then(() => {
       switch (connector_type) {
         
         case "default":
@@ -565,7 +564,7 @@ export class TangleInterface {
     return item.promise;
   }
 
-  #destroy() {
+  destroyConnector() {
     const item = new Query(Query.TYPE_DESTROY);
 
     for (let i = 0; i < this.#queue.length; i++) {
@@ -596,6 +595,11 @@ export class TangleInterface {
         try {
           while (this.#queue.length > 0) {
             const item = this.#queue.shift();
+
+            if(this.connector === null) {
+              item.reject("ConnectorNotAssigned");
+              continue;
+            }
 
             switch (item.type) {
               case Query.TYPE_USERSELECT:
@@ -819,11 +823,13 @@ export class TangleInterface {
                 this.#reconection = false;
                 await this.connector
                   .destroy()
-                  .then(device => {
-                    item.resolve(device);
+                  .then(() => {
+                    this.connector = null;
+                    item.resolve();
                   })
                   .catch(error => {
                     //console.warn(error);
+                    this.connector = null;
                     item.reject(error);
                   });
 
