@@ -35,8 +35,8 @@ export class TangleDevice {
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 
-    this.#ownerSignature = "00000000000000000000000000000000";
-    this.#ownerKey = "00000000000000000000000000000000";
+    this.#ownerSignature = null;
+    this.#ownerKey = null;
 
     this.interface = new TangleInterface(this, reconnectionInterval);
     if (connectorType != "dummy") {
@@ -301,7 +301,24 @@ export class TangleDevice {
   //   });
   // }
 
-  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
+  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
+    
+    if(ownerSignature) {
+      this.setOwnerSignature(ownerSignature);
+    }
+
+    if(ownerKey) {
+      this.setOwnerKey(ownerKey);
+    }
+
+    if(!this.#ownerSignature) {
+      throw "OwnerSignatureNotAssigned";
+    }
+
+    if(!this.#ownerKey) {
+      throw "OwnerKeyNotAssigned";
+    }
+    
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
     return this.interface
@@ -524,7 +541,24 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null, autoConnect = true) {
+  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null) {
+
+    if(ownerSignature) {
+      this.setOwnerSignature(ownerSignature);
+    }
+
+    if(ownerKey) {
+      this.setOwnerKey(ownerKey);
+    }
+
+    if(!this.#ownerSignature) {
+      throw "OwnerSignatureNotAssigned";
+    }
+
+    if(!this.#ownerKey) {
+      throw "OwnerKeyNotAssigned";
+    }
+
     let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
 
     if (devices && devices.length > 0) {
