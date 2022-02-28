@@ -588,7 +588,7 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria))
+    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
       .then(() => {
         return this.interface.connect(10000);
       })
