@@ -19,6 +19,9 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
+  FLAG_CHANGE_DATARATE_REQUEST: 232,
+  FLAG_CHANGE_DATARATE_RESPONSE: 233,
+
   FLAG_FW_VERSION_REQUEST: 234,
   FLAG_FW_VERSION_RESPONSE: 235,
   FLAG_ERASE_OWNER_REQUEST: 236,
@@ -87,6 +90,7 @@ class Query {
   static TYPE_SET_CLOCK = 12;
   static TYPE_GET_CLOCK = 13;
   static TYPE_FIRMWARE_UPDATE = 14;
+  static TYPE_DESTROY = 15;
 
   constructor(type, a = null, b = null, c = null, d = null) {
     this.type = type;
@@ -125,7 +129,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack();
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (new TangleDummyConnector(this));
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (null);
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -156,8 +160,7 @@ export class TangleInterface {
       //   }
       // });
 
-      this.#reconection = false;
-      this.connector.destroy(); // dodelat .destroy() v tangleConnectConnectoru
+      this.destroyConnector(); // dodelat .destroy() v tangleConnectConnectoru
     });
   }
 
@@ -203,50 +206,62 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-    this.connector.destroy();
+    console.log(`> Assigning ${connector_type} connector...`);
 
-    if (connector_type == "default") {
-      if (detectTangleConnect()) {
-        this.connector = new TangleConnectConnector(this);
-      } else if (navigator.bluetooth) {
-        this.connector = new TangleWebBluetoothConnector(this);
-      } else if (navigator.serial) {
-        this.connector = new TangleWebSerialConnector(this);
-      } else {
-        this.connector = new TangleDummyConnector(this);
-      }
-      return;
+    if ((!this.connector && connector_type === "none") || (this.connector && this.connector.type === connector_type)) {
+      console.warn("Trying to reassign current connector.");
+      return Promise.resolve();
     }
 
-    switch (connector_type) {
-      case "dummy":
-        this.connector = new TangleDummyConnector(this, false);
-        break;
+    return this.destroyConnector()
+      .catch(() => {})
+      .then(() => {
+        switch (connector_type) {
+          case "none":
+            this.connector = null;
+            break;
 
-      case "edummy":
-        this.connector = new TangleDummyConnector(this, true);
-        break;
+          case "default":
+            if (detectTangleConnect()) {
+              this.connector = new TangleConnectConnector(this);
+            } else if (navigator.bluetooth) {
+              this.connector = new TangleWebBluetoothConnector(this);
+            } else if (navigator.serial) {
+              this.connector = new TangleWebSerialConnector(this);
+            } else {
+              this.connector = new TangleDummyConnector(this);
+            }
+            break;
 
-      case "webbluetooth":
-        this.connector = new TangleWebBluetoothConnector(this);
-        break;
+          case "dummy":
+            this.connector = new TangleDummyConnector(this, false);
+            break;
 
-      case "webserial":
-        this.connector = new TangleWebSerialConnector(this);
-        break;
+          case "edummy":
+            this.connector = new TangleDummyConnector(this, true);
+            break;
 
-      case "tangleconnect":
-        this.connector = new TangleConnectConnector(this);
-        break;
+          case "webbluetooth":
+            this.connector = new TangleWebBluetoothConnector(this);
+            break;
 
-      case "websockets":
-        this.connector = new TangleWebSocketsConnector(this);
-        break;
+          case "webserial":
+            this.connector = new TangleWebSerialConnector(this);
+            break;
 
-      default:
-        throw "UnknownConnector";
-        break;
-    }
+          case "tangleconnect":
+            this.connector = new TangleConnectConnector(this);
+            break;
+
+          case "websockets":
+            this.connector = new TangleWebSocketsConnector(this);
+            break;
+
+          default:
+            throw "UnknownConnector";
+            break;
+        }
+      });
   }
 
   reconnection(enable) {
@@ -554,6 +569,21 @@ export class TangleInterface {
     return item.promise;
   }
 
+  destroyConnector() {
+    const item = new Query(Query.TYPE_DESTROY);
+
+    for (let i = 0; i < this.#queue.length; i++) {
+      if (this.#queue[i].type === Query.TYPE_DESTROY) {
+        this.#queue[i].reject("Multiple Connector destroy()");
+        this.#queue.splice(i, 1);
+        break;
+      }
+    }
+
+    this.#process(item);
+    return item.promise;
+  }
+
   // starts a "thread" that is processing the commands from queue
   #process(item) {
     if (item) {
@@ -570,6 +600,11 @@ export class TangleInterface {
         try {
           while (this.#queue.length > 0) {
             const item = this.#queue.shift();
+
+            if (this.connector === null) {
+              item.reject("ConnectorNotAssigned");
+              continue;
+            }
 
             switch (item.type) {
               case Query.TYPE_USERSELECT:
@@ -785,6 +820,22 @@ export class TangleInterface {
                   })
                   .finally(() => {
                     this.releaseWakeLock();
+                  });
+
+                break;
+
+              case Query.TYPE_DESTROY:
+                this.#reconection = false;
+                await this.connector
+                  .destroy()
+                  .then(() => {
+                    this.connector = null;
+                    item.resolve();
+                  })
+                  .catch(error => {
+                    //console.warn(error);
+                    this.connector = null;
+                    item.reject(error);
                   });
 
                 break;

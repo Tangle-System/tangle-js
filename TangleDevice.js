@@ -39,7 +39,8 @@ export class TangleDevice {
     this.#ownerKey = null;
 
     this.interface = new TangleInterface(this, reconnectionInterval);
-    if (connectorType != "dummy") {
+    
+    if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
     }
 
@@ -107,6 +108,7 @@ export class TangleDevice {
     }
 
     this.#ownerSignature = ownerSignature;
+    return true;
   }
 
   /**
@@ -132,6 +134,7 @@ export class TangleDevice {
     }
 
     this.#ownerKey = reg[0];
+    return true;
   }
 
   /**
@@ -145,8 +148,15 @@ export class TangleDevice {
     return this.#ownerKey;
   }
 
-  assignConnector(connector_type) {
+  setConnector(connector_type) {
     this.interface.assignConnector(connector_type);
+  }
+
+  /**
+   * @alias this.setConnector
+   */
+  assignConnector(connector_type) {
+    return this.setConnector(connector_type);
   }
 
   connectRemoteControl() {
@@ -294,7 +304,24 @@ export class TangleDevice {
   //   });
   // }
 
-  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null) {
+  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
+    
+    if(ownerSignature) {
+      this.setOwnerSignature(ownerSignature);
+    }
+
+    if(ownerKey) {
+      this.setOwnerKey(ownerKey);
+    }
+
+    if(!this.#ownerSignature) {
+      throw "OwnerSignatureNotAssigned";
+    }
+
+    if(!this.#ownerKey) {
+      throw "OwnerKeyNotAssigned";
+    }
+    
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
     return this.interface
@@ -380,7 +407,7 @@ export class TangleDevice {
           "Smoulinka",
           "Vila Amalka",
           "Zlata rybka",
-          "Zvonilka"
+          "Zvonilka",
         ];
 
         try {
@@ -517,8 +544,25 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null, autoConnect = false) {
-    //let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }, { legacy: true }]);
+  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null) {
+
+    if(ownerSignature) {
+      this.setOwnerSignature(ownerSignature);
+    }
+
+    if(ownerKey) {
+      this.setOwnerKey(ownerKey);
+    }
+
+    if(!this.#ownerSignature) {
+      throw "OwnerSignatureNotAssigned";
+    }
+
+    if(!this.#ownerKey) {
+      throw "OwnerKeyNotAssigned";
+    }
+
+    //let criteria = /** @type {any} */ ([{ ownerSignature: this.#ownerSignature }]);
     let criteria = /** @type {any} */ ([{}, { legacy: true }]);
 
     if (devices && devices.length > 0) {
@@ -545,7 +589,7 @@ export class TangleDevice {
 
     console.log(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 2000, 10000) : this.interface.userSelect(criteria))
+    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
       .then(() => {
         return this.interface.connect(10000);
       })
@@ -742,104 +786,124 @@ export class TangleDevice {
 
     this.interface.requestWakeLock();
 
-    return new Promise(async (resolve, reject) => {
-      const chunk_size = 4976; // must be modulo 16
-
-      let index_from = 0;
-      let index_to = chunk_size;
-
-      let written = 0;
-
-      console.log("OTA UPDATE");
-      console.log(firmware);
-
-      try {
-        this.interface.emit("ota_status", "begin");
-
-        {
-          //===========// RESET //===========//
-          console.log("OTA RESET");
-
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-          await this.interface.execute(network_bytes, null);
-        }
-
-        await sleep(100);
-
-        {
-          //===========// BEGIN //===========//
-          console.log("OTA BEGIN");
-
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-          await this.interface.execute(network_bytes, null);
-        }
-
-        await sleep(10000);
-
-        {
-          //===========// WRITE //===========//
-          console.log("OTA WRITE");
-
-          const start_timestamp = new Date().getTime();
-
-          while (written < firmware.length) {
-            if (index_to > firmware.length) {
-              index_to = firmware.length;
-            }
-
-            const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
-            const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-            await this.interface.execute(network_bytes, null);
-
-            written += index_to - index_from;
-
-            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-            console.log(percentage + "%");
-            this.interface.emit("ota_progress", percentage);
-
-            index_from += chunk_size;
-            index_to = index_from + chunk_size;
+    return (
+      window
+        //@ts-ignore
+        .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?")
+        //@ts-ignore
+        .then(result => {
+          if (result) {
+            return this.setNetworkDatarate(2000000).catch(() => {
+              window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
+            });
+          } else {
+            return Promise.resolve();
           }
+        })
+        .then(() => {
+          return new Promise(async (resolve, reject) => {
+            const chunk_size = 3984; // must be modulo 16
+            // const chunk_size = 992; // must be modulo 16
 
-          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
-        }
+            let index_from = 0;
+            let index_to = chunk_size;
 
-        await sleep(100);
+            let written = 0;
 
-        {
-          //===========// END //===========//
-          console.log("OTA END");
+            console.log("OTA UPDATE");
+            console.log(firmware);
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-          await this.interface.execute(network_bytes, null);
-        }
+            await sleep(100);
 
-        await sleep(1000);
+            try {
+              this.interface.emit("ota_status", "begin");
 
-        console.log("Rebooting whole network...");
+              {
+                //===========// RESET //===========//
+                console.log("OTA RESET");
 
-        const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
-        await this.interface.execute(payload, null);
+                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+                await this.interface.execute(network_bytes, null);
+              }
 
-        this.interface.emit("ota_status", "success");
-        resolve();
-        return;
-      } catch (e) {
-        this.interface.emit("ota_status", "fail");
-        reject(e);
-        return;
-      }
-    })
-      .then(() => {
-        this.disconnect();
-      })
-      .finally(() => {
-        this.interface.releaseWakeLock();
-        this.#updating = false;
-      });
+              await sleep(100);
+
+              {
+                //===========// BEGIN //===========//
+                console.log("OTA BEGIN");
+
+                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+                await this.interface.execute(network_bytes, null);
+              }
+
+              await sleep(10000);
+
+              {
+                //===========// WRITE //===========//
+                console.log("OTA WRITE");
+
+                const start_timestamp = new Date().getTime();
+
+                while (written < firmware.length) {
+                  if (index_to > firmware.length) {
+                    index_to = firmware.length;
+                  }
+
+                  const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+                  const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+                  await this.interface.execute(network_bytes, null);
+
+                  written += index_to - index_from;
+
+                  const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+                  console.log(percentage + "%");
+                  this.interface.emit("ota_progress", percentage);
+
+                  index_from += chunk_size;
+                  index_to = index_from + chunk_size;
+                }
+
+                console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+              }
+
+              await sleep(100);
+
+              {
+                //===========// END //===========//
+                console.log("OTA END");
+
+                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+                await this.interface.execute(network_bytes, null);
+              }
+
+              await sleep(5000);
+
+              console.log("Rebooting whole network...");
+
+              const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+              await this.interface.execute(payload, null);
+
+              this.interface.emit("ota_status", "success");
+              resolve();
+              return;
+            } catch (e) {
+              this.interface.emit("ota_status", "fail");
+              reject(e);
+              return;
+            }
+          }).then(() => {
+            this.disconnect();
+          });
+        })
+
+        .finally(() => {
+          this.interface.releaseWakeLock();
+          this.#updating = false;
+        })
+    );
   }
 
   /**
@@ -942,6 +1006,7 @@ export class TangleDevice {
     });
   }
 
+  // Code.device.interface.execute([240,1,0,0,0,5],null)
   rebootNetwork() {
     console.log("> Rebooting network...");
 
@@ -1094,4 +1159,14 @@ export class TangleDevice {
   //   const payload = [NETWORK_FLAGS.FLAG_DEVICE_ID, id];
   //   return this.connector.request(payload);
   // }
+
+  // datarate in bits per second
+  setNetworkDatarate(datarate) {
+    console.log(`> Setting network datarate to ${datarate} bsp...`);
+
+    const request_uuid = this.#getUUID();
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(9, 4), DEVICE_FLAGS.FLAG_CHANGE_DATARATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(datarate, 4)];
+
+    return this.interface.execute(payload, null);
+  }
 }

@@ -65,12 +65,12 @@ export class WebBLEConnection {
     */
     this.#writing = false;
 
-    this.#uuidCounter = 0;
+    this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
   }
 
   #getUUID() {
     // valid UUIDs are in range [1..4294967295] (32 bit number)
-    if (this.#uuidCounter >= 4294967295) {
+    if (this.#uuidCounter >= 0xffffffff) {
       this.#uuidCounter = 0;
     }
 
@@ -474,6 +474,8 @@ export class TangleWebBluetoothConnector {
   #connectedGuard;
 
   constructor(interfaceReference) {
+    this.type = "webbluetooth";
+
     this.#interfaceReference = interfaceReference;
 
     this.FW_PRE_0_7_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
@@ -636,6 +638,7 @@ criteria example:
       if (add_legacy_uuids) {
         // window.alert("add_legacy_uuids");
 
+        web_ble_options.filters.push({ name: "Nara Alpha" });
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -710,6 +713,7 @@ criteria example:
         web_ble_options.filters.push({ namePrefix: "7" });
         web_ble_options.filters.push({ namePrefix: "8" });
         web_ble_options.filters.push({ namePrefix: "9" });
+        web_ble_options.filters.push({ namePrefix: "@" });
       }
     }
 
@@ -730,6 +734,7 @@ criteria example:
           if (!legacy_filters_applied) {
             legacy_filters_applied = true;
 
+            web_ble_options.filters.push({ name: "Nara Alpha" });
             web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -872,7 +877,7 @@ criteria example:
           this.#onDisconnected();
         };
 
-        return { connector: "webbluetooth" };
+        return { connector: this.type };
       });
   }
 
@@ -929,7 +934,7 @@ criteria example:
   }
 
   selected() {
-    return Promise.resolve(this.#selected() ? { connector: "webbluetooth" } : null);
+    return Promise.resolve(this.#selected() ? { connector: this.type } : null);
   }
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
@@ -1073,7 +1078,7 @@ criteria example:
 
   // connected() is an interface function that needs to return a Promise
   connected() {
-    return Promise.resolve(this.#connected() ? { connector: "webbluetooth" } : null);
+    return Promise.resolve(this.#connected() ? { connector: this.type } : null);
   }
 
   #disconnect() {
