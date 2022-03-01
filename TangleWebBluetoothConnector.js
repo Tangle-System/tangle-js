@@ -393,7 +393,7 @@ export class WebBLEConnection {
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
-        await sleep(10000); // need to wait 10 seconds to let the ESP erase the flash.
+        await sleep(8000); // need to wait 10 seconds to let the ESP erase the flash.
 
         {
           //===========// WRITE //===========//

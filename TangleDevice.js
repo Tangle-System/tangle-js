@@ -878,7 +878,7 @@ export class TangleDevice {
                 await this.interface.execute(network_bytes, null);
               }
 
-              await sleep(5000);
+              await sleep(3000);
 
               console.log("Rebooting whole network...");
 

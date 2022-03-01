@@ -513,7 +513,7 @@ criteria example:
           await this.#writeDevice(bytes);
         }
 
-        await sleep(10000); // need to wait 10 seconds to let the ESP erase the flash.
+        await sleep(8000); // need to wait 10 seconds to let the ESP erase the flash.
 
         {
           //===========// WRITE //===========//
