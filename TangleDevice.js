@@ -780,130 +780,130 @@ export class TangleDevice {
     });
   }
 
-  updateNetworkFirmware(firmware) {
-    this.#updating = true;
+  // updateNetworkFirmware(firmware) {
+  //   this.#updating = true;
 
-    this.interface.requestWakeLock();
+  //   this.interface.requestWakeLock();
 
-    return (
-      window
-        //@ts-ignore
-        .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?")
-        //@ts-ignore
-        .then(result => {
-          if (result) {
-            return this.setNetworkDatarate(2000000).catch(() => {
-              window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
-            });
-          } else {
-            return Promise.resolve();
-          }
-        })
-        .then(() => {
-          return new Promise(async (resolve, reject) => {
-            const chunk_size = 3984; // must be modulo 16
-            // const chunk_size = 992; // must be modulo 16
+  //   return (
+  //     window
+  //       //@ts-ignore
+  //       .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?")
+  //       //@ts-ignore
+  //       .then(result => {
+  //         if (result) {
+  //           return this.setNetworkDatarate(2000000).catch(() => {
+  //             window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
+  //           });
+  //         } else {
+  //           return Promise.resolve();
+  //         }
+  //       })
+  //       .then(() => {
+  //         return new Promise(async (resolve, reject) => {
+  //           const chunk_size = 3984; // must be modulo 16
+  //           // const chunk_size = 992; // must be modulo 16
 
-            let index_from = 0;
-            let index_to = chunk_size;
+  //           let index_from = 0;
+  //           let index_to = chunk_size;
 
-            let written = 0;
+  //           let written = 0;
 
-            console.log("OTA UPDATE");
-            console.log(firmware);
+  //           console.log("OTA UPDATE");
+  //           console.log(firmware);
 
-            await sleep(100);
+  //           await sleep(100);
 
-            try {
-              this.interface.emit("ota_status", "begin");
+  //           try {
+  //             this.interface.emit("ota_status", "begin");
 
-              {
-                //===========// RESET //===========//
-                console.log("OTA RESET");
+  //             {
+  //               //===========// RESET //===========//
+  //               console.log("OTA RESET");
 
-                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-                await this.interface.execute(network_bytes, null);
-              }
+  //               const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+  //               const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+  //               await this.interface.execute(network_bytes, null);
+  //             }
 
-              await sleep(100);
+  //             await sleep(100);
 
-              {
-                //===========// BEGIN //===========//
-                console.log("OTA BEGIN");
+  //             {
+  //               //===========// BEGIN //===========//
+  //               console.log("OTA BEGIN");
 
-                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-                await this.interface.execute(network_bytes, null);
-              }
+  //               const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+  //               const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+  //               await this.interface.execute(network_bytes, null);
+  //             }
 
-              await sleep(10000);
+  //             await sleep(10000);
 
-              {
-                //===========// WRITE //===========//
-                console.log("OTA WRITE");
+  //             {
+  //               //===========// WRITE //===========//
+  //               console.log("OTA WRITE");
 
-                const start_timestamp = new Date().getTime();
+  //               const start_timestamp = new Date().getTime();
 
-                while (written < firmware.length) {
-                  if (index_to > firmware.length) {
-                    index_to = firmware.length;
-                  }
+  //               while (written < firmware.length) {
+  //                 if (index_to > firmware.length) {
+  //                   index_to = firmware.length;
+  //                 }
 
-                  const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
-                  const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-                  await this.interface.execute(network_bytes, null);
+  //                 const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+  //                 const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+  //                 await this.interface.execute(network_bytes, null);
 
-                  written += index_to - index_from;
+  //                 written += index_to - index_from;
 
-                  const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-                  console.log(percentage + "%");
-                  this.interface.emit("ota_progress", percentage);
+  //                 const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+  //                 console.log(percentage + "%");
+  //                 this.interface.emit("ota_progress", percentage);
 
-                  index_from += chunk_size;
-                  index_to = index_from + chunk_size;
-                }
+  //                 index_from += chunk_size;
+  //                 index_to = index_from + chunk_size;
+  //               }
 
-                console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
-              }
+  //               console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+  //             }
 
-              await sleep(100);
+  //             await sleep(100);
 
-              {
-                //===========// END //===========//
-                console.log("OTA END");
+  //             {
+  //               //===========// END //===========//
+  //               console.log("OTA END");
 
-                const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-                const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
-                await this.interface.execute(network_bytes, null);
-              }
+  //               const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+  //               const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+  //               await this.interface.execute(network_bytes, null);
+  //             }
 
-              await sleep(3000);
+  //             await sleep(3000);
 
-              console.log("Rebooting whole network...");
+  //             console.log("Rebooting whole network...");
 
-              const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
-              await this.interface.execute(payload, null);
+  //             const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+  //             await this.interface.execute(payload, null);
 
-              this.interface.emit("ota_status", "success");
-              resolve();
-              return;
-            } catch (e) {
-              this.interface.emit("ota_status", "fail");
-              reject(e);
-              return;
-            }
-          }).then(() => {
-            this.disconnect();
-          });
-        })
+  //             this.interface.emit("ota_status", "success");
+  //             resolve();
+  //             return;
+  //           } catch (e) {
+  //             this.interface.emit("ota_status", "fail");
+  //             reject(e);
+  //             return;
+  //           }
+  //         }).then(() => {
+  //           this.disconnect();
+  //         });
+  //       })
 
-        .finally(() => {
-          this.interface.releaseWakeLock();
-          this.#updating = false;
-        })
-    );
-  }
+  //       .finally(() => {
+  //         this.interface.releaseWakeLock();
+  //         this.#updating = false;
+  //       })
+  //   );
+  // }
 
   /**
    * @param {Uint8Array} config;
@@ -1159,13 +1159,13 @@ export class TangleDevice {
   //   return this.connector.request(payload);
   // }
 
-  // datarate in bits per second
-  setNetworkDatarate(datarate) {
-    console.log(`> Setting network datarate to ${datarate} bsp...`);
+  // // datarate in bits per second
+  // setNetworkDatarate(datarate) {
+  //   console.log(`> Setting network datarate to ${datarate} bsp...`);
 
-    const request_uuid = this.#getUUID();
-    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(9, 4), DEVICE_FLAGS.FLAG_CHANGE_DATARATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(datarate, 4)];
+  //   const request_uuid = this.#getUUID();
+  //   const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(9, 4), DEVICE_FLAGS.FLAG_CHANGE_DATARATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(datarate, 4)];
 
-    return this.interface.execute(payload, null);
-  }
+  //   return this.interface.execute(payload, null);
+  // }
 }
