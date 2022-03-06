@@ -127,22 +127,29 @@ export class WebBLEConnection {
   // WIP, event handling from tangle network to application
   // timeline changes from tangle network to application ...
   #onNetworkNotification(event) {
-    // let value = event.target.value;
-    // let a = [];
-    // for (let i = 0; i < value.byteLength; i++) {
-    //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
-    // }
-    // console.log("> " + a.join(" "));
+    
+    let value = event.target.value;
+    let a = [];
+    for (let i = 0; i < value.byteLength; i++) {
+      a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
+    }
+    console.log("> " + a.join(" "));
+
+    this.#interfaceReference.process(event.target.value);
+
   }
 
   // WIP
   #onDeviceNotification(event) {
+
     // let value = event.target.value;
     // let a = [];
     // for (let i = 0; i < value.byteLength; i++) {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
     // console.log("> " + a.join(" "));
+
+    // this.#interfaceReference.process(event.target.value);
   }
 
   attach(service, networkUUID, clockUUID, deviceUUID) {
@@ -158,8 +165,8 @@ export class WebBLEConnection {
           .startNotifications()
           .then(() => {
             console.log("> Network notifications started");
-            this.#networkChar.oncharacteristicvaluechanged = () => {
-              this.#onNetworkNotification();
+            this.#networkChar.oncharacteristicvaluechanged = (event) => {
+              this.#onNetworkNotification(event);
             };
           })
           .catch(e => {
@@ -192,8 +199,8 @@ export class WebBLEConnection {
           .startNotifications()
           .then(() => {
             console.log("> Device notifications started");
-            this.#networkChar.oncharacteristicvaluechanged = () => {
-              this.#onDeviceNotification();
+            this.#deviceChar.oncharacteristicvaluechanged = (event) => {
+              this.#onDeviceNotification(event);
             };
           })
           .catch(e => {

@@ -463,13 +463,15 @@ export function crc32(bytes) {
 const CRC8_TABLE =
   "005EBCE2613FDD83C29C7E20A3FD1F419DC3217FFCA2401E5F01E3BD3E6082DC237D9FC1421CFEA0E1BF5D0380DE3C62BEE0025CDF81633D7C22C09E1D43A1FF4618FAA427799BC584DA3866E5BB5907DB856739BAE406581947A5FB7826C49A653BD987045AB8E6A7F91B45C6987A24F8A6441A99C7257B3A6486D85B05E7B98CD2306EEDB3510F4E10F2AC2F7193CD114FADF3702ECC92D38D6F31B2EC0E50AFF1134DCE90722C6D33D18F0C52B0EE326C8ED0530DEFB1F0AE4C1291CF2D73CA947628ABF517490856B4EA6937D58B5709EBB536688AD495CB2977F4AA4816E9B7550B88D6346A2B7597C94A14F6A8742AC896154BA9F7B6E80A54D7896B35";
 
-function strToArr(str) {
+export function hexStringToArray(str) {
   var arr = str.match(/[0-9a-f]{2}/gi); // convert into array of hex pairs
   arr = arr.map(x => parseInt(x, 16)); // convert hex pairs into ints (bytes)
   return arr;
 }
 
-const CRC8_DATA = strToArr(CRC8_TABLE);
+window.hexStringToArray = hexStringToArray;
+
+const CRC8_DATA = hexStringToArray(CRC8_TABLE);
 
 export function crc8(bArr) {
   var i = 1;
@@ -482,7 +484,28 @@ export function crc8(bArr) {
   return b;
 }
 
-window.crc8 = crc8;
-window.crc32 = crc32;
+// window.crc8 = crc8;
+// window.crc32 = crc32;
 
 /////////////////////////////////////////////////////////////////
+
+// export function base64ToUint8Array(base64) {
+//   var binary_string = window.atob(base64);
+//   var len = binary_string.length;
+//   var bytes = new Uint8Array(len);
+//   for (var i = 0; i < len; i++) {
+//       bytes[i] = binary_string.charCodeAt(i);
+//   }
+//   return bytes;
+// }
+
+// window.base64ToUint8Array = base64ToUint8Array;
+
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+export function rgbToHex(r, g, b) {
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}

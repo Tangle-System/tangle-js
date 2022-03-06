@@ -1,7 +1,8 @@
-import { sleep, toBytes, numberToBytes, crc8, crc32 } from "./functions.js";
+import { sleep, toBytes, numberToBytes, crc8, crc32, hexStringToArray, rgbToHex } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglWriter } from "./TnglWriter.js";
+import { TnglReader } from "./TnglReader.js";
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +41,8 @@ export class TangleWebSerialConnector {
   #writing;
 
   #connected;
+  #opened;
+  #disconnecting;
 
   #transmitStream;
   #transmitStreamWriter;
@@ -50,7 +53,13 @@ export class TangleWebSerialConnector {
 
   #divisor;
 
-  #readCallback;
+  #beginCallback;
+  // #endCallback;
+  // #successCallback;
+  // #failCallback;
+
+  #feedbackCallback;
+  #dataCallback;
 
   constructor(interfaceReference) {
     this.type = "webserial";
@@ -63,6 +72,8 @@ export class TangleWebSerialConnector {
     this.#writing = false;
 
     this.#connected = false;
+    this.#opened = false;
+    this.#disconnecting = false;
 
     this.#transmitStream = null;
     this.#transmitStreamWriter = null;
@@ -73,12 +84,22 @@ export class TangleWebSerialConnector {
 
     this.#divisor = 8;
 
-    this.#readCallback = null;
+    // this.#beginCallback = null;
+    // this.#endCallback = null;
+    // this.#successCallback = null;
+    // this.#failCallback = null;
 
-    this.UNKNOWN_PACKET = 0;
-    this.NETWORK_PACKET = 1;
-    this.DEVICE_PACKET = 2;
-    this.CLOCK_PACKET = 3;
+    this.#beginCallback = null;
+    this.#feedbackCallback = null;
+    this.#dataCallback = null;
+
+    this.NETWORK_WRITE = 1;
+    this.DEVICE_WRITE = 2;
+    this.CLOCK_WRITE = 3;
+
+    this.NETWORK_REQUEST = 4;
+    this.DEVICE_REQUEST = 5;
+    this.CLOCK_REQUEST = 6;
   }
 
   /**
@@ -87,19 +108,38 @@ export class TangleWebSerialConnector {
    * Received data is handled to the processor's funtion onReceive(value).
    */
   async #run() {
-    let error = null;
-
     while (true) {
       // try {
       let { value, done } = await this.#receiveStreamReader.read();
 
-      if (this.#readCallback) {
-        value = this.#readCallback(value);
-      }
+      // console.log(value);
 
-      if (value && value.length !== 0) {
-        console.log(`${value}`);
-        this.#interfaceReference.emit("receive", { target: this, payload: value });
+      if (value) {
+        value = value.replace(/>>>[\w\d=]*<<</g, (match, $1) => {
+          console.warn(match);
+
+          if (match === ">>>BEGIN<<<") {
+            this.#beginCallback && this.#beginCallback();
+          } else if (match === ">>>END<<<") {
+            this.disconnect();
+          } else if (match === ">>>SUCCESS<<<") {
+            this.#feedbackCallback && this.#feedbackCallback(true);
+          } else if (match === ">>>FAIL<<<") {
+            this.#feedbackCallback && this.#feedbackCallback(false);
+          } else if (match.match(/>>>DATA=/)) {
+            // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
+            let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i);
+            reg && this.#dataCallback && this.#dataCallback(hexStringToArray(reg[1]));
+          }
+
+          // Return the replacement leveraging the parameters.
+          return "";
+        });
+
+        if (value.length !== 0) {
+          console.log(`${value}`);
+          this.#interfaceReference.emit("receive", { target: this, payload: value });
+        }
       }
 
       if (done) {
@@ -113,17 +153,9 @@ export class TangleWebSerialConnector {
       // }
     }
 
-    if (this.#receiveStream) {
-      if (this.#receiveStreamReader) {
-        await this.#receiveStreamReader.cancel().catch(() => {});
-        await this.#receiveTextDecoderDone.catch(() => {});
-        this.#receiveStreamReader = null;
-      }
-      this.#receiveStream = null;
+    if (!this.#disconnecting) {
+      this.disconnect();
     }
-
-    this.#connected = false;
-    this.#interfaceReference.emit("#disconnected");
   }
 
   /*
@@ -167,8 +199,8 @@ criteria example:
   // Then selects the device
   userSelect(criteria) {
     if (this.#connected) {
-      this.disconnect().then(() => {
-        this.userSelect(criteria);
+      return this.disconnect().then(() => {
+        return this.userSelect(criteria);
       });
     }
 
@@ -207,7 +239,7 @@ criteria example:
   unselect() {
     if (this.#connected) {
       return this.disconnect().then(() => {
-        this.unselect();
+        return this.unselect();
       });
     }
 
@@ -221,9 +253,16 @@ criteria example:
       return Promise.reject("NotSelected");
     }
 
+    if (this.#connected) {
+      console.warn("Serial device already connected");
+      return Promise.resolve();
+    }
+
     return this.#serialPort
       .open(this.PORT_OPTIONS)
       .then(() => {
+        this.#opened = true;
+
         // this.transmitter.attach(this.serialPort.writable);
         this.#transmitStream = this.#serialPort.writable;
 
@@ -238,13 +277,28 @@ criteria example:
 
         this.#run();
 
-        return this.#write(this.UNKNOWN_PACKET, []).finally(() => {
-          return sleep(1000).then(() => {
-            console.log("> Serial Connector Connected");
-            this.#connected = true;
-            this.#interfaceReference.emit("#connected");
-            return Promise.resolve({ connector: this.type });
-          });
+        return new Promise((resolve, reject) => {
+          const timeout_handle = setTimeout(() => {
+            console.warn("Connection timeouted");
+            this.#beginCallback = null;
+            reject("ConnectTimeout");
+          }, timeout);
+
+          this.#beginCallback = () => {
+            clearTimeout(timeout_handle);
+            this.#beginCallback = null;
+
+            setTimeout(() => {
+              this.#connected = true;
+              console.log("> Serial Connector Connected");
+              this.#interfaceReference.emit("#connected");
+              resolve({ connector: this.type });
+            }, 100);
+          };
+
+          this.#transmitStreamWriter = this.#transmitStream.getWriter();
+          this.#transmitStreamWriter.write(new Uint8Array(["\n".charCodeAt(0)]));
+          this.#transmitStreamWriter.releaseLock();
         });
       })
       .catch(error => {
@@ -260,11 +314,25 @@ criteria example:
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   async disconnect() {
-    if (!this.#connected || !this.#serialPort) {
+    console.log("> Closing serial port...");
+
+    if (!this.#serialPort) {
+      console.log("No Serial Port selected");
       return Promise.resolve();
     }
 
-    // await this.receiver.detach();
+    if (!this.#opened) {
+      console.log("Serial port already closed");
+      return Promise.resolve();
+    }
+
+    if (this.#disconnecting) {
+      console.log("Serial port already disconnecting");
+      return Promise.resolve();
+    }
+
+    this.#disconnecting = true;
+
     if (this.#receiveStream) {
       if (this.#receiveStreamReader) {
         await this.#receiveStreamReader.cancel().catch(() => {});
@@ -274,18 +342,30 @@ criteria example:
       this.#receiveStream = null;
     }
 
-    // await this.#transmitter.detach();
     if (this.#transmitStream) {
-      // if (this.#transmitStreamWriter) {
-      //   await this.#transmitStreamWriter.close().catch(() => {});
-      //   this.#transmitStreamWriter = null;
-      // }
+      if (this.#transmitStreamWriter) {
+        await this.#transmitStreamWriter.close().catch(() => {});
+        this.#transmitStreamWriter = null;
+      }
       this.#transmitStream = null;
     }
 
-    return this.#serialPort.close().finally(() => {
-      this.#connected = false;
-    });
+    return this.#serialPort
+      .close()
+      .then(() => {
+        this.#opened = false;
+        console.log("> Serial port closed");
+      })
+      .catch(error => {
+        console.error("Failed to close serial port. Error: " + error);
+      })
+      .finally(() => {
+        this.#disconnecting = false;
+        if (this.#connected) {
+          this.#connected = false;
+          this.#interfaceReference.emit("#disconnected");
+        }
+      });
   }
 
   // serial_connector_packet_type_t packet_type;
@@ -295,13 +375,20 @@ criteria example:
   // uint32_t header_crc32;
 
   // enum serial_connector_packet_type_t : uint32_t {
-  //   UNKNOWN_PACKET = 0,
-  //   NETWORK_PACKET = 1,
-  //   DEVICE_PACKET = 2,
-  //   CLOCK_PACKET = 3
+  //   NETWORK_WRITE = 1,
+  //   DEVICE_WRITE = 2,
+  //   CLOCK_WRITE = 3
   // };
 
-  #write(packet_type, payload) {
+  #write(packet_type, payload, tries = 3) {
+    if (!tries) {
+      return Promise.reject("WriteFailed");
+    }
+
+    if(!payload) {
+      payload = [];
+    }
+
     const header_writer = new TnglWriter(32);
     const timeout = 25 + payload.length / this.#divisor;
 
@@ -311,67 +398,85 @@ criteria example:
     header_writer.writeUint32(crc32(payload));
     header_writer.writeUint32(crc32(new Uint8Array(header_writer.bytes.buffer)));
 
-    const stream_writer = this.#transmitStream.getWriter();
+    this.#transmitStreamWriter = this.#transmitStream.getWriter();
 
     return new Promise((resolve, reject) => {
       const timeout_handle = setTimeout(
         () => {
           console.error("ResponseTimeout");
-          this.#readCallback = null;
-          stream_writer.releaseLock();
+          this.#feedbackCallback = null;
+          this.#transmitStreamWriter.releaseLock();
           reject("ResponseTimeout");
-          //resolve();
         },
         timeout < 5000 ? 10000 : timeout * 2,
       );
 
-      this.#readCallback = message => {
-        if (message.match(/>>>SUCCESS<<</)) {
-          message = message.replace(/>>>SUCCESS<<</, "");
-          this.#readCallback = null;
-          clearInterval(timeout_handle);
-          setInterval(() => {
-            stream_writer.releaseLock();
+      this.#feedbackCallback = success => {
+        this.#feedbackCallback = null;
+        clearInterval(timeout_handle);
+        if (success) {
+          setTimeout(() => {
+            this.#transmitStreamWriter.releaseLock();
             resolve();
           }, 10);
-        } else if (message.match(/>>>FAIL<<</)) {
-          message = message.replace(/>>>FAIL<<</, "");
-          console.error("Serial write fail code detected");
-          this.#readCallback = null;
-          clearInterval(timeout_handle);
-          stream_writer.releaseLock();
+        } else {
           //try to write it once more
           console.log("Trying to recover...");
-          sleep(100).then(() => {
-            resolve(this.#write(packet_type, payload));
-          });
+          setTimeout(() => {
+            this.#transmitStreamWriter.releaseLock();
+            resolve(this.#write(packet_type, payload, tries - 1));
+          }, 100);
         }
-
-        return message;
       };
 
-      return stream_writer
+      return this.#transmitStreamWriter
         .write(new Uint8Array(header_writer.bytes.buffer))
         .then(() => {
-          return stream_writer.write(new Uint8Array(payload));
+          return this.#transmitStreamWriter.write(new Uint8Array(payload));
         })
         .catch(error => {
-          stream_writer.releaseLock();
-          reject(error);
+          console.error(error);
+          // this.#transmitStreamWriter.releaseLock();
+          // reject(error);
         });
     });
   }
 
   #writeNetwork(payload) {
-    return this.#write(this.NETWORK_PACKET, payload);
+    return this.#write(this.NETWORK_WRITE, payload);
   }
 
   #writeDevice(payload) {
-    return this.#write(this.DEVICE_PACKET, payload);
+    return this.#write(this.DEVICE_WRITE, payload);
   }
 
   #writeClock(payload) {
-    return this.#write(this.CLOCK_PACKET, payload);
+    return this.#write(this.CLOCK_WRITE, payload);
+  }
+
+  #request(request_type, payload, tries = 3) {
+    if (!tries) {
+      return Promise.reject("RequestFailed");
+    }
+
+    let response = null;
+
+    this.#dataCallback = data => {
+      response = data;
+      this.#dataCallback = null;
+    };
+
+    return this.#write(request_type, payload, tries).then(() => {
+      return response;
+    });
+  }
+
+  #readClock() {
+    return this.#request(this.CLOCK_REQUEST);
+  }
+
+  #requestDevice(request) {
+    return this.#request(this.DEVICE_REQUEST, request);
   }
 
   // deliver handles the communication with the Tangle network in a way
@@ -424,7 +529,7 @@ criteria example:
       return Promise.reject("NotImplemented");
     }
 
-    return this.#writeDevice(payload);
+    return this.#requestDevice(payload);
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -459,7 +564,31 @@ criteria example:
   getClock() {
     // console.log(`getClock()`);
 
-    return Promise.reject("NotImplemented");
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+    }
+
+    return new Promise(async (resolve, reject) => {
+      for (let index = 0; index < 3; index++) {
+        await sleep(1000);
+        try {
+          const bytes = await this.#readClock();
+
+          const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          const timestamp = reader.readInt32();
+
+          // const timestamp = await this.#promise;
+          console.log("Clock read success:", timestamp);
+          resolve(new TimeTrack(timestamp));
+          return;
+        } catch (e) {
+          console.warn("Clock read failed:", e);
+        }
+      }
+
+      reject("ClockReadFailed");
+      return;
+    });
   }
 
   // handles the firmware updating. Sends "ota" events

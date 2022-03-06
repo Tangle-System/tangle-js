@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect } from "./functions.js";
+import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -7,6 +7,7 @@ import { TangleWebSocketsConnector } from "./TangleWebSocketsConnector.js";
 import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
+import { TnglReader } from "./TnglReader.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -19,8 +20,8 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
-  // FLAG_CHANGE_DATARATE_REQUEST: 232,
-  // FLAG_CHANGE_DATARATE_RESPONSE: 233,
+  FLAG_CHANGE_DATARATE_REQUEST: 232,
+  FLAG_CHANGE_DATARATE_RESPONSE: 233,
 
   FLAG_FW_VERSION_REQUEST: 234,
   FLAG_FW_VERSION_RESPONSE: 235,
@@ -224,10 +225,10 @@ export class TangleInterface {
           case "default":
             if (detectTangleConnect()) {
               this.connector = new TangleConnectConnector(this);
-            } else if (navigator.bluetooth) {
-              this.connector = new TangleWebBluetoothConnector(this);
             } else if (navigator.serial) {
               this.connector = new TangleWebSerialConnector(this);
+            } else if (navigator.bluetooth) {
+              this.connector = new TangleWebBluetoothConnector(this);
             } else {
               this.connector = new TangleDummyConnector(this);
             }
@@ -850,6 +851,97 @@ export class TangleInterface {
           this.#processing = false;
         }
       })();
+    }
+  }
+
+  process(bytecode) {
+    let tangleBytes = new TnglReader(bytecode);
+
+    while (tangleBytes.available > 0) {
+      switch (tangleBytes.peekFlag()) {
+        case NETWORK_FLAGS.FLAG_EMIT_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT:
+        case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
+          {
+            let is_lazy = false;
+            let event_value;
+
+            switch (tangleBytes.readFlag()) {
+              case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
+                is_lazy = true;
+              case NETWORK_FLAGS.FLAG_EMIT_EVENT:
+                console.log("FLAG_EVENT");
+                event_value = null;
+                break;
+
+              case NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT:
+                is_lazy = true;
+              case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
+                console.log("FLAG_TIMESTAMP_EVENT");
+                event_value = tangleBytes.readInt32();
+                break;
+
+              case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
+                is_lazy = true;
+              case NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT:
+                console.log("FLAG_COLOR_EVENT");
+                const bytes = tangleBytes.readBytes(3);
+                event_value = rgbToHex(bytes[0], bytes[1], bytes[2]);
+                break;
+
+              case NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT:
+                is_lazy = true;
+              case NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT:
+                console.log("FLAG_PERCENTAGE_EVENT");
+                event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
+                break;
+
+              case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
+                is_lazy = true;
+              case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
+                console.log("FLAG_LABEL_EVENT");
+                event_value = String.fromCharCode(...tangleBytes.readBytes(5));
+                break;
+
+              default:
+                // console.error("ERROR");
+                break;
+            }
+
+            console.log(`is_lazy = ${is_lazy ? "true" : "false"}`);
+            console.log(`event_value = ${event_value}`);
+
+            const event_label = String.fromCharCode(...tangleBytes.readBytes(5)); // 5 bytes
+            console.log(`event_label = ${event_label}`);
+
+            const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
+            console.log(`event_timestamp = ${event_timestamp} ms`);
+
+            const event_device_id = tangleBytes.readUint8(); // 1 byte
+            console.log(`event_device_id = ${event_device_id}`);
+
+            if (is_lazy) {
+              let event = { value: event_value, label: event_label, id: event_device_id };
+              this.emit("event", event);
+            } else {
+              let event = { value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
+              this.emit("event", event);
+            }
+          }
+          break;
+
+        default:
+          // console.error("ERROR");
+          tangleBytes.readUint8();
+          break;
+      }
     }
   }
 }

@@ -38,6 +38,8 @@ export class TnglReader {
         bytes.push(this._dataView.getUint8(this._index + i));
       }
 
+      this.foward(byteCount);
+
       return bytes;
     } else {
       console.warn("End of the data");
