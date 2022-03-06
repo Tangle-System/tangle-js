@@ -1,5 +1,7 @@
-import { sleep } from "./functions.js";
+import { sleep, toBytes, numberToBytes, crc8, crc32 } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
+import { DEVICE_FLAGS } from "./TangleInterface.js";
+import { TnglWriter } from "./TnglWriter.js";
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -35,19 +37,48 @@ export class TangleWebSerialConnector {
   #interfaceReference;
 
   #serialPort;
+  #writing;
 
-  #selected;
   #connected;
 
+  #transmitStream;
+  #transmitStreamWriter;
+
+  #receiveStream;
+  #receiveStreamReader;
+  #receiveTextDecoderDone;
+
+  #divisor;
+
+  #readCallback;
+
   constructor(interfaceReference) {
+    this.type = "webserial";
+
     this.#interfaceReference = interfaceReference;
 
-    this.PORT_OPTIONS = { baudRate: 1000000 };
+    this.PORT_OPTIONS = { baudRate: 1000000, dataBits: 8, stopBits: 1, parity: "none" };
 
     this.#serialPort = null;
+    this.#writing = false;
 
-    this.#selected = false;
     this.#connected = false;
+
+    this.#transmitStream = null;
+    this.#transmitStreamWriter = null;
+
+    this.#receiveStream = null;
+    this.#receiveStreamReader = null;
+    this.#receiveTextDecoderDone = null;
+
+    this.#divisor = 8;
+
+    this.#readCallback = null;
+
+    this.UNKNOWN_PACKET = 0;
+    this.NETWORK_PACKET = 1;
+    this.DEVICE_PACKET = 2;
+    this.CLOCK_PACKET = 3;
   }
 
   /**
@@ -59,25 +90,37 @@ export class TangleWebSerialConnector {
     let error = null;
 
     while (true) {
-      try {
-        const { value, done } = await this._receiveStreamReader.read();
+      // try {
+      let { value, done } = await this.#receiveStreamReader.read();
 
-        if (value) {
-          this.#interfaceReference.emit("receive", { target: this, payload: value });
-        }
-
-        if (done) {
-          this._receiveStreamReader.releaseLock();
-          console.log("Reader done");
-          break;
-        }
-      } catch (e) {
-        console.error(e);
-        error = e;
+      if (this.#readCallback) {
+        value = this.#readCallback(value);
       }
+
+      if (value && value.length !== 0) {
+        console.log(`${value}`);
+        this.#interfaceReference.emit("receive", { target: this, payload: value });
+      }
+
+      if (done) {
+        this.#receiveStreamReader.releaseLock();
+        console.log("Reader done");
+        break;
+      }
+      // } catch (e) {
+      //   console.error(e);
+      //   error = e;
+      // }
     }
 
-    this.detach();
+    if (this.#receiveStream) {
+      if (this.#receiveStreamReader) {
+        await this.#receiveStreamReader.cancel().catch(() => {});
+        await this.#receiveTextDecoderDone.catch(() => {});
+        this.#receiveStreamReader = null;
+      }
+      this.#receiveStream = null;
+    }
 
     this.#connected = false;
     this.#interfaceReference.emit("#disconnected");
@@ -123,13 +166,20 @@ criteria example:
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
   userSelect(criteria) {
-    this.#connected
-      ? this.disconnect()
-      : Promise.resolve().then(() => {
-          return navigator.serial.requestPort().then(port => {
-            this.#serialPort = port;
-          });
-        });
+    if (this.#connected) {
+      this.disconnect().then(() => {
+        this.userSelect(criteria);
+      });
+    }
+
+    if (this.#serialPort) {
+      this.#serialPort = null;
+    }
+
+    return navigator.serial.requestPort().then(port => {
+      this.#serialPort = port;
+      return Promise.resolve({ connector: this.type });
+    });
   }
 
   // takes the criteria, scans for scan_period and automatically selects the device,
@@ -151,12 +201,14 @@ criteria example:
   }
 
   selected() {
-    return Promise.resolve(this.#serialPort ? { fwVersion: "unknown" } : null);
+    return Promise.resolve(this.#serialPort ? { connector: this.type } : null);
   }
 
   unselect() {
     if (this.#connected) {
-      return Promise.reject("Connected");
+      return this.disconnect().then(() => {
+        this.unselect();
+      });
     }
 
     this.#serialPort = null;
@@ -173,20 +225,27 @@ criteria example:
       .open(this.PORT_OPTIONS)
       .then(() => {
         // this.transmitter.attach(this.serialPort.writable);
-        // this.receiver.attach(this.serialPort.readable);
-        // this.run();
+        this.#transmitStream = this.#serialPort.writable;
 
+        // this.receiver.attach(this.serialPort.readable);
+        this.#receiveStream = this.#serialPort.readable;
         let textDecoder = new window.TextDecoderStream();
-        this._receiveTextDecoderDone = this.#serialPort.readable.pipeTo(textDecoder.writable);
-        this._receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
+        this.#receiveTextDecoderDone = this.#receiveStream.pipeTo(textDecoder.writable);
+        this.#receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
         //.pipeThrough(new TransformStream(new JSONTransformer()));
 
-        this._receiveStreamReader = this._receiveStream.getReader();
+        this.#receiveStreamReader = this.#receiveStream.getReader();
 
         this.#run();
 
-        this.#connected = true;
-        this.#interfaceReference.emit("#connected");
+        return this.#write(this.UNKNOWN_PACKET, []).finally(() => {
+          return sleep(1000).then(() => {
+            console.log("> Serial Connector Connected");
+            this.#connected = true;
+            this.#interfaceReference.emit("#connected");
+            return Promise.resolve({ connector: this.type });
+          });
+        });
       })
       .catch(error => {
         return this.disconnect().then(() => {
@@ -196,123 +255,316 @@ criteria example:
   }
 
   connected() {
-    return Promise.resolve(this.#connected);
+    return Promise.resolve(this.#connected ? { connector: this.type } : null);
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
-  disconnect() {
-    if (!this.#serialPort) {
-      return Promise.reject("NotSelected");
+  async disconnect() {
+    if (!this.#connected || !this.#serialPort) {
+      return Promise.resolve();
     }
 
-    if (this._transmitStream) {
-      this._transmitStream = null;
-    }
-
-    if (this._receiveStream) {
-      if (this._receiveStreamReader) {
-        //await this._receiveStreamReader.cancel().catch(() => {});
-        //await this._receiveTextDecoderDone.catch(() => {});
-        this._receiveStreamReader = null;
+    // await this.receiver.detach();
+    if (this.#receiveStream) {
+      if (this.#receiveStreamReader) {
+        await this.#receiveStreamReader.cancel().catch(() => {});
+        await this.#receiveTextDecoderDone.catch(() => {});
+        this.#receiveStreamReader = null;
       }
-      this._receiveStream = null;
+      this.#receiveStream = null;
     }
 
-    //.then(() => {
-    return this.#serialPort.close();
-    //})
+    // await this.#transmitter.detach();
+    if (this.#transmitStream) {
+      // if (this.#transmitStreamWriter) {
+      //   await this.#transmitStreamWriter.close().catch(() => {});
+      //   this.#transmitStreamWriter = null;
+      // }
+      this.#transmitStream = null;
+    }
 
-    this.#connected = false;
-    this.#interfaceReference.emit("#disconnected");
+    return this.#serialPort.close().finally(() => {
+      this.#connected = false;
+    });
+  }
+
+  // serial_connector_packet_type_t packet_type;
+  // uint32_t packet_size;
+  // uint32_t packet_receive_timeout;
+  // uint32_t packet_crc32;
+  // uint32_t header_crc32;
+
+  // enum serial_connector_packet_type_t : uint32_t {
+  //   UNKNOWN_PACKET = 0,
+  //   NETWORK_PACKET = 1,
+  //   DEVICE_PACKET = 2,
+  //   CLOCK_PACKET = 3
+  // };
+
+  #write(packet_type, payload) {
+    const header_writer = new TnglWriter(32);
+    const timeout = 25 + payload.length / this.#divisor;
+
+    header_writer.writeUint32(packet_type);
+    header_writer.writeUint32(payload.length);
+    header_writer.writeUint32(timeout);
+    header_writer.writeUint32(crc32(payload));
+    header_writer.writeUint32(crc32(new Uint8Array(header_writer.bytes.buffer)));
+
+    const stream_writer = this.#transmitStream.getWriter();
+
+    return new Promise((resolve, reject) => {
+      const timeout_handle = setTimeout(
+        () => {
+          console.error("ResponseTimeout");
+          this.#readCallback = null;
+          stream_writer.releaseLock();
+          reject("ResponseTimeout");
+          //resolve();
+        },
+        timeout < 5000 ? 10000 : timeout * 2,
+      );
+
+      this.#readCallback = message => {
+        if (message.match(/>>>SUCCESS<<</)) {
+          message = message.replace(/>>>SUCCESS<<</, "");
+          this.#readCallback = null;
+          clearInterval(timeout_handle);
+          setInterval(() => {
+            stream_writer.releaseLock();
+            resolve();
+          }, 10);
+        } else if (message.match(/>>>FAIL<<</)) {
+          message = message.replace(/>>>FAIL<<</, "");
+          console.error("Serial write fail code detected");
+          this.#readCallback = null;
+          clearInterval(timeout_handle);
+          stream_writer.releaseLock();
+          //try to write it once more
+          console.log("Trying to recover...");
+          sleep(100).then(() => {
+            resolve(this.#write(packet_type, payload));
+          });
+        }
+
+        return message;
+      };
+
+      return stream_writer
+        .write(new Uint8Array(header_writer.bytes.buffer))
+        .then(() => {
+          return stream_writer.write(new Uint8Array(payload));
+        })
+        .catch(error => {
+          stream_writer.releaseLock();
+          reject(error);
+        });
+    });
+  }
+
+  #writeNetwork(payload) {
+    return this.#write(this.NETWORK_PACKET, payload);
+  }
+
+  #writeDevice(payload) {
+    return this.#write(this.DEVICE_PACKET, payload);
+  }
+
+  #writeClock(payload) {
+    return this.#write(this.CLOCK_PACKET, payload);
   }
 
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    if (this.#connected) {
-      return Promise.resolve();
-    } else {
-      return Promise.reject("Disconnected");
+    // console.log(`deliver(payload=${payload})`);
+
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+      return;
     }
+
+    if (!payload) {
+      return Promise.resolve();
+    }
+
+    return this.#writeNetwork(payload);
   }
 
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    if (this.#connected) {
-      return Promise.resolve();
-    } else {
-      return Promise.reject("Disconnected");
+    // console.log(`transmit(payload=${payload})`);
+
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+      return;
     }
+
+    if (!payload) {
+      return Promise.resolve();
+    }
+
+    return this.#writeNetwork(payload);
   }
 
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    if (this.#connected) {
-      return Promise.resolve([]);
-    } else {
-      return Promise.reject("Disconnected");
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
+      return;
     }
+
+    if (!payload) {
+      return Promise.resolve();
+    }
+
+    if (read_response) {
+      return Promise.reject("NotImplemented");
+    }
+
+    return this.#writeDevice(payload);
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    if (this.#connected) {
-      return Promise.resolve();
-    } else {
-      return Promise.reject("Disconnected");
+    // console.log(`setClock(clock.millis()=${clock.millis()})`);
+
+    if (!this.#connected) {
+      return Promise.reject("DeviceDisconnected");
     }
+
+    return new Promise(async (resolve, reject) => {
+      for (let index = 0; index < 3; index++) {
+        try {
+          await this.#writeClock([...toBytes(clock.millis(), 4)]);
+          console.log("Clock write success");
+          resolve();
+          return;
+        } catch (e) {
+          console.warn("Clock write failed");
+          await sleep(1000);
+        }
+      }
+
+      reject("ClockWriteFailed");
+      return;
+    });
   }
 
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    if (this.#connected) {
-      return Promise.resolve(new TimeTrack(0));
-    } else {
-      return Promise.reject("Disconnected");
-    }
+    // console.log(`getClock()`);
+
+    return Promise.reject("NotImplemented");
   }
 
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
+    // console.log(`updateFW(firmware=${firmware})`);
+
+    if (!this.#serialPort) {
+      console.warn("Serial Port is null");
+      return Promise.reject("UpdateFailed");
+    }
+
+    if (this.#writing) {
+      console.warn("Communication in proccess");
+      return Promise.reject("UpdateFailed");
+    }
+
+    this.#writing = true;
+
     return new Promise(async (resolve, reject) => {
-      if (!this.#connected) {
-        reject("Disconnected");
-        return;
-      }
+      const chunk_size = 3984; // must be modulo 16
 
-      this.#interfaceReference.emit("ota_status", "begin");
+      this.#divisor = 32;
 
-      await sleep(1000);
+      let index_from = 0;
+      let index_to = chunk_size;
 
-      for (let percentage = 1; percentage <= 100; percentage++) {
-        this.#interfaceReference.emit("ota_progress", percentage);
+      let written = 0;
 
-        await sleep(50);
+      console.log("OTA UPDATE");
+      console.log(firmware);
 
-        if (!this.#connected) {
-          this.#interfaceReference.emit("ota_status", "fail");
-          reject("Connection Failure");
-          return;
+      try {
+        this.#interfaceReference.emit("ota_status", "begin");
+
+        {
+          //===========// RESET //===========//
+          console.log("OTA RESET");
+
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+          await this.#writeDevice(bytes);
         }
 
-        if (Math.random() <= 0.01) {
-          this.#interfaceReference.emit("ota_status", "fail");
-          reject("Simulated Failure");
-          return;
+        await sleep(100);
+
+        {
+          //===========// BEGIN //===========//
+          console.log("OTA BEGIN");
+
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+          await this.#writeDevice(bytes);
         }
+
+        await sleep(8000); // need to wait 10 seconds to let the ESP erase the flash.
+
+        {
+          //===========// WRITE //===========//
+          console.log("OTA WRITE");
+
+          const start_timestamp = new Date().getTime();
+
+          while (written < firmware.length) {
+            if (index_to > firmware.length) {
+              index_to = firmware.length;
+            }
+
+            const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+
+            await this.#writeDevice(bytes);
+            written += index_to - index_from;
+
+            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            console.log(percentage + "%");
+
+            this.#interfaceReference.emit("ota_progress", percentage);
+
+            index_from += chunk_size;
+            index_to = index_from + chunk_size;
+          }
+
+          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        }
+
+        await sleep(100);
+
+        {
+          //===========// END //===========//
+          console.log("OTA END");
+
+          const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          await this.#writeDevice(bytes);
+        }
+
+        await sleep(3000);
+
+        this.#interfaceReference.emit("ota_status", "success");
+        resolve();
+      } catch (e) {
+        console.error(e);
+        this.#interfaceReference.emit("ota_status", "fail");
+        reject("UpdateFailed");
       }
-
-      await sleep(1000);
-
-      this.#interfaceReference.emit("ota_status", "success");
-
-      resolve();
-      return;
+    }).finally(() => {
+      this.#divisor = 8;
+      this.#writing = false;
     });
   }
 

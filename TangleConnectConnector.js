@@ -1,4 +1,4 @@
-import { sleep, toBytes } from "./functions.js";
+import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
 
@@ -14,6 +14,8 @@ export class TangleConnectConnector {
   // #reject; // function that will reject current promise
 
   constructor(interfaceReference) {
+    this.type = "tangleconnect";
+
     this.#interfaceReference = interfaceReference;
 
     this.#promise = null;
@@ -25,7 +27,8 @@ export class TangleConnectConnector {
       var _selected = false;
 
       function _fail(chance) {
-        return Math.random() < chance;
+        //return Math.random() < chance;
+        return false;
       }
 
       // @ts-ignore
@@ -146,7 +149,7 @@ export class TangleConnectConnector {
       window.tangleConnect.deliver = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(25); // delivering logic
@@ -163,7 +166,7 @@ export class TangleConnectConnector {
       window.tangleConnect.transmit = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(10); // transmiting logic
@@ -180,7 +183,7 @@ export class TangleConnectConnector {
       window.tangleConnect.request = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(50); // requesting logic
@@ -198,7 +201,7 @@ export class TangleConnectConnector {
       window.tangleConnect.readClock = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(50); // reading clock logic.
@@ -215,7 +218,7 @@ export class TangleConnectConnector {
       window.tangleConnect.writeClock = async function (bytes) {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         await sleep(10); // writing clock logic.
@@ -232,7 +235,7 @@ export class TangleConnectConnector {
       window.tangleConnect.updateFW = async function () {
         if (!_connected) {
           // @ts-ignore
-          window.tangleConnect.reject("DeviceNotConnected");
+          window.tangleConnect.reject("DeviceDisconnected");
           return;
         }
         // @ts-ignore
@@ -296,7 +299,7 @@ export class TangleConnectConnector {
   }
 
   available() {
-    return "tangleConnect" in window;
+    return detectTangleConnect();
   }
 
   #applyTimeout(promise, timeout, message) {
@@ -688,10 +691,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }
