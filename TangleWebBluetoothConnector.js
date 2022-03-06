@@ -638,7 +638,7 @@ criteria example:
       if (add_legacy_uuids) {
         // window.alert("add_legacy_uuids");
 
-        web_ble_options.filters.push({ name: "Nara Alpha" });
+        web_ble_options.filters.push({ namePrefix: "Nara Al" });
         web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
         web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
@@ -734,7 +734,7 @@ criteria example:
           if (!legacy_filters_applied) {
             legacy_filters_applied = true;
 
-            web_ble_options.filters.push({ name: "Nara Alpha" });
+            web_ble_options.filters.push({ namePrefix: "Nara Al" });
             web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
             web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
