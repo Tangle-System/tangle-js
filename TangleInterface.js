@@ -225,10 +225,10 @@ export class TangleInterface {
           case "default":
             if (detectTangleConnect()) {
               this.connector = new TangleConnectConnector(this);
-            } else if (navigator.serial) {
-              this.connector = new TangleWebSerialConnector(this);
             } else if (navigator.bluetooth) {
               this.connector = new TangleWebBluetoothConnector(this);
+            } else if (navigator.serial) {
+              this.connector = new TangleWebSerialConnector(this);
             } else {
               this.connector = new TangleDummyConnector(this);
             }
