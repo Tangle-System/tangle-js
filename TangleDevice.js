@@ -39,7 +39,7 @@ export class TangleDevice {
     this.#ownerKey = null;
 
     this.interface = new TangleInterface(this, reconnectionInterval);
-    
+
     if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
     }
@@ -305,23 +305,22 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
-    
-    if(ownerSignature) {
+    if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
 
-    if(ownerKey) {
+    if (ownerKey) {
       this.setOwnerKey(ownerKey);
     }
 
-    if(!this.#ownerSignature) {
+    if (!this.#ownerSignature) {
       throw "OwnerSignatureNotAssigned";
     }
 
-    if(!this.#ownerKey) {
+    if (!this.#ownerKey) {
       throw "OwnerKeyNotAssigned";
     }
-    
+
     const criteria = /** @type {any} */ ([{ adoptionFlag: true }, { legacy: true }]);
 
     return this.interface
@@ -412,17 +411,30 @@ export class TangleDevice {
 
         try {
           while (!newDeviceName || !newDeviceName.match(/^[\w_ ]+/)) {
-            // @ts-ignore
-            newDeviceName = await window.prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
-              placeholder: "NARA",
-              regex: /^[a-zA-Z0-9_ ]{1,16}$/,
-              invalidText: "Název obsahuje nepovolené znaky",
-              maxlength: 16,
-            });
+            let exit = false;
+
+            newDeviceName = await window
+              // @ts-ignore
+              .prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
+                placeholder: "NARA",
+                regex: /^[a-zA-Z0-9_ ]{1,16}$/,
+                invalidText: "Název obsahuje nepovolené znaky",
+                maxlength: 16,
+              });
+
+            if (!newDeviceName) {
+              throw "AdoptionCancelled";
+            }
           }
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
+            newDeviceId = await window
+              // @ts-ignore
+              .prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
             // @ts-ignore
-            newDeviceId = await window.prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
+
+            if (!newDeviceId) {
+              throw "AdoptionCancelled";
+            }
           }
 
           newDeviceName = czechHackyToEnglish(newDeviceName); // replace all hacky carky with english letters
@@ -537,6 +549,22 @@ export class TangleDevice {
             });
           });
       })
+      .catch(error => {
+        console.log(error);
+        if (error === "BluefyError") {
+          // @ts-ignore
+          window.alert("Pokud vlastníte lampu se zvlněným podstavcem, kterou se vám nedaří připojit, obraťte se prosím, na naši podporu.", "Spárování nové lampy se nezdařilo");
+          return;
+        }
+        if (error === "UserCanceledSelection") {
+          return this.connected().then(result => {
+            if (!result) {
+              // @ts-ignore
+              window.alert('Pro připojení již spárované lampy prosím stiskněte jakýkoli symbol "🛑"', "Spárování nové lampy se nezdařilo");
+            }
+          });
+        }
+      })
       .finally(() => {
         this.#adopting = false;
       });
@@ -545,20 +573,19 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null) {
-
-    if(ownerSignature) {
+    if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
 
-    if(ownerKey) {
+    if (ownerKey) {
       this.setOwnerKey(ownerKey);
     }
 
-    if(!this.#ownerSignature) {
+    if (!this.#ownerSignature) {
       throw "OwnerSignatureNotAssigned";
     }
 
-    if(!this.#ownerKey) {
+    if (!this.#ownerKey) {
       throw "OwnerKeyNotAssigned";
     }
 
@@ -593,10 +620,14 @@ export class TangleDevice {
         return this.interface.connect(10000);
       })
       .catch(error => {
-        if (error !== "UserCanceledSelection") {
+        console.error(error);
+        if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
-          window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+          window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
+          return;
         }
+        //@ts-ignore
+        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
       });
   }
 

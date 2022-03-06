@@ -865,7 +865,12 @@ criteria example:
 
     return navigator.bluetooth
       .requestDevice(web_ble_options)
-      .catch(() => {
+      .catch(e => {
+        console.error(e);
+        // Bluefy way how to say "Bluetooth is not enabled"
+        if (e.toString() === "2") {
+          throw "BluefyError";
+        }
         throw "UserCanceledSelection";
       })
       .then(device => {
