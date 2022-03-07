@@ -1,4 +1,4 @@
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -564,7 +564,7 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = false) {
+  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = true) {
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -606,7 +606,11 @@ export class TangleDevice {
     }
 
     if (connectAny) {
-      criteria = [{}, { legacy: true }];
+      if (detectBluefy()) {
+        criteria = [{}];
+      } else {
+        criteria = [{}, { legacy: true }];
+      }
     }
 
     console.log(criteria);
