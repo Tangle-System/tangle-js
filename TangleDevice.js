@@ -120,7 +120,7 @@ export class TangleDevice {
   }
 
   setOwnerKey(ownerKey) {
-    
+
     const reg = ownerKey.match(/([\dabcdefABCDEF]{32})/g);
 
     if (!reg[0]) {
@@ -817,7 +817,7 @@ export class TangleDevice {
         //@ts-ignore
         .then(result => {
           if (result) {
-            return this.setNetworkDatarate(1000000).catch(() => {
+            return this.setNetworkDatarate(2000000).catch(() => {
               window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
             });
           } else {
@@ -836,6 +836,8 @@ export class TangleDevice {
 
             console.log("OTA UPDATE");
             console.log(firmware);
+
+            const start_timestamp = new Date().getTime();
 
             await sleep(100);
 
@@ -862,13 +864,11 @@ export class TangleDevice {
                 await this.interface.execute(network_bytes, null);
               }
 
-              await sleep(10000);
+              await sleep(8000);
 
               {
                 //===========// WRITE //===========//
                 console.log("OTA WRITE");
-
-                const start_timestamp = new Date().getTime();
 
                 while (written < firmware.length) {
                   if (index_to > firmware.length) {
@@ -888,8 +888,6 @@ export class TangleDevice {
                   index_from += chunk_size;
                   index_to = index_from + chunk_size;
                 }
-
-                console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
               }
 
               await sleep(100);
@@ -909,6 +907,8 @@ export class TangleDevice {
 
               const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
               await this.interface.execute(payload, null);
+
+              console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
               this.interface.emit("ota_status", "success");
               resolve();

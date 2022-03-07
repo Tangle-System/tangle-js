@@ -116,7 +116,7 @@ export class TangleWebSerialConnector {
 
       if (value) {
         value = value.replace(/>>>[\w\d=]*<<</g, (match, $1) => {
-          console.warn(match);
+          // console.warn(match);
 
           if (match === ">>>BEGIN<<<") {
             this.#beginCallback && this.#beginCallback();
@@ -125,10 +125,10 @@ export class TangleWebSerialConnector {
           } else if (match === ">>>SUCCESS<<<") {
             this.#feedbackCallback && this.#feedbackCallback(true);
           } else if (match === ">>>FAIL<<<") {
+            console.warn(match);
             this.#feedbackCallback && this.#feedbackCallback(false);
           } else if (match.match(/>>>DATA=/)) {
-            // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
-            let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i);
+            let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i);  // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
             reg && this.#dataCallback && this.#dataCallback(hexStringToArray(reg[1]));
           }
 
@@ -385,7 +385,7 @@ criteria example:
       return Promise.reject("WriteFailed");
     }
 
-    if(!payload) {
+    if (!payload) {
       payload = [];
     }
 
@@ -418,7 +418,7 @@ criteria example:
           setTimeout(() => {
             this.#transmitStreamWriter.releaseLock();
             resolve();
-          }, 10);
+          }, 25);
         } else {
           //try to write it once more
           console.log("Trying to recover...");
@@ -621,6 +621,8 @@ criteria example:
       console.log("OTA UPDATE");
       console.log(firmware);
 
+      const start_timestamp = new Date().getTime();
+
       try {
         this.#interfaceReference.emit("ota_status", "begin");
 
@@ -648,8 +650,6 @@ criteria example:
           //===========// WRITE //===========//
           console.log("OTA WRITE");
 
-          const start_timestamp = new Date().getTime();
-
           while (written < firmware.length) {
             if (index_to > firmware.length) {
               index_to = firmware.length;
@@ -668,8 +668,6 @@ criteria example:
             index_from += chunk_size;
             index_to = index_from + chunk_size;
           }
-
-          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
         }
 
         await sleep(100);
@@ -683,6 +681,8 @@ criteria example:
         }
 
         await sleep(3000);
+
+        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();

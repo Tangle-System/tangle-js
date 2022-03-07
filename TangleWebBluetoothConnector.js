@@ -127,7 +127,6 @@ export class WebBLEConnection {
   // WIP, event handling from tangle network to application
   // timeline changes from tangle network to application ...
   #onNetworkNotification(event) {
-    
     let value = event.target.value;
     let a = [];
     for (let i = 0; i < value.byteLength; i++) {
@@ -136,19 +135,16 @@ export class WebBLEConnection {
     console.log("> " + a.join(" "));
 
     this.#interfaceReference.process(event.target.value);
-
   }
 
   // WIP
   #onDeviceNotification(event) {
-
     // let value = event.target.value;
     // let a = [];
     // for (let i = 0; i < value.byteLength; i++) {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
     // console.log("> " + a.join(" "));
-
     // this.#interfaceReference.process(event.target.value);
   }
 
@@ -165,7 +161,7 @@ export class WebBLEConnection {
           .startNotifications()
           .then(() => {
             console.log("> Network notifications started");
-            this.#networkChar.oncharacteristicvaluechanged = (event) => {
+            this.#networkChar.oncharacteristicvaluechanged = event => {
               this.#onNetworkNotification(event);
             };
           })
@@ -199,7 +195,7 @@ export class WebBLEConnection {
           .startNotifications()
           .then(() => {
             console.log("> Device notifications started");
-            this.#deviceChar.oncharacteristicvaluechanged = (event) => {
+            this.#deviceChar.oncharacteristicvaluechanged = event => {
               this.#onDeviceNotification(event);
             };
           })
@@ -379,6 +375,8 @@ export class WebBLEConnection {
       console.log("OTA UPDATE");
       console.log(firmware);
 
+      const start_timestamp = new Date().getTime();
+
       try {
         this.#interfaceReference.emit("ota_status", "begin");
 
@@ -406,8 +404,6 @@ export class WebBLEConnection {
           //===========// WRITE //===========//
           console.log("OTA WRITE");
 
-          const start_timestamp = new Date().getTime();
-
           while (written < firmware.length) {
             if (index_to > firmware.length) {
               index_to = firmware.length;
@@ -426,8 +422,6 @@ export class WebBLEConnection {
             index_from += chunk_size;
             index_to = index_from + chunk_size;
           }
-
-          console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
         }
 
         await sleep(100);
@@ -439,6 +433,8 @@ export class WebBLEConnection {
           const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
+
+        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
