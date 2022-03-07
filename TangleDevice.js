@@ -97,7 +97,6 @@ export class TangleDevice {
   }
 
   setOwnerSignature(ownerSignature) {
-
     const reg = ownerSignature.match(/([\dabcdefABCDEF]{32})/g);
 
     if (!reg[0]) {
@@ -120,7 +119,6 @@ export class TangleDevice {
   }
 
   setOwnerKey(ownerKey) {
-
     const reg = ownerKey.match(/([\dabcdefABCDEF]{32})/g);
 
     if (!reg[0]) {
@@ -566,7 +564,7 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null) {
+  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = false) {
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -605,6 +603,10 @@ export class TangleDevice {
       if (devices_criteria.length != 0) {
         criteria = devices_criteria;
       }
+    }
+
+    if (connectAny) {
+      criteria = [{}, { legacy: true }];
     }
 
     console.log(criteria);
