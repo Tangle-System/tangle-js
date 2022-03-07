@@ -907,7 +907,7 @@ export class TangleInterface {
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
                 console.log("FLAG_LABEL_EVENT");
-                event_value = String.fromCharCode(...tangleBytes.readBytes(5));
+                event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
                 break;
 
               default:
@@ -918,7 +918,7 @@ export class TangleInterface {
             console.log(`is_lazy = ${is_lazy ? "true" : "false"}`);
             console.log(`event_value = ${event_value}`);
 
-            const event_label = String.fromCharCode(...tangleBytes.readBytes(5)); // 5 bytes
+            const event_label = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0]; // 5 bytes
             console.log(`event_label = ${event_label}`);
 
             const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
