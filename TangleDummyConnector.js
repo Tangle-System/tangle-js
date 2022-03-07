@@ -207,6 +207,11 @@ criteria example:
         return;
       }
       await sleep(25); // delivering logic
+
+      if (payload.length < 64) {
+        this.#interfaceReference.process(new DataView(new Uint8Array(payload).buffer));
+      }
+      
       if (this.#fail(0.1)) {
         reject("DeliverFailed");
         return;
@@ -226,6 +231,11 @@ criteria example:
         return;
       }
       await sleep(10); // transmiting logic
+
+      if (payload.length < 64) {
+        this.#interfaceReference.process(new DataView(new Uint8Array(payload).buffer));
+      }
+
       if (this.#fail(0.1)) {
         reject("TransmitFailed");
         return;
