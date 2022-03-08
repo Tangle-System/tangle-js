@@ -127,12 +127,14 @@ export class WebBLEConnection {
   // WIP, event handling from tangle network to application
   // timeline changes from tangle network to application ...
   #onNetworkNotification(event) {
-    let value = event.target.value;
-    let a = [];
-    for (let i = 0; i < value.byteLength; i++) {
-      a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
-    }
-    console.log("> " + a.join(" "));
+    console.log(event);
+    
+    // let value = event.target.value;
+    // let a = [];
+    // for (let i = 0; i < value.byteLength; i++) {
+    //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
+    // }
+    // console.log("> " + a.join(" "));
 
     this.#interfaceReference.process(event.target.value);
   }
@@ -592,6 +594,8 @@ criteria example:
       let add_adoption_uuid = false;
 
       for (let i = 0; i < this.#criteria.length; i++) {
+        add_all_devices = true;
+
         if (this.#criteria[i].adoptionFlag) {
           add_all_devices = true;
           add_adoption_uuid = true;
@@ -603,6 +607,7 @@ criteria example:
         }
 
         if (this.#criteria[i].ownerSignature) {
+          add_all_devices = false;
           add_tangle_uuid = true;
           add_adoption_uuid = true;
         }
