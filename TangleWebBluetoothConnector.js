@@ -326,6 +326,8 @@ export class WebBLEConnection {
   // reads the current clock characteristics timestamp from the device
   // as fast as possible
   readClock() {
+    // return Promise.reject("SimulatedFail");
+
     if (!this.#clockChar) {
       console.warn("Sync characteristics is null");
       return Promise.reject("ClockReadFailed");
@@ -420,6 +422,7 @@ export class WebBLEConnection {
             console.log(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
+            this.#interfaceReference.emit("ota_timeleft", percentage);
 
             index_from += chunk_size;
             index_to = index_from + chunk_size;
@@ -728,6 +731,7 @@ criteria example:
     //
     else if (this.#criteria.length == 0) {
       web_ble_options.filters.push({ services: [this.TANGLE_SERVICE_UUID] });
+      // web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
     }
 
     //

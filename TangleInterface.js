@@ -20,6 +20,11 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
+  FLAG_ROM_PHY_VDD33_REQUEST: 228,
+  FLAG_ROM_PHY_VDD33_RESPONSE: 229,
+  FLAG_VOLTAGE_ON_PIN_REQUEST: 230,
+  FLAG_VOLTAGE_ON_PIN_RESPONSE: 231,
+
   FLAG_CHANGE_DATARATE_REQUEST: 232,
   FLAG_CHANGE_DATARATE_RESPONSE: 233,
 
@@ -128,7 +133,7 @@ export class TangleInterface {
   constructor(deviceReference, reconnectionInterval = 1000) {
     this.#deviceReference = deviceReference;
 
-    this.clock = new TimeTrack();
+    this.clock = new TimeTrack(0);
 
     this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (null);
 

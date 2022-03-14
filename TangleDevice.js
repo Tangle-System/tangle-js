@@ -609,7 +609,7 @@ export class TangleDevice {
       if (detectBluefy()) {
         criteria = [{}];
       } else {
-        criteria = [{}, { legacy: true }];
+        criteria = [{}, { adoptionFlag: true }, { legacy: true }];
       }
     }
 
@@ -1199,4 +1199,81 @@ export class TangleDevice {
 
     return this.interface.execute(payload, null);
   }
+
+  readRomPhyVdd33() {
+    console.log("> Requesting rom_phy_vdd33 ...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_ROM_PHY_VDD33_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      console.log("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ROM_PHY_VDD33_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      console.log(`error_code=${error_code}`);
+
+      let vdd_reading = null;
+
+      if (error_code === 0) {
+        vdd_reading = reader.readInt32();
+      } else {
+        throw "Fail";
+      }
+      console.log(`vdd_reading=${vdd_reading}`);
+
+      return vdd_reading;
+    });
+  }
+
+  readPinVoltage(pin) {
+    console.log(`> Requesting pin ${pin} voltage ...`);
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_VOLTAGE_ON_PIN_REQUEST, ...numberToBytes(request_uuid, 4), pin];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      console.log("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_VOLTAGE_ON_PIN_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      console.log(`error_code=${error_code}`);
+
+      let pin_reading = null;
+
+      if (error_code === 0) {
+        pin_reading = reader.readUint32();
+      } else {
+        throw "Fail";
+      }
+      console.log(`pin_reading=${pin_reading}`);
+
+      return pin_reading;
+    });
+  }
+
 }
