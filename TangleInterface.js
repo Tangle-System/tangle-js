@@ -865,6 +865,38 @@ export class TangleInterface {
 
     while (tangleBytes.available > 0) {
       switch (tangleBytes.peekFlag()) {
+        case NETWORK_FLAGS.FLAG_CONF_BYTES:
+          {
+            logging.verbose("FLAG_CONF_BYTES");
+            tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_CONF_BYTES
+
+            const conf_size = tangleBytes.readUint32();
+            //const bytecode_offset = tangleBytes.position() + offset;
+            tangleBytes.foward(conf_size);
+
+            logging.debug("conf_size=%u", conf_size);
+            //logging.debug("bytecode_offset=%u", bytecode_offset);
+
+            // control::feed(bytecode, bytecode_offset, conf_size);
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_TNGL_BYTES:
+          {
+            logging.verbose("FLAG_TNGL_BYTES");
+            tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_TNGL_BYTES
+
+            const tngl_size = tangleBytes.readUint32();
+            //const bytecode_offset = tangleBytes.position() + offset;
+            tangleBytes.foward(tngl_size);
+
+            logging.debug("tngl_size=%u", tngl_size);
+            //logging.debug("bytecode_offset=%u", bytecode_offset);
+
+            // Runtime::feed(bytecode, bytecode_offset, tngl_size);
+          }
+          break;
+
         case NETWORK_FLAGS.FLAG_EMIT_EVENT:
         case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
         case NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT:
@@ -883,21 +915,21 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_EVENT:
-                logging.debug("FLAG_EVENT");
+                logging.verbose("FLAG_EVENT");
                 event_value = null;
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
-                logging.debug("FLAG_TIMESTAMP_EVENT");
+                logging.verbose("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT:
-                logging.debug("FLAG_COLOR_EVENT");
+                logging.verbose("FLAG_COLOR_EVENT");
                 const bytes = tangleBytes.readBytes(3);
                 event_value = rgbToHex(bytes[0], bytes[1], bytes[2]);
                 break;
@@ -905,14 +937,14 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT:
-                logging.debug("FLAG_PERCENTAGE_EVENT");
+                logging.verbose("FLAG_PERCENTAGE_EVENT");
                 event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
-                logging.debug("FLAG_LABEL_EVENT");
+                logging.verbose("FLAG_LABEL_EVENT");
                 event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
                 break;
 
@@ -939,6 +971,40 @@ export class TangleInterface {
             } else {
               let event = { value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
               this.emit("event", event);
+            }
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_SET_TIMELINE:
+          {
+            logging.verbose("FLAG_SET_TIMELINE");
+            tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_SET_TIMELINE
+
+            const PAUSED_FLAG = 1 << 4;
+
+            // (int32_t) = clock_timestamp
+            // (int32_t) = timeline_timestamp
+            // (uint8_t) = timeline_flags bits: [ Reserved,Reserved,Reserved,PausedFLag,IndexBit3,IndexBit2,IndexBit1,IndexBit0]
+
+            const clock_timestamp = tangleBytes.readInt32();
+            const timeline_timestamp = tangleBytes.readInt32();
+            const timeline_flags = tangleBytes.readUint8();
+            logging.debug(`clock_timestamp = ${clock_timestamp} ms`);
+            logging.debug(`timeline_timestamp = ${timeline_timestamp} ms`);
+            logging.debug(`timeline_flags = ${timeline_flags}`);
+
+            const timeline_paused = timeline_flags & PAUSED_FLAG ? true : false;
+            logging.debug("timeline_paused = %s", timeline_paused ? "true" : "false");
+
+            if (timeline_paused) {
+              this.#deviceReference.timeline.pause();
+              this.#deviceReference.timeline.setMillis(timeline_timestamp);
+            } else {
+              const time_delta = this.clock.millis() - clock_timestamp;
+              const current_timeline_timestamp = timeline_timestamp + time_delta;
+
+              this.#deviceReference.timeline.unpause();
+              this.#deviceReference.timeline.setMillis(current_timeline_timestamp);
             }
           }
           break;
