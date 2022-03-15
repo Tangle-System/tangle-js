@@ -136,7 +136,11 @@ export class WebBLEConnection {
     // }
     // console.log("> " + a.join(" "));
 
-    this.#interfaceReference.process(event.target.value);
+    if (detectBluefy()) {
+      this.#interfaceReference.process(event);
+    } else {
+      this.#interfaceReference.process(event.target.value);
+    }
   }
 
   // WIP
