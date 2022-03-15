@@ -1,6 +1,7 @@
 import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
+import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -285,11 +286,12 @@ export class TangleConnectConnector {
     window.tangleConnect.hasOwnProperty("open") &&
       /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
         e.preventDefault();
+        // @ts-ignore
         for (let el of e.path) {
           if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
             e.preventDefault();
             const url = el.getAttribute("href");
-            console.log(url);
+            // console.log(url);
             // @ts-ignore
             window.tangleConnect.open(url);
             break;
@@ -324,11 +326,11 @@ export class TangleConnectConnector {
         window.tangleConnect.reject = reject;
       });
 
-      // console.log("ping")
+      // logging.debug("ping")
       // @ts-ignore
       window.tangleConnect.ping();
       await this.#promise;
-      // console.log("pong")
+      // logging.debug("pong")
     }
     //
     console.timeEnd("ping_measure");
@@ -377,9 +379,9 @@ criteria example:
   // Then selects the device
   userSelect(criteria, timeout = 60000) {
     // this.#selected = true;
-    // //console.log("choose()");
+    // //logging.debug("choose()");
 
-    console.log(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
+    logging.debug(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -411,7 +413,7 @@ criteria example:
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
-    console.log(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
+    logging.debug(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -430,7 +432,7 @@ criteria example:
   }
 
   selected() {
-    console.log(`selected()`);
+    logging.debug(`selected()`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -448,7 +450,7 @@ criteria example:
   }
 
   unselect() {
-    console.log(`unselect()`);
+    logging.debug(`unselect()`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -469,10 +471,10 @@ criteria example:
 
   */
   connect(timeout = 10000) {
-    console.log(`connect(timeout=${timeout})`);
+    logging.debug(`connect(timeout=${timeout})`);
 
     if (timeout < 1000) {
-      console.error("Invalid timeout. Must be more than 1000 ms.");
+      logging.error("Invalid timeout. Must be more than 1000 ms.");
       timeout = 1000;
     }
 
@@ -492,7 +494,7 @@ criteria example:
   }
 
   connected() {
-    console.log(`connected()`);
+    logging.debug(`connected()`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -511,7 +513,7 @@ criteria example:
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   disconnect() {
-    console.log(`disconnect()`);
+    logging.debug(`disconnect()`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -529,7 +531,7 @@ criteria example:
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    console.log(`deliver(payload=[${payload}])`);
+    logging.debug(`deliver(payload=[${payload}])`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -547,7 +549,7 @@ criteria example:
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    console.log(`transmit(payload=[${payload}])`);
+    logging.debug(`transmit(payload=[${payload}])`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -565,7 +567,7 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    console.log(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
+    logging.debug(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -585,7 +587,7 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    console.log("setClock()");
+    logging.debug("setClock()");
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
@@ -610,13 +612,13 @@ criteria example:
           // window.tangleConnect.writeClock(timestamp);
 
           await this.#applyTimeout(this.#promise, 5000, "writeClock");
-          console.log("Clock write success:", timestamp);
+          logging.debug("Clock write success:", timestamp);
 
           // @ts-ignore
           resolve();
           return;
         } catch (e) {
-          console.warn("Clock write failed: " + e);
+          logging.warn("Clock write failed: " + e);
         }
       }
 
@@ -628,7 +630,7 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    console.log("getClock()");
+    logging.debug("getClock()");
 
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
@@ -652,12 +654,12 @@ criteria example:
           const timestamp = reader.readInt32();
 
           // const timestamp = await this.#promise;
-          console.log("Clock read success:", timestamp);
+          logging.debug("Clock read success:", timestamp);
 
           resolve(new TimeTrack(timestamp));
           return;
         } catch (e) {
-          console.warn("Clock read failed:", e);
+          logging.warn("Clock read failed:", e);
           await sleep(1000);
         }
       }
@@ -673,7 +675,7 @@ criteria example:
   // TODO - emit "ota_progress" events
 
   updateFW(firmware) {
-    console.log(`updateFW(firmware.length=${firmware.length})`);
+    logging.debug(`updateFW(firmware.length=${firmware.length})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore

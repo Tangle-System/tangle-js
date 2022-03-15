@@ -1,7 +1,8 @@
 import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
-
 import { io } from "./socketio.js";
+import { logging } from "./Logging.js";
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,12 +48,12 @@ export class TangleWebSocketsConnector {
         if (!this.socket) {
           this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
 
-          console.log(this.socket);
+          logging.debug(this.socket);
 
           this.socket.on("connect", socket => {
-            console.log("connected");
+            logging.debug("connected");
 
-            console.log("> Connected to remote control");
+            logging.debug("> Connected to remote control");
 
             // socket.join("sans-souci");
 
@@ -60,7 +61,7 @@ export class TangleWebSocketsConnector {
           });
 
           this.socket.on("disconnect", () => {
-            console.log("> Disconnected from remote control");
+            logging.debug("> Disconnected from remote control");
 
             this.#connected = false;
 
@@ -68,7 +69,7 @@ export class TangleWebSocketsConnector {
           });
 
           this.socket.on("connect_error", (error) => {
-            console.log('connect_error',error)
+            logging.debug('connect_error',error)
             setTimeout(() => {
               this.socket.connect();
             }, 1000);

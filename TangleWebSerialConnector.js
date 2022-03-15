@@ -3,6 +3,7 @@ import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglWriter } from "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
+import { logging } from "./Logging.js";
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -112,11 +113,11 @@ export class TangleWebSerialConnector {
       // try {
       let { value, done } = await this.#receiveStreamReader.read();
 
-      // console.log(value);
+      // logging.debug(value);
 
       if (value) {
         value = value.replace(/>>>[\w\d=]*<<</g, (match, $1) => {
-          // console.warn(match);
+          // logging.warn(match);
 
           if (match === ">>>BEGIN<<<") {
             this.#beginCallback && this.#beginCallback();
@@ -125,7 +126,7 @@ export class TangleWebSerialConnector {
           } else if (match === ">>>SUCCESS<<<") {
             this.#feedbackCallback && this.#feedbackCallback(true);
           } else if (match === ">>>FAIL<<<") {
-            console.warn(match);
+            logging.warn(match);
             this.#feedbackCallback && this.#feedbackCallback(false);
           } else if (match.match(/>>>DATA=/)) {
             let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i);  // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
@@ -137,18 +138,18 @@ export class TangleWebSerialConnector {
         });
 
         if (value.length !== 0) {
-          console.log(`${value}`);
+          logging.info(value);
           this.#interfaceReference.emit("receive", { target: this, payload: value });
         }
       }
 
       if (done) {
         this.#receiveStreamReader.releaseLock();
-        console.log("Reader done");
+        logging.debug("Reader done");
         break;
       }
       // } catch (e) {
-      //   console.error(e);
+      //   logging.error(e);
       //   error = e;
       // }
     }
@@ -254,7 +255,7 @@ criteria example:
     }
 
     if (this.#connected) {
-      console.warn("Serial device already connected");
+      logging.warn("Serial device already connected");
       return Promise.resolve();
     }
 
@@ -279,7 +280,7 @@ criteria example:
 
         return new Promise((resolve, reject) => {
           const timeout_handle = setTimeout(() => {
-            console.warn("Connection timeouted");
+            logging.warn("Connection timeouted");
             this.#beginCallback = null;
             reject("ConnectTimeout");
           }, timeout);
@@ -290,7 +291,7 @@ criteria example:
 
             setTimeout(() => {
               this.#connected = true;
-              console.log("> Serial Connector Connected");
+              logging.debug("> Serial Connector Connected");
               this.#interfaceReference.emit("#connected");
               resolve({ connector: this.type });
             }, 100);
@@ -314,20 +315,20 @@ criteria example:
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   async disconnect() {
-    console.log("> Closing serial port...");
+    logging.debug("> Closing serial port...");
 
     if (!this.#serialPort) {
-      console.log("No Serial Port selected");
+      logging.debug("No Serial Port selected");
       return Promise.resolve();
     }
 
     if (!this.#opened) {
-      console.log("Serial port already closed");
+      logging.debug("Serial port already closed");
       return Promise.resolve();
     }
 
     if (this.#disconnecting) {
-      console.log("Serial port already disconnecting");
+      logging.debug("Serial port already disconnecting");
       return Promise.resolve();
     }
 
@@ -354,10 +355,10 @@ criteria example:
       .close()
       .then(() => {
         this.#opened = false;
-        console.log("> Serial port closed");
+        logging.debug("> Serial port closed");
       })
       .catch(error => {
-        console.error("Failed to close serial port. Error: " + error);
+        logging.error("Failed to close serial port. Error: " + error);
       })
       .finally(() => {
         this.#disconnecting = false;
@@ -403,7 +404,7 @@ criteria example:
     return new Promise((resolve, reject) => {
       const timeout_handle = setTimeout(
         () => {
-          console.error("ResponseTimeout");
+          logging.error("ResponseTimeout");
           this.#feedbackCallback = null;
           this.#transmitStreamWriter.releaseLock();
           reject("ResponseTimeout");
@@ -421,7 +422,7 @@ criteria example:
           }, 25);
         } else {
           //try to write it once more
-          console.log("Trying to recover...");
+          logging.debug("Trying to recover...");
           setTimeout(() => {
             this.#transmitStreamWriter.releaseLock();
             resolve(this.#write(packet_type, payload, tries - 1));
@@ -435,7 +436,7 @@ criteria example:
           return this.#transmitStreamWriter.write(new Uint8Array(payload));
         })
         .catch(error => {
-          console.error(error);
+          logging.error(error);
           // this.#transmitStreamWriter.releaseLock();
           // reject(error);
         });
@@ -482,7 +483,7 @@ criteria example:
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    // console.log(`deliver(payload=${payload})`);
+    // logging.debug(`deliver(payload=${payload})`);
 
     if (!this.#connected) {
       return Promise.reject("DeviceDisconnected");
@@ -499,7 +500,7 @@ criteria example:
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    // console.log(`transmit(payload=${payload})`);
+    // logging.debug(`transmit(payload=${payload})`);
 
     if (!this.#connected) {
       return Promise.reject("DeviceDisconnected");
@@ -535,7 +536,7 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    // console.log(`setClock(clock.millis()=${clock.millis()})`);
+    // logging.debug(`setClock(clock.millis()=${clock.millis()})`);
 
     if (!this.#connected) {
       return Promise.reject("DeviceDisconnected");
@@ -545,11 +546,11 @@ criteria example:
       for (let index = 0; index < 3; index++) {
         try {
           await this.#writeClock([...toBytes(clock.millis(), 4)]);
-          console.log("Clock write success");
+          logging.debug("Clock write success");
           resolve();
           return;
         } catch (e) {
-          console.warn("Clock write failed");
+          logging.warn("Clock write failed");
           await sleep(1000);
         }
       }
@@ -562,7 +563,7 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    // console.log(`getClock()`);
+    // logging.debug(`getClock()`);
 
     if (!this.#connected) {
       return Promise.reject("DeviceDisconnected");
@@ -578,11 +579,11 @@ criteria example:
           const timestamp = reader.readInt32();
 
           // const timestamp = await this.#promise;
-          console.log("Clock read success:", timestamp);
+          logging.debug("Clock read success:", timestamp);
           resolve(new TimeTrack(timestamp));
           return;
         } catch (e) {
-          console.warn("Clock read failed:", e);
+          logging.warn("Clock read failed:", e);
         }
       }
 
@@ -594,15 +595,15 @@ criteria example:
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
-    // console.log(`updateFW(firmware=${firmware})`);
+    // logging.debug(`updateFW(firmware=${firmware})`);
 
     if (!this.#serialPort) {
-      console.warn("Serial Port is null");
+      logging.warn("Serial Port is null");
       return Promise.reject("UpdateFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("UpdateFailed");
     }
 
@@ -618,8 +619,8 @@ criteria example:
 
       let written = 0;
 
-      console.log("OTA UPDATE");
-      console.log(firmware);
+      logging.debug("OTA UPDATE");
+      logging.debug(firmware);
 
       const start_timestamp = new Date().getTime();
 
@@ -628,7 +629,7 @@ criteria example:
 
         {
           //===========// RESET //===========//
-          console.log("OTA RESET");
+          logging.debug("OTA RESET");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
           await this.#writeDevice(bytes);
@@ -638,7 +639,7 @@ criteria example:
 
         {
           //===========// BEGIN //===========//
-          console.log("OTA BEGIN");
+          logging.debug("OTA BEGIN");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
           await this.#writeDevice(bytes);
@@ -648,7 +649,7 @@ criteria example:
 
         {
           //===========// WRITE //===========//
-          console.log("OTA WRITE");
+          logging.debug("OTA WRITE");
 
           while (written < firmware.length) {
             if (index_to > firmware.length) {
@@ -661,7 +662,7 @@ criteria example:
             written += index_to - index_from;
 
             const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-            console.log(percentage + "%");
+            logging.debug(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
 
@@ -674,7 +675,7 @@ criteria example:
 
         {
           //===========// END //===========//
-          console.log("OTA END");
+          logging.debug("OTA END");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
           await this.#writeDevice(bytes);
@@ -682,12 +683,12 @@ criteria example:
 
         await sleep(3000);
 
-        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
       } catch (e) {
-        console.error(e);
+        logging.error(e);
         this.#interfaceReference.emit("ota_status", "fail");
         reject("UpdateFailed");
       }

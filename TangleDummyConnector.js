@@ -3,6 +3,8 @@ import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglReader } from "./TnglReader.js";
 import { TnglWriter } from "./TnglWriter.js";
+import { logging } from "./Logging.js";
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +70,7 @@ criteria example:
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
   userSelect(criteria) {
-    console.log(`userSelect(criteria=${criteria}`);
+    logging.info(`userSelect(criteria=${criteria}`);
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
@@ -98,7 +100,7 @@ criteria example:
   // are eligible.
 
   autoSelect(criteria, scan_period = 1000, timeout = 3000) {
-    console.log(`autoSelect(criteria=${criteria}, scan_period=${scan_period}, timeout=${timeout})`);
+    logging.info(`autoSelect(criteria=${criteria}, scan_period=${scan_period}, timeout=${timeout})`);
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -119,7 +121,7 @@ criteria example:
   }
 
   selected() {
-    console.log(`selected()`);
+    logging.info(`selected()`);
 
     return new Promise(async (resolve, reject) => {
       if (this.#selected) {
@@ -131,7 +133,7 @@ criteria example:
   }
 
   unselect() {
-    console.log(`unselect()`);
+    logging.info(`unselect()`);
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
@@ -144,7 +146,7 @@ criteria example:
   }
 
   connect(timeout) {
-    console.log(`connect(timeout=${timeout})`);
+    logging.info(`connect(timeout=${timeout})`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#selected) {
@@ -172,7 +174,7 @@ criteria example:
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
   disconnect() {
-    console.log(`disconnect()`);
+    logging.info(`disconnect()`);
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
@@ -185,7 +187,7 @@ criteria example:
   }
 
   connected() {
-    console.log(`connected()`);
+    logging.info(`connected()`);
 
     return new Promise(async (resolve, reject) => {
       if (this.#connected) {
@@ -199,7 +201,7 @@ criteria example:
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
   deliver(payload) {
-    console.log(`deliver(payload=${payload})`);
+    logging.info(`deliver(payload=${payload})`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -223,7 +225,7 @@ criteria example:
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
   transmit(payload) {
-    console.log(`transmit(payload=${payload})`);
+    logging.info(`transmit(payload=${payload})`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -247,7 +249,7 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    console.log(`request(payload=${payload}, read_response=${read_response ? "true" : "false"})`);
+    logging.info(`request(payload=${payload}, read_response=${read_response ? "true" : "false"})`);
 
     const ERROR_CODE_SUCCESS = 0;
     const DUMMY_MACS = [0x111111111111, 0x222222222222, 0x333333333333, 0x444444444444, 0x555555555555, 0x666666666666, 0x777777777777, 0x888888888888];
@@ -452,7 +454,7 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
-    console.log(`setClock(clock.millis()=${clock.millis()})`);
+    logging.info(`setClock(clock.millis()=${clock.millis()})`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -471,7 +473,7 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
-    console.log(`getClock()`);
+    logging.info(`getClock()`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -491,7 +493,7 @@ criteria example:
   // handles the firmware updating. Sends "ota" events
   // to all handlers
   updateFW(firmware) {
-    console.log(`updateFW(firmware=${firmware})`);
+    logging.info(`updateFW(firmware=${firmware})`);
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -526,7 +528,7 @@ criteria example:
   }
 
   destroy() {
-    console.log(`destroy()`);
+    logging.info(`destroy()`);
 
     // return this.disconnect()
     //   .catch(() => {})

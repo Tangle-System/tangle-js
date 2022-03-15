@@ -1,6 +1,7 @@
 
 
 import { mapValue } from "./functions.js";
+import { logging } from "./Logging.js";
 import { TnglWriter } from "./TnglWriter.js";
 
 const CONSTANTS = Object.freeze({
@@ -154,7 +155,7 @@ export class TnglCompiler {
   compileByte(byte) {
     let reg = byte.match(/0x([0-9a-f][0-9a-f])(?![0-9a-f])/i);
     if (!reg) {
-      console.error("Failed to compile a byte");
+      logging.error("Failed to compile a byte");
       return;
     }
     this.#tnglWriter.writeUint8(parseInt(reg[1], 16));
@@ -163,7 +164,7 @@ export class TnglCompiler {
   compileChar(char) {
     let reg = char.match(/(-?)'([\W\w])'/);
     if (!reg) {
-      console.error("Failed to compile char");
+      logging.error("Failed to compile char");
       return;
     }
     if (reg[1] === "-") {
@@ -177,7 +178,7 @@ export class TnglCompiler {
   compileString(string) {
     let reg = string.match(/"([\w ]*)"/);
     if (!reg) {
-      console.error("Failed to compile a string");
+      logging.error("Failed to compile a string");
       return;
     }
 
@@ -191,7 +192,7 @@ export class TnglCompiler {
   compileInfinity(infinity) {
     let reg = infinity.match(/([+-]?Infinity)/);
     if (!reg) {
-      console.error("Failed to compile a infinity");
+      logging.error("Failed to compile a infinity");
       return;
     }
 
@@ -200,13 +201,13 @@ export class TnglCompiler {
     } else if (reg[1] === "-Infinity") {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MIN);
     } else {
-      console.error("Error while compiling infinity");
+      logging.error("Error while compiling infinity");
     }
   }
 
   // takes in time string token like "1.2d+9h2m7.2s-123t" and appeds to payload the total time in ms (tics) as a int32_t: [FLAG.TIMESTAMP, BYTE4, BYTE2, BYTE1, BYTE0]
   compileTimestamp(timestamp) {
-    // console.log(timestamp);
+    // logging.debug(timestamp);
 
     timestamp.replace(/_/g, ""); // replaces all '_' with nothing
 
@@ -218,8 +219,8 @@ export class TnglCompiler {
       if (!reg) {
         // if the regex match failes, then the algorithm is done
         if (timestamp != "") {
-          console.error("Error while parsing timestamp");
-          console.log("Leftover string:", timestamp);
+          logging.error("Error while parsing timestamp");
+          logging.debug("Leftover string:", timestamp);
         }
         break;
       }
@@ -228,9 +229,9 @@ export class TnglCompiler {
       let unit = reg[2]; // gets "d" from "-1.4d"
       let number = parseFloat(reg[1]); // gets "-1.4" from "-1.4d"
 
-      // console.log("value:", value);
-      // console.log("unit:", unit);
-      // console.log("number:", number);
+      // logging.debug("value:", value);
+      // logging.debug("unit:", unit);
+      // logging.debug("number:", number);
 
       switch (unit) {
         case "d":
@@ -254,14 +255,14 @@ export class TnglCompiler {
           break;
 
         default:
-          console.error("Error while parsing timestamp");
+          logging.error("Error while parsing timestamp");
           break;
       }
 
       timestamp = timestamp.replace(value, ""); // removes one value from the string
     }
 
-    // console.log("total_tics:", total_tics);
+    // logging.debug("total_tics:", total_tics);
 
     if (total_tics === 0) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
@@ -275,7 +276,7 @@ export class TnglCompiler {
   compileColor(color) {
     let reg = color.match(/#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i);
     if (!reg) {
-      console.error("Failed to compile color");
+      logging.error("Failed to compile color");
       return;
     }
 
@@ -299,7 +300,7 @@ export class TnglCompiler {
   compilePercentage(percentage) {
     let reg = percentage.match(/([+-]?[\d.]+)%/);
     if (!reg) {
-      console.error("Failed to compile percentage");
+      logging.error("Failed to compile percentage");
       return;
     }
 
@@ -322,7 +323,7 @@ export class TnglCompiler {
   compileLabel(label) {
     let reg = label.match(/\$([\w]*)/);
     if (!reg) {
-      console.error("Failed to compile a label");
+      logging.error("Failed to compile a label");
       return;
     }
 
@@ -336,7 +337,7 @@ export class TnglCompiler {
   compilePixels(pixels) {
     let reg = pixels.match(/(-?[\d]+)px/);
     if (!reg) {
-      console.error("Failed to compile pixels");
+      logging.error("Failed to compile pixels");
       return;
     }
 
@@ -596,7 +597,7 @@ export class TnglCompiler {
 
       // === unknown ===
       default:
-        console.warn("Unknown word >", word, "<");
+        logging.warn("Unknown word >", word, "<");
         break;
     }
   }
@@ -607,20 +608,21 @@ export class TnglCompiler {
 }
 
 export class TnglCodeParser {
-  constructor() { }
+  #compiler;
+  constructor() {
+    this.#compiler = new TnglCompiler();
+  }
 
   parseTnglCode(tngl_code) {
-    console.log(tngl_code);
+    logging.debug(tngl_code);
 
     const tokens = this.#tokenize(tngl_code, TnglCodeParser.#parses);
-    console.log(tokens);
-
-    let compiler = new TnglCompiler();
+    logging.debug(tokens);
 
     for (let index = 0; index < tokens.length; index++) {
       const element = tokens[index];
 
-      // console.log(element);
+      // logging.debug(element);
 
       switch (element.type) {
         case "comment":
@@ -628,47 +630,47 @@ export class TnglCodeParser {
           break;
 
         case "htmlrgb":
-          compiler.compileColor(element.token);
+          this.#compiler.compileColor(element.token);
           break;
 
         case "infinity":
-          compiler.compileInfinity(element.token);
+          this.#compiler.compileInfinity(element.token);
           break;
 
         case "string":
-          compiler.compileString(element.token);
+          this.#compiler.compileString(element.token);
           break;
 
         case "timestamp":
-          compiler.compileTimestamp(element.token);
+          this.#compiler.compileTimestamp(element.token);
           break;
 
         case "label":
-          compiler.compileLabel(element.token);
+          this.#compiler.compileLabel(element.token);
           break;
 
         case "char":
-          compiler.compileChar(element.token);
+          this.#compiler.compileChar(element.token);
           break;
 
         case "byte":
-          compiler.compileByte(element.token);
+          this.#compiler.compileByte(element.token);
           break;
 
         case "pixels":
-          compiler.compilePixels(element.token);
+          this.#compiler.compilePixels(element.token);
           break;
 
         case "percentage":
-          compiler.compilePercentage(element.token);
+          this.#compiler.compilePercentage(element.token);
           break;
 
         case "float":
-          console.error('"Naked" float numbers are not permitted.');
+          logging.error('"Naked" float numbers are not permitted.');
           break;
 
         case "number":
-          console.error('"Naked" numbers are not permitted.');
+          logging.error('"Naked" numbers are not permitted.');
           break;
 
         case "arrow":
@@ -676,7 +678,7 @@ export class TnglCodeParser {
           break;
 
         case "word":
-          compiler.compileWord(element.token);
+          this.#compiler.compileWord(element.token);
           break;
 
         case "whitespace":
@@ -685,21 +687,21 @@ export class TnglCodeParser {
 
         case "punctuation":
           if (element.token === "}") {
-            compiler.compileFlag(TNGL_FLAGS.END_OF_STATEMENT);
+            this.#compiler.compileFlag(TNGL_FLAGS.END_OF_STATEMENT);
           }
           break;
 
         default:
-          console.warn("Unknown token type >", element.type, "<");
+          logging.warn("Unknown token type >", element.type, "<");
           break;
       }
     }
 
-    compiler.compileFlag(TNGL_FLAGS.END_OF_TNGL_BYTES);
+    this.#compiler.compileFlag(TNGL_FLAGS.END_OF_TNGL_BYTES);
 
-    let tnglBytes = compiler.tnglBytes;
+    let tnglBytes = this.#compiler.tnglBytes;
 
-    console.log(tnglBytes);
+    logging.debug(tnglBytes);
     return tnglBytes;
   }
 

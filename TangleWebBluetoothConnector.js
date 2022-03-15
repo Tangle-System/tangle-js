@@ -2,6 +2,7 @@
 /// <reference types="web-bluetooth" />
 
 import { detectAndroid, detectBluefy, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
+import { logging } from "./Logging.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
@@ -98,7 +99,7 @@ export class WebBLEConnection {
           try {
             await characteristic.writeValueWithResponse(new Uint8Array(payload));
           } catch (e) {
-            console.warn(e);
+            logging.warn(e);
             reject(e);
             return;
           }
@@ -111,7 +112,7 @@ export class WebBLEConnection {
       });
     } else {
       if (bytes.length > bytes_size) {
-        console.error("The maximum bytes that can be written without response is " + bytes_size);
+        logging.error("The maximum bytes that can be written without response is " + bytes_size);
         return Promise.reject("WriteError");
       }
       const payload = [...numberToBytes(write_uuid, 4), ...numberToBytes(0, 4), ...numberToBytes(bytes.length, 4), ...bytes.slice(0, bytes.length)];
@@ -127,14 +128,14 @@ export class WebBLEConnection {
   // WIP, event handling from tangle network to application
   // timeline changes from tangle network to application ...
   #onNetworkNotification(event) {
-    console.log(event);
-    
+    // logging.debug(event);
+
     // let value = event.target.value;
     // let a = [];
     // for (let i = 0; i < value.byteLength; i++) {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
-    // console.log("> " + a.join(" "));
+    // logging.debug("> " + a.join(" "));
 
     if (detectBluefy()) {
       this.#interfaceReference.process(event);
@@ -150,14 +151,14 @@ export class WebBLEConnection {
     // for (let i = 0; i < value.byteLength; i++) {
     //   a.push("0x" + ("00" + value.getUint8(i).toString(16)).slice(-2));
     // }
-    // console.log("> " + a.join(" "));
+    // logging.debug("> " + a.join(" "));
     // this.#interfaceReference.process(event.target.value);
   }
 
   attach(service, networkUUID, clockUUID, deviceUUID) {
     this.#service = service;
 
-    console.log("> Getting Network Characteristics...");
+    logging.debug("> Getting Network Characteristics...");
     return this.#service
       .getCharacteristic(networkUUID)
       .then(characteristic => {
@@ -166,32 +167,32 @@ export class WebBLEConnection {
         return this.#networkChar
           .startNotifications()
           .then(() => {
-            console.log("> Network notifications started");
+            logging.debug("> Network notifications started");
             this.#networkChar.oncharacteristicvaluechanged = event => {
               this.#onNetworkNotification(event);
             };
           })
           .catch(e => {
-            console.warn(e);
+            logging.warn(e);
           });
       })
       .catch(e => {
-        console.warn(e);
+        logging.warn(e);
         throw "ConnectionFailed";
       })
       .then(() => {
-        console.log("> Getting Clock Characteristics...");
+        logging.debug("> Getting Clock Characteristics...");
         return this.#service.getCharacteristic(clockUUID);
       })
       .then(characteristic => {
         this.#clockChar = characteristic;
       })
       .catch(e => {
-        console.warn(e);
+        logging.warn(e);
         throw "ConnectionFailed";
       })
       .then(() => {
-        console.log("> Getting Device Characteristics...");
+        logging.debug("> Getting Device Characteristics...");
         return this.#service.getCharacteristic(deviceUUID);
       })
       .then(characteristic => {
@@ -200,17 +201,17 @@ export class WebBLEConnection {
         return this.#deviceChar
           .startNotifications()
           .then(() => {
-            console.log("> Device notifications started");
+            logging.debug("> Device notifications started");
             this.#deviceChar.oncharacteristicvaluechanged = event => {
               this.#onDeviceNotification(event);
             };
           })
           .catch(e => {
-            console.warn(e);
+            logging.warn(e);
           });
       })
       .catch(e => {
-        console.warn(e);
+        logging.warn(e);
         throw "ConnectionFailed";
       });
   }
@@ -222,12 +223,12 @@ export class WebBLEConnection {
   // transmering queue will handle it
   deliver(payload) {
     if (!this.#networkChar) {
-      console.warn("Network characteristics is null");
+      logging.warn("Network characteristics is null");
       return Promise.reject("DeliverFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("DeliverFailed");
     }
 
@@ -235,7 +236,7 @@ export class WebBLEConnection {
 
     return this.#writeBytes(this.#networkChar, payload, true)
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         throw "DeliverFailed";
       })
       .finally(() => {
@@ -248,12 +249,12 @@ export class WebBLEConnection {
   // returns promise that will be resolved when message is physically send (only transmittion, not receive)
   transmit(payload) {
     if (!this.#networkChar) {
-      console.warn("Network characteristics is null");
+      logging.warn("Network characteristics is null");
       return Promise.reject("TransmitFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("TransmitFailed");
     }
 
@@ -261,7 +262,7 @@ export class WebBLEConnection {
 
     return this.#writeBytes(this.#networkChar, payload, false)
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         throw "TransmitFailed";
       })
       .finally(() => {
@@ -273,12 +274,12 @@ export class WebBLEConnection {
   // and then reads the response also from the Device Characteristics
   request(payload, read_response) {
     if (!this.#deviceChar) {
-      console.warn("Device characteristics is null");
+      logging.warn("Device characteristics is null");
       return Promise.reject("RequestFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("RequestFailed");
     }
 
@@ -293,7 +294,7 @@ export class WebBLEConnection {
         }
       })
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         throw "RequestFailed";
       })
       .finally(() => {
@@ -304,12 +305,12 @@ export class WebBLEConnection {
   // write timestamp to clock characteristics as fast as possible
   writeClock(timestamp) {
     if (!this.#clockChar) {
-      console.warn("Sync characteristics is null");
+      logging.warn("Sync characteristics is null");
       return Promise.reject("ClockWriteFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("ClockWriteFailed");
     }
 
@@ -319,7 +320,7 @@ export class WebBLEConnection {
     return this.#clockChar
       .writeValueWithoutResponse(new Uint8Array(bytes))
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         throw "ClockWriteFailed";
       })
       .finally(() => {
@@ -333,12 +334,12 @@ export class WebBLEConnection {
     // return Promise.reject("SimulatedFail");
 
     if (!this.#clockChar) {
-      console.warn("Sync characteristics is null");
+      logging.warn("Sync characteristics is null");
       return Promise.reject("ClockReadFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("ClockReadFailed");
     }
 
@@ -351,7 +352,7 @@ export class WebBLEConnection {
         return reader.readInt32();
       })
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         throw "ClockReadFailed";
       })
       .finally(() => {
@@ -361,12 +362,12 @@ export class WebBLEConnection {
 
   updateFirmware(firmware) {
     if (!this.#deviceChar) {
-      console.warn("Device characteristics is null");
+      logging.warn("Device characteristics is null");
       return Promise.reject("UpdateFailed");
     }
 
     if (this.#writing) {
-      console.warn("Communication in proccess");
+      logging.warn("Communication in proccess");
       return Promise.reject("UpdateFailed");
     }
 
@@ -380,8 +381,8 @@ export class WebBLEConnection {
 
       let written = 0;
 
-      console.log("OTA UPDATE");
-      console.log(firmware);
+      logging.debug("OTA UPDATE");
+      logging.debug(firmware);
 
       const start_timestamp = new Date().getTime();
 
@@ -390,7 +391,7 @@ export class WebBLEConnection {
 
         {
           //===========// RESET //===========//
-          console.log("OTA RESET");
+          logging.debug("OTA RESET");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
           await this.#writeBytes(this.#deviceChar, bytes, true);
@@ -400,7 +401,7 @@ export class WebBLEConnection {
 
         {
           //===========// BEGIN //===========//
-          console.log("OTA BEGIN");
+          logging.debug("OTA BEGIN");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
           await this.#writeBytes(this.#deviceChar, bytes, true);
@@ -410,7 +411,7 @@ export class WebBLEConnection {
 
         {
           //===========// WRITE //===========//
-          console.log("OTA WRITE");
+          logging.debug("OTA WRITE");
 
           while (written < firmware.length) {
             if (index_to > firmware.length) {
@@ -423,7 +424,7 @@ export class WebBLEConnection {
             written += index_to - index_from;
 
             const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-            console.log(percentage + "%");
+            logging.debug(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
             this.#interfaceReference.emit("ota_timeleft", percentage);
@@ -437,18 +438,18 @@ export class WebBLEConnection {
 
         {
           //===========// END //===========//
-          console.log("OTA END");
+          logging.debug("OTA END");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
-        console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
       } catch (e) {
-        console.error(e);
+        logging.error(e);
         this.#interfaceReference.emit("ota_status", "fail");
         reject("UpdateFailed");
       }
@@ -563,7 +564,7 @@ criteria example:
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
   userSelect(criteria, timeout) {
-    //console.log("choose()");
+    //logging.debug("choose()");
 
     if (this.#connected()) {
       return this.disconnect()
@@ -575,7 +576,7 @@ criteria example:
         });
     }
 
-    // console.log(criteria);
+    // logging.debug(criteria);
 
     // store new criteria as a array
     if (criteria) {
@@ -877,12 +878,12 @@ criteria example:
       web_ble_options = { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] };
     }
 
-    // console.log(web_ble_options);
+    // logging.debug(web_ble_options);
 
     return navigator.bluetooth
       .requestDevice(web_ble_options)
       .catch(e => {
-        console.error(e);
+        logging.error(e);
         // Bluefy way how to say "Bluetooth is not enabled"
         if (e.toString() === "2") {
           throw "BluefyError";
@@ -890,7 +891,7 @@ criteria example:
         throw "UserCanceledSelection";
       })
       .then(device => {
-        // console.log(device);
+        // logging.debug(device);
 
         this.#webBTDevice = device;
 
@@ -962,7 +963,7 @@ criteria example:
   // Fails if no device is selected
   connect(timeout = 5000) {
     if (timeout <= 0) {
-      console.log("> Connect timeout have expired");
+      logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
     }
 
@@ -974,25 +975,25 @@ criteria example:
     }
 
     if (this.#connected()) {
-      console.log("> Bluetooth Device is already connected");
+      logging.debug("> Bluetooth Device is already connected");
       return Promise.resolve();
     }
 
     const timeout_handle = setTimeout(
       () => {
-        console.warn("Timeout triggered");
+        logging.warn("Timeout triggered");
         this.disconnect();
       },
       timeout < 5000 ? 5000 : timeout,
     );
 
-    console.log("> Connecting to Bluetooth device...");
+    logging.debug("> Connecting to Bluetooth device...");
     return this.#webBTDevice.gatt
       .connect()
       .then(server => {
         this.#connection.reset();
 
-        console.log("> Getting the Bluetooth Service UUID...");
+        logging.debug("> Getting the Bluetooth Service UUID...");
 
         return (
           server
@@ -1000,12 +1001,12 @@ criteria example:
             // figure out which FW we are connecting to
             .then(services => {
               if (services.length != 1 || !services[0].isPrimary) {
-                console.error("Connected to device that is not Tangle");
+                logging.error("Connected to device that is not Tangle");
                 throw "ConnectionFailed";
               }
 
               const service_uuid = services[0].uuid.toLowerCase();
-              console.log("Got Service UUID " + service_uuid);
+              logging.debug("Got Service UUID " + service_uuid);
 
               let legacy_fw_version = "unknown";
 
@@ -1039,40 +1040,40 @@ criteria example:
                   break;
 
                 default:
-                  console.error("Connected to non Tangle Device");
+                  logging.error("Connected to non Tangle Device");
                   throw "ConnectionFailed";
                   break;
               }
 
               if (legacy_fw_version) {
-                console.log("FW Version: " + legacy_fw_version);
+                logging.debug("FW Version: " + legacy_fw_version);
                 this.#interfaceReference.emit("version", legacy_fw_version);
 
-                console.warn("Connected to unsupported legacy FW version");
+                logging.warn("Connected to unsupported legacy FW version");
                 throw "ConnectionFailed";
               }
 
               clearTimeout(timeout_handle);
 
-              console.log("> Getting the Bluetooth Service...");
+              logging.debug("> Getting the Bluetooth Service...");
               return server.getPrimaryService(service_uuid);
             })
         );
       })
       .then(service => {
-        console.log("> Getting the Service Characteristic...");
+        logging.debug("> Getting the Service Characteristic...");
 
         return this.#connection.attach(service, this.TERMINAL_CHAR_UUID, this.CLOCK_CHAR_UUID, this.DEVICE_CHAR_UUID);
       })
       .then(() => {
-        console.log("> Bluetooth Device Connected");
+        logging.debug("> Bluetooth Device Connected");
         if (!this.#connectedGuard) {
           this.#interfaceReference.emit("#connected");
         }
         return { connector: "webbluetooth" };
       })
       .catch(error => {
-        console.warn(error.name);
+        logging.warn(error.name);
 
         clearTimeout(timeout_handle);
 
@@ -1110,14 +1111,14 @@ criteria example:
   disconnect() {
     this.#reconection = false;
 
-    console.log("> Disconnecting from Bluetooth Device...");
+    logging.debug("> Disconnecting from Bluetooth Device...");
 
     this.#connection.reset();
 
     if (this.#connected()) {
       this.#disconnect();
     } else {
-      console.log("Bluetooth Device is already disconnected");
+      logging.debug("Bluetooth Device is already disconnected");
     }
 
     return Promise.resolve();
@@ -1129,7 +1130,7 @@ criteria example:
   // synchronously. So that only after all event handlers (one after the other) are done,
   // only then start this.connect() to reconnect to the bluetooth device
   #onDisconnected = event => {
-    console.log("> Bluetooth Device disconnected");
+    logging.debug("> Bluetooth Device disconnected");
     this.#connection.reset();
     if (this.#connectedGuard) {
       this.#interfaceReference.emit("#disconnected");
@@ -1177,11 +1178,11 @@ criteria example:
       for (let index = 0; index < 3; index++) {
         try {
           await this.#connection.writeClock(clock.millis());
-          console.log("Clock write success");
+          logging.debug("Clock write success");
           resolve();
           return;
         } catch (e) {
-          console.warn("Clock write failed");
+          logging.warn("Clock write failed");
           await sleep(1000);
         }
       }
@@ -1203,11 +1204,11 @@ criteria example:
         await sleep(1000);
         try {
           const timestamp = await this.#connection.readClock();
-          console.log("Clock read success:", timestamp);
+          logging.debug("Clock read success:", timestamp);
           resolve(new TimeTrack(timestamp));
           return;
         } catch (e) {
-          console.warn("Clock read failed:", e);
+          logging.warn("Clock read failed:", e);
         }
       }
 

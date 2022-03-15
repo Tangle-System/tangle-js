@@ -28,9 +28,9 @@ export function toBytes(value, byteCount) {
 //   let value_rational = Math.round((value - value_whole) / (1 / 256));
 //   let value_int16 = (value_whole << 8) + value_rational;
 
-//   // console.log(value_whole);
-//   // console.log(value_rational);
-//   // console.log(value_int16);
+//   // console.info(value_whole);
+//   // console.info(value_rational);
+//   // console.info(value_int16);
 
 //   return value_int16;
 // }
@@ -190,17 +190,19 @@ export function numberToBytes(value, byteCount) {
   return byteArray;
 }
 
+var androidDetected = navigator.userAgent.toLowerCase().indexOf("android") > -1;
 export function detectAndroid() {
-  return navigator.userAgent.toLowerCase().indexOf("android") > -1;
+  return androidDetected;
 }
 
+var bluefyDetected = navigator.userAgent.toLowerCase().indexOf("bluefy") > -1;
 export function detectBluefy() {
-  //return navigator.userAgent.toLowerCase().indexOf("android") == -1 && navigator.userAgent.toLowerCase().indexOf("windows") == -1;
-  return navigator.userAgent.toLowerCase().indexOf("bluefy") > -1;
+  return bluefyDetected;
 }
 
+var tangleConnectDetected = "tangleConnect" in window;
 export function detectTangleConnect() {
-  return "tangleConnect" in window;
+  return tangleConnectDetected;
 }
 
 //////////////////////////////////////////////////////
@@ -217,7 +219,7 @@ export function computeTnglFingerprint(tngl_bytes, tngl_label) {
     })
     .then(signature => {
       // let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
-      // console.log(digest);
+      // console.info(digest);
       return new Uint8Array(signature);
     });
 }
@@ -349,12 +351,12 @@ class NoSleep {
         .then(wakeLock => {
           this._wakeLock = wakeLock;
           this.enabled = true;
-          console.log("Wake Lock active.");
+          console.info("Wake Lock active.");
           this._wakeLock.addEventListener("release", () => {
             // ToDo: Potentially emit an event for the page to observe since
             // Wake Lock releases happen when page visibility changes.
             // (https://web.dev/wakelock/#wake-lock-lifecycle)
-            console.log("Wake Lock released.");
+            console.info("Wake Lock released.");
           });
         })
         .catch(err => {

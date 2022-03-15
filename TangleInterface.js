@@ -8,6 +8,7 @@ import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
+import { logging } from "./Logging.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -198,13 +199,13 @@ export class TangleInterface {
   }
 
   requestWakeLock() {
-    console.log("> Activating wakeLock...");
+    logging.debug("> Activating wakeLock...");
 
     return noSleep.enable();
   }
 
   releaseWakeLock() {
-    console.log("> Deactivating wakeLock...");
+    logging.debug("> Deactivating wakeLock...");
 
     noSleep.disable();
 
@@ -212,10 +213,10 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-    console.log(`> Assigning ${connector_type} connector...`);
+    logging.debug(`> Assigning ${connector_type} connector...`);
 
     if ((!this.connector && connector_type === "none") || (this.connector && this.connector.type === connector_type)) {
-      console.warn("Trying to reassign current connector.");
+      logging.warn("Trying to reassign current connector.");
       return Promise.resolve();
     }
 
@@ -278,7 +279,7 @@ export class TangleInterface {
     // this.#reconection = false;
 
     if (timeout < 1000) {
-      console.error("Timeout is too short.");
+      logging.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
     }
 
@@ -325,7 +326,7 @@ export class TangleInterface {
     // this.#reconection = false;
 
     if (timeout < 1000) {
-      console.error("Timeout is too short.");
+      logging.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
     }
 
@@ -390,7 +391,7 @@ export class TangleInterface {
 
   connect(timeout = 10000) {
     if (timeout < 1000) {
-      console.error("Timeout is too short.");
+      logging.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
     }
 
@@ -411,7 +412,7 @@ export class TangleInterface {
     // this.#reconection = true;
 
     // if (timeout < 1000) {
-    //   console.error("Timeout is too short.");
+    //   logging.error("Timeout is too short.");
     //   return Promise.reject("InvalidTimeout");
     // }
 
@@ -465,11 +466,11 @@ export class TangleInterface {
     // this.#queue = [];
 
     if (this.#reconection && this.#reconnectionInterval) {
-      console.log("Reconnecting...");
+      logging.debug("Reconnecting...");
       setTimeout(() => {
-        console.log("Reconnecting device");
+        logging.debug("Reconnecting device");
         return this.connect(this.#reconnectionInterval).catch(() => {
-          console.warn("Reconnection failed.");
+          logging.warn("Reconnection failed.");
         });
       }, 1000);
     }
@@ -621,7 +622,7 @@ export class TangleInterface {
                     item.resolve(device);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -634,7 +635,7 @@ export class TangleInterface {
                     item.resolve(device);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -646,7 +647,7 @@ export class TangleInterface {
                     item.resolve(device);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -659,7 +660,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -684,7 +685,7 @@ export class TangleInterface {
                   })
                   .catch(error => {
                     this.disconnect();
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -696,7 +697,7 @@ export class TangleInterface {
                     item.resolve(device);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -712,7 +713,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -724,7 +725,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -736,7 +737,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -770,7 +771,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -783,7 +784,7 @@ export class TangleInterface {
                   })
 
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -795,7 +796,7 @@ export class TangleInterface {
                     item.resolve(response);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   });
                 break;
@@ -808,7 +809,7 @@ export class TangleInterface {
               //     })
 
               //     .catch(error => {
-              //       //console.warn(error);
+              //       //logging.warn(error);
               //       item.reject(error);
               //     });
               //   break;
@@ -821,7 +822,7 @@ export class TangleInterface {
                     item.resolve(response);
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     item.reject(error);
                   })
                   .finally(() => {
@@ -839,7 +840,7 @@ export class TangleInterface {
                     item.resolve();
                   })
                   .catch(error => {
-                    //console.warn(error);
+                    //logging.warn(error);
                     this.connector = null;
                     item.reject(error);
                   });
@@ -851,7 +852,7 @@ export class TangleInterface {
             }
           }
         } catch (e) {
-          console.error(e);
+          logging.error(e);
         } finally {
           this.#processing = false;
         }
@@ -882,21 +883,21 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_EVENT:
-                console.log("FLAG_EVENT");
+                logging.debug("FLAG_EVENT");
                 event_value = null;
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
-                console.log("FLAG_TIMESTAMP_EVENT");
+                logging.debug("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT:
-                console.log("FLAG_COLOR_EVENT");
+                logging.debug("FLAG_COLOR_EVENT");
                 const bytes = tangleBytes.readBytes(3);
                 event_value = rgbToHex(bytes[0], bytes[1], bytes[2]);
                 break;
@@ -904,33 +905,33 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT:
-                console.log("FLAG_PERCENTAGE_EVENT");
+                logging.debug("FLAG_PERCENTAGE_EVENT");
                 event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
                 is_lazy = true;
               case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
-                console.log("FLAG_LABEL_EVENT");
+                logging.debug("FLAG_LABEL_EVENT");
                 event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
                 break;
 
               default:
-                // console.error("ERROR");
+                // logging.error("ERROR");
                 break;
             }
 
-            console.log(`is_lazy = ${is_lazy ? "true" : "false"}`);
-            console.log(`event_value = ${event_value}`);
+            logging.debug(`is_lazy = ${is_lazy ? "true" : "false"}`);
+            logging.debug(`event_value = ${event_value}`);
 
             const event_label = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0]; // 5 bytes
-            console.log(`event_label = ${event_label}`);
+            logging.debug(`event_label = ${event_label}`);
 
             const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
-            console.log(`event_timestamp = ${event_timestamp} ms`);
+            logging.debug(`event_timestamp = ${event_timestamp} ms`);
 
             const event_device_id = tangleBytes.readUint8(); // 1 byte
-            console.log(`event_device_id = ${event_device_id}`);
+            logging.debug(`event_device_id = ${event_device_id}`);
 
             if (is_lazy) {
               let event = { value: event_value, label: event_label, id: event_device_id };
@@ -943,7 +944,7 @@ export class TangleInterface {
           break;
 
         default:
-          // console.error("ERROR");
+          // logging.error("ERROR");
           tangleBytes.readUint8();
           break;
       }

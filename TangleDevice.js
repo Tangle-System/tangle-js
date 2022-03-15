@@ -6,6 +6,7 @@ import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./socketio.js";
+import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -38,7 +39,7 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface(this, reconnectionInterval);
+    this.interface = new TangleInterface(this, reconnectionInterval, );
 
     if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
@@ -62,7 +63,7 @@ export class TangleDevice {
         this.connected().then(connected => {
           if (connected) {
             this.syncClock().catch(error => {
-              console.warn(error);
+              logging.warn(error);
             });
           }
         });
@@ -72,18 +73,18 @@ export class TangleDevice {
 
   #onConnected = event => {
     if (!this.#adopting) {
-      console.log("> Device connected");
+      logging.debug("> Device connected");
       this.interface.emit("connected", { target: this });
 
       this.requestTimeline().catch(e => {
-        console.error("Timeline request after reconnection failed.", e);
+        logging.error("Timeline request after reconnection failed.", e);
       });
     }
   };
 
   #onDisconnected = event => {
     if (!this.#adopting) {
-      console.log("> Device disconnected");
+      logging.debug("> Device disconnected");
       this.interface.emit("disconnected", { target: this });
     }
   };
@@ -154,7 +155,7 @@ export class TangleDevice {
   connectRemoteControl() {
     this.#reconnectRC = true;
 
-    console.log("> Connecting to Remote Control");
+    logging.debug("> Connecting to Remote Control");
 
     if (!this.socket) {
       // TODO - scopovani dle apky
@@ -162,56 +163,56 @@ export class TangleDevice {
       this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ["websocket"] });
 
       this.socket.on("connect", () => {
-        console.log("> Connected to remote control");
+        logging.debug("> Connected to remote control");
         window.alert("Connected to remote control");
       });
 
       this.socket.on("disconnect", () => {
-        console.log("> Disconnected from remote control");
+        logging.debug("> Disconnected from remote control");
         window.alert("Disconnected from remote control");
 
         // if (this.#reconnectRC) {
-        //   console.log("Disconnected by its own... Reloading");
+        //   logging.debug("Disconnected by its own... Reloading");
         //   window.location.reload();
         // }
 
         // if (this.#reconnectRC) {
-        //   console.log("> Reconnecting Remote Control...");
+        //   logging.debug("> Reconnecting Remote Control...");
 
         //   this.socket.connect();
         // }
       });
 
       this.socket.on("deliver", payload => {
-        console.log("deliver", payload);
+        logging.debug("deliver", payload);
         this.interface.deliver(new Uint8Array(payload));
       });
 
       this.socket.on("transmit", payload => {
-        console.log("transmit", payload);
+        logging.debug("transmit", payload);
         this.interface.transmit(new Uint8Array(payload));
       });
 
       // this.socket.on("request", payload => {
-      //   console.log("request", payload);
+      //   logging.debug("request", payload);
       //   this.interface.request(new Uint8Array(payload));
       // });
 
       this.socket.on("connect_error", error => {
-        console.log("connect_error", error);
+        logging.debug("connect_error", error);
         setTimeout(() => {
           this.socket.connect();
         }, 1000);
       });
 
       // this.socket.on("setClock", payload => {
-      //   console.warn("setClock", payload);
+      //   logging.warn("setClock", payload);
       // });
 
       // // ============= CLOCK HACK ==============
 
       // const hackClock = () => {
-      //   console.warn("overriding clock with UTC clock");
+      //   logging.warn("overriding clock with UTC clock");
       //   this.interface.clock.setMillis(getClockTimestamp());
       //   this.syncClock();
       // };
@@ -227,7 +228,7 @@ export class TangleDevice {
   }
 
   disconnectRemoteControl() {
-    console.log("> Disonnecting from the Remote Control");
+    logging.debug("> Disonnecting from the Remote Control");
 
     this.#reconnectRC = false;
 
@@ -292,7 +293,7 @@ export class TangleDevice {
   //     // ulozit device do local storage jako json
   //   })
   //   .catch((error) => {
-  //     console.warn(error);
+  //     logging.warn(error);
   //   });
   // }
 
@@ -452,16 +453,16 @@ export class TangleDevice {
         const request_uuid = this.#getUUID();
         const bytes = [DEVICE_FLAGS.FLAG_ADOPT_REQUEST, ...numberToBytes(request_uuid, 4), ...owner_signature_bytes, ...owner_key_bytes, ...device_name_bytes, ...numberToBytes(device_id, 1)];
 
-        console.log("> Adopting device...");
+        logging.debug("> Adopting device...");
 
-        console.log(bytes);
+        logging.debug(bytes);
 
         return this.interface
           .request(bytes, true)
           .then(response => {
             let reader = new TnglReader(response);
 
-            console.log("> Got response:", response);
+            logging.debug("> Got response:", response);
 
             if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ADOPT_RESPONSE) {
               throw "InvalidResponse";
@@ -480,7 +481,7 @@ export class TangleDevice {
               return ("0" + (byte & 0xff).toString(16)).slice(-2);
             }).join(":");
 
-            console.log(`error_code=${error_code}, device_mac=${device_mac}`);
+            logging.debug(`error_code=${error_code}, device_mac=${device_mac}`);
 
             if (error_code === 0) {
               return (
@@ -497,26 +498,26 @@ export class TangleDevice {
                   })
                   // .then(() => {
                   //   return this.requestTimeline().catch(e => {
-                  //     console.error("Timeline request failed.", e);
+                  //     logging.error("Timeline request failed.", e);
                   //   });
                   // })
                   .then(() => {
                     setTimeout(() => {
                       if (this.interface.connected()) {
-                        console.log("> Device connected");
+                        logging.debug("> Device connected");
                         this.interface.emit("connected", { target: this });
                       }
                     }, 1);
                   })
                   .catch(e => {
-                    console.error(e);
+                    logging.error(e);
                   })
                   .then(() => {
                     return { mac: device_mac, ownerSignature: this.#ownerSignature, ownerKey: this.#ownerKey, name: newDeviceName, id: newDeviceId };
                   })
               );
             } else {
-              console.warn("Adoption refused.");
+              logging.warn("Adoption refused.");
               this.disconnect().finally(() => {
                 // @ts-ignore
                 window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
@@ -529,7 +530,7 @@ export class TangleDevice {
             }
           })
           .catch(e => {
-            console.error(e);
+            logging.error(e);
             this.disconnect().finally(() => {
               // @ts-ignore
               window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
@@ -542,7 +543,7 @@ export class TangleDevice {
           });
       })
       .catch(error => {
-        console.log(error);
+        logging.debug(error);
         if (error === "BluefyError") {
           // @ts-ignore
           window.alert("Pokud vlastníte lampu se zvlněným podstavcem, kterou se vám nedaří připojit, obraťte se prosím, na naši podporu.", "Spárování nové lampy se nezdařilo");
@@ -613,14 +614,14 @@ export class TangleDevice {
       }
     }
 
-    console.log(criteria);
+    logging.debug(criteria);
 
     return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
       .then(() => {
         return this.interface.connect(10000);
       })
       .catch(error => {
-        console.error(error);
+        logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
           window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
@@ -643,7 +644,7 @@ export class TangleDevice {
 
   // WIP, writes Tngl only if fingerprints does not match
   syncTngl(tngl_code, tngl_bytes = null) {
-    //console.log("writeTngl()");
+    //logging.debug("writeTngl()");
 
     if (tngl_code === null && tngl_bytes === null) {
       return Promise.reject("Invalid");
@@ -655,8 +656,8 @@ export class TangleDevice {
 
     return this.getTnglFingerprint().then(device_fingerprint => {
       return computeTnglFingerprint(tngl_bytes, "fingerprint").then(new_fingerprint => {
-        // console.log(device_fingerprint);
-        // console.log(new_fingerprint);
+        // logging.debug(device_fingerprint);
+        // logging.debug(new_fingerprint);
 
         for (let i = 0; i < device_fingerprint.length; i++) {
           if (device_fingerprint[i] !== new_fingerprint[i]) {
@@ -668,7 +669,7 @@ export class TangleDevice {
   }
 
   writeTngl(tngl_code, tngl_bytes = null) {
-    //console.log("writeTngl()");
+    //logging.debug("writeTngl()");
 
     if (tngl_code === null && tngl_bytes === null) {
       return Promise.reject("Invalid");
@@ -685,14 +686,14 @@ export class TangleDevice {
 
     const payload = [...timeline_payload, ...tngl_payload];
     return this.interface.execute(payload, "TNGL").then(() => {
-      // console.log("Written");
+      // logging.debug("Written");
     });
   }
 
   // event_label example: "evt1"
   // event_value example: 1000
   emitEvent(event_label, device_ids = [0xff], force_delivery = true, is_lazy = true) {
-    // console.log("emitTimestampEvent(id=" + device_ids + ")");
+    // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = is_lazy ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.timeline.millis(), 4), device_id];
@@ -710,7 +711,7 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 1000
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    // console.log("emitTimestampEvent(id=" + device_ids + ")");
+    // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = is_lazy
@@ -730,7 +731,7 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: "#00aaff"
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    // console.log("emitColorEvent(id=" + device_ids + ")");
+    // logging.debug("emitColorEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = is_lazy
@@ -751,7 +752,7 @@ export class TangleDevice {
   // event_value example: 100.0
   // !!! PARAMETER CHANGE !!!
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    // console.log("emitPercentageEvent(id=" + device_ids + ")");
+    // logging.debug("emitPercentageEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = is_lazy
@@ -772,7 +773,7 @@ export class TangleDevice {
   // event_value example: "label"
   // !!! PARAMETER CHANGE !!!
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    // console.log("emitLabelEvent(id=" + device_ids + ")");
+    // logging.debug("emitLabelEvent(id=" + device_ids + ")");
 
     const func = device_id => {
       const payload = is_lazy
@@ -791,21 +792,21 @@ export class TangleDevice {
 
   // !!! PARAMETER CHANGE !!!
   syncTimeline() {
-    //console.log("syncTimeline()");
+    //logging.debug("syncTimeline()");
     const flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
     const payload = [NETWORK_FLAGS.FLAG_SET_TIMELINE, ...numberToBytes(this.interface.clock.millis(), 4), ...numberToBytes(this.timeline.millis(), 4), flags];
     return this.interface.execute(payload, "TMLN");
   }
 
   syncClock() {
-    console.log("> Forcing sync clock...");
+    logging.debug("> Forcing sync clock...");
     return this.interface.syncClock().then(() => {
-      console.log("> Device clock synchronized");
+      logging.debug("> Device clock synchronized");
     });
   }
 
   updateDeviceFirmware(firmware) {
-    //console.log("updateDeviceFirmware()");
+    //logging.debug("updateDeviceFirmware()");
     return this.interface.updateFW(firmware).then(() => {
       this.disconnect();
     });
@@ -840,8 +841,8 @@ export class TangleDevice {
 
             let written = 0;
 
-            console.log("OTA UPDATE");
-            console.log(firmware);
+            logging.debug("OTA UPDATE");
+            logging.debug(firmware);
 
             const start_timestamp = new Date().getTime();
 
@@ -852,7 +853,7 @@ export class TangleDevice {
 
               {
                 //===========// RESET //===========//
-                console.log("OTA RESET");
+                logging.debug("OTA RESET");
 
                 const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
                 const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
@@ -863,7 +864,7 @@ export class TangleDevice {
 
               {
                 //===========// BEGIN //===========//
-                console.log("OTA BEGIN");
+                logging.debug("OTA BEGIN");
 
                 const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
                 const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
@@ -874,7 +875,7 @@ export class TangleDevice {
 
               {
                 //===========// WRITE //===========//
-                console.log("OTA WRITE");
+                logging.debug("OTA WRITE");
 
                 while (written < firmware.length) {
                   if (index_to > firmware.length) {
@@ -888,7 +889,7 @@ export class TangleDevice {
                   written += index_to - index_from;
 
                   const percentage = Math.floor((written * 10000) / firmware.length) / 100;
-                  console.log(percentage + "%");
+                  logging.debug(percentage + "%");
                   this.interface.emit("ota_progress", percentage);
 
                   index_from += chunk_size;
@@ -900,7 +901,7 @@ export class TangleDevice {
 
               {
                 //===========// END //===========//
-                console.log("OTA END");
+                logging.debug("OTA END");
 
                 const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
                 const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
@@ -909,12 +910,12 @@ export class TangleDevice {
 
               await sleep(3000);
 
-              console.log("Rebooting whole network...");
+              logging.debug("Rebooting whole network...");
 
               const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
               await this.interface.execute(payload, null);
 
-              console.log("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+              logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
               this.interface.emit("ota_status", "success");
               resolve();
@@ -945,7 +946,7 @@ export class TangleDevice {
    */
 
   updateDeviceConfig(config) {
-    console.log("> Updating config...");
+    logging.debug("> Updating config...");
 
     const config_bytes = config;
     const config_bytes_size = config.length;
@@ -956,7 +957,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_CONFIG_UPDATE_RESPONSE) {
         throw "InvalidResponse";
@@ -970,10 +971,10 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       if (error_code === 0) {
-        console.log("Write Config Success");
+        logging.debug("Write Config Success");
         // reboot device
         const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
         return this.interface.request(payload, false);
@@ -984,7 +985,7 @@ export class TangleDevice {
   }
 
   updateNetworkConfig(config) {
-    console.log("> Updating config of whole network...");
+    logging.debug("> Updating config of whole network...");
 
     const config_bytes = config;
     const config_bytes_size = config.length;
@@ -995,20 +996,20 @@ export class TangleDevice {
     const payload_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(request_bytes.length, 4), ...request_bytes];
 
     return this.interface.execute(payload_bytes, "CONF").then(() => {
-      console.log("> Rebooting network...");
+      logging.debug("> Rebooting network...");
       const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
       return this.interface.execute(payload, null);
     });
   }
 
   requestTimeline() {
-    console.log("> Requesting timeline...");
+    logging.debug("> Requesting timeline...");
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_TIMELINE_REQUEST, ...numberToBytes(request_uuid, 4)];
 
     return this.interface.request(bytes, true).then(response => {
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       let reader = new TnglReader(response);
 
@@ -1026,7 +1027,7 @@ export class TangleDevice {
       const timeline_timestamp = reader.readInt32();
       const timeline_paused = reader.readUint8();
 
-      console.log(`clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`);
+      logging.debug(`clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`);
 
       if (timeline_paused) {
         this.timeline.setState(timeline_timestamp, true);
@@ -1038,21 +1039,21 @@ export class TangleDevice {
 
   // Code.device.interface.execute([240,1,0,0,0,5],null)
   rebootNetwork() {
-    console.log("> Rebooting network...");
+    logging.debug("> Rebooting network...");
 
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.execute(payload, null);
   }
 
   rebootDevice() {
-    console.log("> Rebooting device...");
+    logging.debug("> Rebooting device...");
 
     const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.request(payload, false);
   }
 
   rebootAndDisconnectDevice() {
-    console.log("> Rebooting and disconnecting device...");
+    logging.debug("> Rebooting and disconnecting device...");
 
     this.interface.reconnection(false);
 
@@ -1062,7 +1063,7 @@ export class TangleDevice {
   }
 
   removeOwner() {
-    console.log("> Removing owner...");
+    logging.debug("> Removing owner...");
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST, ...numberToBytes(request_uuid, 4)];
@@ -1070,7 +1071,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ERASE_OWNER_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -1084,7 +1085,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       if (error_code !== 0) {
         throw "OwnerEraseFailed";
@@ -1107,7 +1108,7 @@ export class TangleDevice {
   }
 
   getFwVersion() {
-    console.log("> Requesting fw version...");
+    logging.debug("> Requesting fw version...");
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_FW_VERSION_REQUEST, ...numberToBytes(request_uuid, 4)];
@@ -1115,7 +1116,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_FW_VERSION_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -1129,7 +1130,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       let version = null;
 
@@ -1138,14 +1139,14 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      console.log(`version=${version}`);
+      logging.debug(`version=${version}`);
 
       return version;
     });
   }
 
   getTnglFingerprint() {
-    console.log("> Getting TNGL fingerprint...");
+    logging.debug("> Getting TNGL fingerprint...");
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_TNGL_FINGERPRINT_REQUEST, ...numberToBytes(request_uuid, 4)];
@@ -1153,7 +1154,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_TNGL_FINGERPRINT_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -1167,7 +1168,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       let fingerprint = null;
 
@@ -1177,14 +1178,14 @@ export class TangleDevice {
         throw "Fail";
       }
 
-      console.log(`fingerprint=${fingerprint}`);
+      logging.debug(`fingerprint=${fingerprint}`);
 
       return new Uint8Array(fingerprint);
     });
   }
 
   // setDeviceId(id) {
-  //   console.log("> Rebooting network...");
+  //   logging.debug("> Rebooting network...");
 
   //   const payload = [NETWORK_FLAGS.FLAG_DEVICE_ID, id];
   //   return this.connector.request(payload);
@@ -1192,7 +1193,7 @@ export class TangleDevice {
 
   // datarate in bits per second
   setNetworkDatarate(datarate) {
-    console.log(`> Setting network datarate to ${datarate} bsp...`);
+    logging.debug(`> Setting network datarate to ${datarate} bsp...`);
 
     const request_uuid = this.#getUUID();
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(9, 4), DEVICE_FLAGS.FLAG_CHANGE_DATARATE_REQUEST, ...numberToBytes(request_uuid, 4), ...numberToBytes(datarate, 4)];
@@ -1201,7 +1202,7 @@ export class TangleDevice {
   }
 
   readRomPhyVdd33() {
-    console.log("> Requesting rom_phy_vdd33 ...");
+    logging.debug("> Requesting rom_phy_vdd33 ...");
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_ROM_PHY_VDD33_REQUEST, ...numberToBytes(request_uuid, 4)];
@@ -1209,7 +1210,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_ROM_PHY_VDD33_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -1223,7 +1224,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       let vdd_reading = null;
 
@@ -1232,14 +1233,14 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      console.log(`vdd_reading=${vdd_reading}`);
+      logging.debug(`vdd_reading=${vdd_reading}`);
 
       return vdd_reading;
     });
   }
 
   readPinVoltage(pin) {
-    console.log(`> Requesting pin ${pin} voltage ...`);
+    logging.debug(`> Requesting pin ${pin} voltage ...`);
 
     const request_uuid = this.#getUUID();
     const bytes = [DEVICE_FLAGS.FLAG_VOLTAGE_ON_PIN_REQUEST, ...numberToBytes(request_uuid, 4), pin];
@@ -1247,7 +1248,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then(response => {
       let reader = new TnglReader(response);
 
-      console.log("> Got response:", response);
+      logging.debug("> Got response:", response);
 
       if (reader.readFlag() !== DEVICE_FLAGS.FLAG_VOLTAGE_ON_PIN_RESPONSE) {
         throw "InvalidResponseFlag";
@@ -1261,7 +1262,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      console.log(`error_code=${error_code}`);
+      logging.debug(`error_code=${error_code}`);
 
       let pin_reading = null;
 
@@ -1270,7 +1271,7 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      console.log(`pin_reading=${pin_reading}`);
+      logging.debug(`pin_reading=${pin_reading}`);
 
       return pin_reading;
     });
