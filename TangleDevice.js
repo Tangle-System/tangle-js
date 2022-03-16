@@ -5,8 +5,9 @@ import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
-import { io } from "./socketio.js";
+import { io } from "./lib/socketio.js";
 import { logging } from "./Logging.js";
+import { t } from "./i18n.js";
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +40,7 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface(this, reconnectionInterval, );
+    this.interface = new TangleInterface(this, reconnectionInterval);
 
     if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
@@ -164,12 +165,12 @@ export class TangleDevice {
 
       this.socket.on("connect", () => {
         logging.debug("> Connected to remote control");
-        window.alert("Connected to remote control");
+        window.alert(t("Connected to remote control"));
       });
 
       this.socket.on("disconnect", () => {
         logging.debug("> Disconnected from remote control");
-        window.alert("Disconnected from remote control");
+        window.alert(t("Disconnected from remote control"));
 
         // if (this.#reconnectRC) {
         //   logging.debug("Disconnected by its own... Reloading");
@@ -408,10 +409,10 @@ export class TangleDevice {
 
             newDeviceName = await window
               // @ts-ignore
-              .prompt("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.", random_names[Math.floor(Math.random() * random_names.length)], "Pojmenujte svoji lampu", "text", {
+              .prompt(t("Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních."), random_names[Math.floor(Math.random() * random_names.length)], t("Pojmenujte svoji lampu"), "text", {
                 placeholder: "NARA",
                 regex: /^[a-zA-Z0-9_ ]{1,16}$/,
-                invalidText: "Název obsahuje nepovolené znaky",
+                invalidText: t("Název obsahuje nepovolené znaky"),
                 maxlength: 16,
               });
 
@@ -422,7 +423,7 @@ export class TangleDevice {
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
             newDeviceId = await window
               // @ts-ignore
-              .prompt("Prosím, zadejte ID zařízení v rozmezí 0-255", "0", "Přidělte ID svému zařízení", "number", { min: 0, max: 255 });
+              .prompt(t("Prosím, zadejte ID zařízení v rozmezí 0-255"), "0", t("Přidělte ID svému zařízení"), "number", { min: 0, max: 255 });
             // @ts-ignore
 
             if (!newDeviceId) {
@@ -520,7 +521,7 @@ export class TangleDevice {
               logging.warn("Adoption refused.");
               this.disconnect().finally(() => {
                 // @ts-ignore
-                window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
+                window.confirm(t("Zkuste to, prosím, později."), t("Přidání se nezdařilo"), { confirm: t("Zkusit znovu"), cancel: t("Zpět") }).then(result => {
                   if (result) {
                     this.adopt(newDeviceName, newDeviceId, tnglCode);
                   }
@@ -533,7 +534,7 @@ export class TangleDevice {
             logging.error(e);
             this.disconnect().finally(() => {
               // @ts-ignore
-              window.confirm("Zkuste to, prosím, později.", "Přidání se nezdařilo", { confirm: "Zkusit znovu", cancel: "Zpět" }).then(result => {
+              window.confirm(t("Zkuste to, prosím, později."), t("Přidání se nezdařilo"), { confirm: t("Zkusit znovu"), cancel: t("Zpět") }).then(result => {
                 if (result) {
                   this.adopt(newDeviceName, newDeviceId, tnglCode);
                 }
@@ -546,14 +547,14 @@ export class TangleDevice {
         logging.debug(error);
         if (error === "BluefyError") {
           // @ts-ignore
-          window.alert("Pokud vlastníte lampu se zvlněným podstavcem, kterou se vám nedaří připojit, obraťte se prosím, na naši podporu.", "Spárování nové lampy se nezdařilo");
+          window.alert(t("Pokud vlastníte lampu se zvlněným podstavcem, kterou se vám nedaří připojit, obraťte se prosím, na naši podporu."), t("Spárování nové lampy se nezdařilo"));
           return;
         }
         if (error === "UserCanceledSelection") {
           return this.connected().then(result => {
             if (!result) {
               // @ts-ignore
-              window.alert('Pro připojení již spárované lampy prosím stiskněte jakýkoli symbol "🛑"', "Spárování nové lampy se nezdařilo");
+              window.alert(t("Pro připojení již spárované lampy prosím stiskněte jakýkoli symbol") + ' "🛑"', t("Spárování nové lampy se nezdařilo"));
             }
           });
         }
@@ -624,11 +625,11 @@ export class TangleDevice {
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
-          window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
+          window.alert(t('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".'), t("Připojení selhalo."));
           return;
         }
         //@ts-ignore
-        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        window.alert(t("Zkuste to, prosím, později.") + "\n\n" + t("Chyba: ") + error.toString(), t("Připojení selhalo."));
       });
   }
 
@@ -820,12 +821,12 @@ export class TangleDevice {
     return (
       window
         //@ts-ignore
-        .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?")
+        .confirm(t("Nastaví rychlejší přenos dat, který ale nemá takový dosah."), t("Jsou zařízení blízko sebe?"))
         //@ts-ignore
         .then(result => {
           if (result) {
             return this.setNetworkDatarate(2000000).catch(() => {
-              window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
+              window.alert(t("Nastavení rychlejšího přenosu dat se nezdařilo."));
             });
           } else {
             return Promise.resolve();
@@ -1276,5 +1277,4 @@ export class TangleDevice {
       return pin_reading;
     });
   }
-
 }

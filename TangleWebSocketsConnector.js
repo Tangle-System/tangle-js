@@ -1,8 +1,7 @@
 import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
-import { io } from "./socketio.js";
+import { io } from "./lib/socketio.js";
 import { logging } from "./Logging.js";
-
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +45,7 @@ export class TangleWebSocketsConnector {
         this.#connected = true;
 
         if (!this.socket) {
-          this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
+          this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ["websocket"] });
 
           logging.debug(this.socket);
 
@@ -68,13 +67,12 @@ export class TangleWebSocketsConnector {
             this.#interfaceReference.emit("#disconnected");
           });
 
-          this.socket.on("connect_error", (error) => {
-            logging.debug('connect_error',error)
+          this.socket.on("connect_error", error => {
+            logging.debug("connect_error", error);
             setTimeout(() => {
               this.socket.connect();
             }, 1000);
           });
-
         } else {
           this.socket.connect();
         }
