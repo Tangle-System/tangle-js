@@ -1,0 +1,8 @@
+{
+  "name": "tangle-js",
+  "version": "0.8.3",
+  "type": "module",
+  "devDependencies": {
+    "i18next-parser": "^6.0.0"
+  }
+}
