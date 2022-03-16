@@ -21,6 +21,8 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
+  FLAG_DEVICE_CONFIG_REQUEST: 226,
+  FLAG_DEVICE_CONFIG_RESPONSE: 227,
   FLAG_ROM_PHY_VDD33_REQUEST: 228,
   FLAG_ROM_PHY_VDD33_RESPONSE: 229,
   FLAG_VOLTAGE_ON_PIN_REQUEST: 230,
@@ -389,7 +391,7 @@ export class TangleInterface {
     // return this.connector.selected();
   }
 
-  connect(timeout = 10000) {
+  connect(timeout = 10000, supportLegacy = true) {
     if (timeout < 1000) {
       logging.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
@@ -401,7 +403,7 @@ export class TangleInterface {
 
     this.#connecting = true;
 
-    const item = new Query(Query.TYPE_CONNECT, timeout);
+    const item = new Query(Query.TYPE_CONNECT, timeout, supportLegacy);
     this.#process(item);
     return item.promise.finally(() => {
       this.#connecting = false;
@@ -668,7 +670,7 @@ export class TangleInterface {
               case Query.TYPE_CONNECT:
                 this.#reconection = true;
                 await this.connector
-                  .connect(item.a) // a = timeout
+                  .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
                     return this.connector
                       .getClock()
