@@ -7,9 +7,8 @@ import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./lib/socketio.js";
 import { logging } from "./Logging.js";
-import {} from "./i18n.js";
-function t() {}
-function changeLanguage() {}
+import { t, changeLanguage } from "./i18n.js";
+
 /////////////////////////////////////////////////////////////////////////
 
 // should not create more than one object!
@@ -1281,7 +1280,7 @@ export class TangleDevice {
 
   /**
    * Change language for modals
-   * @param {'en','cs'} lng
+   * @param {"en"|"cs"} lng
    */
   setLanguage(lng) {
     changeLanguage(lng);
