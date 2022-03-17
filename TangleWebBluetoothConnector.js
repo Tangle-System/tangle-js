@@ -961,7 +961,7 @@ criteria example:
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
-  connect(timeout = 5000) {
+  connect(timeout = 5000, supportLegacy = true) {
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
@@ -993,72 +993,82 @@ criteria example:
       .then(server => {
         this.#connection.reset();
 
-        logging.debug("> Getting the Bluetooth Service UUID...");
+        if (supportLegacy) {
+          // SUPPORT LEGACY FW SERVICE UUIDS
 
-        return (
-          server
-            .getPrimaryServices()
-            // figure out which FW we are connecting to
-            .then(services => {
-              if (services.length != 1 || !services[0].isPrimary) {
-                logging.error("Connected to device that is not Tangle");
-                throw "ConnectionFailed";
-              }
+          logging.debug("> Getting the Bluetooth Service UUID...");
 
-              const service_uuid = services[0].uuid.toLowerCase();
-              logging.debug("Got Service UUID " + service_uuid);
-
-              let legacy_fw_version = "unknown";
-
-              switch (service_uuid) {
-                case this.FW_PRE_0_7_SERVICE_UUID:
-                  legacy_fw_version = "legacy";
-                  break;
-
-                case this.FW_0_7_0_SERVICE_UUID:
-                  legacy_fw_version = "0.7.0";
-                  break;
-
-                case this.FW_0_7_1_SERVICE_UUID:
-                  legacy_fw_version = "0.7.1";
-                  break;
-
-                case this.FW_0_7_2_SERVICE_UUID:
-                  legacy_fw_version = "0.7.2";
-                  break;
-
-                case this.FW_0_7_3_SERVICE_UUID:
-                  legacy_fw_version = "0.7.3";
-                  break;
-
-                case this.FW_0_7_4_SERVICE_UUID:
-                  legacy_fw_version = "0.7.4";
-                  break;
-
-                case this.TANGLE_SERVICE_UUID:
-                  legacy_fw_version = null;
-                  break;
-
-                default:
-                  logging.error("Connected to non Tangle Device");
+          return (
+            server
+              .getPrimaryServices()
+              // figure out which FW we are connecting to
+              .then(services => {
+                if (services.length != 1 || !services[0].isPrimary) {
+                  logging.error("Connected to device that is not Tangle");
                   throw "ConnectionFailed";
-                  break;
-              }
+                }
 
-              if (legacy_fw_version) {
-                logging.debug("FW Version: " + legacy_fw_version);
-                this.#interfaceReference.emit("version", legacy_fw_version);
+                const service_uuid = services[0].uuid.toLowerCase();
+                logging.debug("Got Service UUID " + service_uuid);
 
-                logging.warn("Connected to unsupported legacy FW version");
-                throw "ConnectionFailed";
-              }
+                let legacy_fw_version = "unknown";
 
-              clearTimeout(timeout_handle);
+                switch (service_uuid) {
+                  case this.FW_PRE_0_7_SERVICE_UUID:
+                    legacy_fw_version = "legacy";
+                    break;
 
-              logging.debug("> Getting the Bluetooth Service...");
-              return server.getPrimaryService(service_uuid);
-            })
-        );
+                  case this.FW_0_7_0_SERVICE_UUID:
+                    legacy_fw_version = "0.7.0";
+                    break;
+
+                  case this.FW_0_7_1_SERVICE_UUID:
+                    legacy_fw_version = "0.7.1";
+                    break;
+
+                  case this.FW_0_7_2_SERVICE_UUID:
+                    legacy_fw_version = "0.7.2";
+                    break;
+
+                  case this.FW_0_7_3_SERVICE_UUID:
+                    legacy_fw_version = "0.7.3";
+                    break;
+
+                  case this.FW_0_7_4_SERVICE_UUID:
+                    legacy_fw_version = "0.7.4";
+                    break;
+
+                  case this.TANGLE_SERVICE_UUID:
+                    legacy_fw_version = null;
+                    break;
+
+                  default:
+                    logging.error("Connected to non Tangle Device");
+                    throw "ConnectionFailed";
+                    break;
+                }
+
+                if (legacy_fw_version) {
+                  logging.debug("FW Version: " + legacy_fw_version);
+                  this.#interfaceReference.emit("version", legacy_fw_version);
+
+                  logging.warn("Connected to unsupported legacy FW version");
+                  throw "ConnectionFailed";
+                }
+
+                clearTimeout(timeout_handle);
+
+                logging.debug("> Getting the Bluetooth Service...");
+                return server.getPrimaryService(service_uuid);
+              })
+          );
+        } else {
+          // NOT SUPPORT LEGACY FW SERVICE UUIDS
+
+          clearTimeout(timeout_handle);
+
+          return server.getPrimaryService(this.TANGLE_SERVICE_UUID);
+        }
       })
       .then(service => {
         logging.debug("> Getting the Service Characteristic...");

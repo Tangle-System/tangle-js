@@ -321,7 +321,7 @@ export class TangleDevice {
       .userSelect(criteria, 60000)
       .then(() => {
         this.#adopting = true;
-        return this.interface.connect(10000);
+        return this.interface.connect(10000, true);
       })
       .then(async () => {
         const random_names = [
@@ -619,7 +619,7 @@ export class TangleDevice {
 
     return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
       .then(() => {
-        return this.interface.connect(10000);
+        return this.interface.connect(10000, false);
       })
       .catch(error => {
         logging.error(error);
@@ -938,8 +938,63 @@ export class TangleDevice {
     );
   }
 
+
+   /**
+   * @returns {Promise} config;
+   *
+   *
+   *
+   *
+   */
+
+  readDeviceConfig() {
+    logging.debug("> Reading device config...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_DEVICE_CONFIG_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      logging.debug("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_DEVICE_CONFIG_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      logging.debug(`error_code=${error_code}`);
+
+      if (error_code === 0) {
+
+        const config_size = reader.readUint32();
+        logging.debug(`config_size=${config_size}`);
+
+        const config_bytes = reader.readBytes(config_size);
+        logging.debug(`config_bytes=${config_bytes}`);
+
+        const decoder = new TextDecoder();
+        const config = decoder.decode(new Uint8Array(config_bytes))
+        logging.debug(`config=${config}`);
+  
+        return config;
+
+      } else {
+        throw "Fail";
+      }
+
+    });
+  }
+
   /**
-   * @param {Uint8Array} config;
+   * @param {string} config;
    *
    *
    *
@@ -949,7 +1004,8 @@ export class TangleDevice {
   updateDeviceConfig(config) {
     logging.debug("> Updating config...");
 
-    const config_bytes = config;
+    const encoder = new TextEncoder();
+    const config_bytes = encoder.encode(config);
     const config_bytes_size = config.length;
 
     // make config update request
@@ -985,10 +1041,20 @@ export class TangleDevice {
     });
   }
 
+    /**
+   * @param {string} config;
+   *
+   *
+   *
+   *
+   */
+
+
   updateNetworkConfig(config) {
     logging.debug("> Updating config of whole network...");
 
-    const config_bytes = config;
+    const encoder = new TextEncoder();
+    const config_bytes = encoder.encode(config);
     const config_bytes_size = config.length;
 
     // make config update request
