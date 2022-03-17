@@ -7,7 +7,7 @@ import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./lib/socketio.js";
 import { logging } from "./Logging.js";
-import { t } from "./i18n.js";
+import { t, changeLanguage } from "./i18n.js";
 
 /////////////////////////////////////////////////////////////////////////
 
@@ -1342,5 +1342,13 @@ export class TangleDevice {
 
       return pin_reading;
     });
+  }
+
+  /**
+   * Change language for modals
+   * @param {"en"|"cs"} lng
+   */
+  setLanguage(lng) {
+    changeLanguage(lng);
   }
 }
