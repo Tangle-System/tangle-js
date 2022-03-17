@@ -7,8 +7,9 @@ import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./lib/socketio.js";
 import { logging } from "./Logging.js";
-import { t, changeLanguage } from "./i18n.js";
-
+import {} from "./i18n.js";
+function t() {}
+function changeLanguage() {}
 /////////////////////////////////////////////////////////////////////////
 
 // should not create more than one object!

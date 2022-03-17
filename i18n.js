@@ -1,20 +1,21 @@
-import i18next from "https://esm.sh/i18next";
-// import cs from "./locales/cs/translation.json";
-// import en from "./locales/en/translation.json";
+// In apps without i18next included use // import I18 from "https://esm.sh/i18next";
+import I18 from "i18next";
+import cs from "./locales/cs/translation.json";
+import en from "./locales/en/translation.json";
 
-i18next.init({
-  lng: "en", // if you're using a language detector, do not define the lng option
+const i18 = I18.createInstance();
+i18.init({
+  lng: "en",
   debug: true,
   resources: {
-    // TODO load here the JSONS
     en: {
-      // ...en,
+      ...en,
     },
     cs: {
-      // ...cs,
+      ...cs,
     },
   },
 });
 
-export const changeLanguage = i18next.changeLanguage;
-export const t = i18next.t;
+export const changeLanguage = i18.changeLanguage;
+export const t = i18.t;
