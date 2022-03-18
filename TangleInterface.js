@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex } from "./functions.js";
+import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex, detectAndroid, detectSafari, detectChrome, detectWindows, detectLinux, detectIPhone, detectMacintosh } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -251,7 +251,58 @@ export class TangleInterface {
             break;
 
           case "webbluetooth":
+
+            if (detectTangleConnect() || detectBluefy() || (detectAndroid() && detectChrome()) || (detectMacintosh() && detectChrome()) || (detectWindows() && detectChrome()) || (detectLinux() && detectChrome())) {
+              // NOP
+            } else {
+              // iPhone outside Bluefy and TangleConnect
+              if (detectIPhone()) {
+                // @ts-ignore
+                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Bluefy", "Otevřít App Store").then(result => {
+                  if (result) {
+                    // redirect na Bluefy v app store
+                    window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
+                  }
+                });
+              }
+              // Macs outside Google Chrome
+              else if (detectMacintosh()) {
+                // @ts-ignore
+                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                  if (result) {
+                    // redirect na Google Chrome
+                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                  }
+                });
+              }
+              // Android outside Google Chrome
+              else if (detectAndroid()) {
+                // @ts-ignore
+                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                  if (result) {
+                    // redirect na Google Chrome
+                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                  }
+                });
+              }
+              // Windows outside Google Chrome
+              else if (detectWindows()) {
+                // @ts-ignore
+                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                  if (result) {
+                    // redirect na Google Chrome
+                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                  }
+                });
+              }
+              // Linux ChromeBooks atd...
+              else {
+                window.confirm("Tato platforma nejspíš není podporována.");
+              }
+            }
+            
             this.connector = new TangleWebBluetoothConnector(this);
+
             break;
 
           case "webserial":
@@ -724,6 +775,7 @@ export class TangleInterface {
                 await this.connector
                   .deliver(item.a)
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {
@@ -736,6 +788,7 @@ export class TangleInterface {
                 await this.connector
                   .transmit(item.a)
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {
@@ -770,6 +823,7 @@ export class TangleInterface {
                 await this.connector
                   .deliver(payload.slice(0, index))
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {

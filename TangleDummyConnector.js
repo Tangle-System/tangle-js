@@ -210,10 +210,6 @@ criteria example:
       }
       await sleep(25); // delivering logic
 
-      if (payload.length < 64) {
-        this.#interfaceReference.process(new DataView(new Uint8Array(payload).buffer));
-      }
-      
       if (this.#fail(0.1)) {
         reject("DeliverFailed");
         return;
@@ -233,10 +229,6 @@ criteria example:
         return;
       }
       await sleep(10); // transmiting logic
-
-      if (payload.length < 64) {
-        this.#interfaceReference.process(new DataView(new Uint8Array(payload).buffer));
-      }
 
       if (this.#fail(0.1)) {
         reject("TransmitFailed");
@@ -530,12 +522,12 @@ criteria example:
   destroy() {
     logging.info(`destroy()`);
 
-    // return this.disconnect()
-    //   .catch(() => {})
-    //   .then(() => {
-    //     return this.unselect();
-    //   })
-    //   .catch(() => {});
+    return this.disconnect()
+      .catch(() => {})
+      .then(() => {
+        return this.unselect();
+      })
+      .catch(() => {});
 
     return Promise.resolve();
   }

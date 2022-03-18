@@ -982,6 +982,11 @@ export class TangleDevice {
         const config = decoder.decode(new Uint8Array(config_bytes));
         logging.debug(`config=${config}`);
 
+        if (config.charAt(config.length - 1) == "\0") {
+          logging.warn("NULL config character detected");
+          return config.slice(0, config.length - 1);
+        }
+
         return config;
       } else {
         throw "Fail";
