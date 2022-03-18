@@ -8,9 +8,17 @@ const DEBUG_LEVEL_VERBOSE = 5;
 const loggingLevel = DEBUG_LEVEL_DEBUG;
 
 export const logging = {
-  error: loggingLevel >= 1 ? console.error : function () {},
-  warn: loggingLevel >= 2 ? console.warn : function () {},
-  info: loggingLevel >= 3 ? console.log : function () {},
-  debug: loggingLevel >= 4 ? console.log : function () {},
-  verbose: loggingLevel >= 5 ? console.log : function () {},
+  error: console.error,
+  warn: function () {},
+  info: function () {},
+  debug: function () {},
+  verbose: function () {},
 };
+
+export function setLoggingLevel(level) {
+  logging.error = level >= 1 ? console.error : function () {};
+  logging.warn = level >= 2 ? console.warn : function () {};
+  logging.info = level >= 3 ? console.log : function () {};
+  logging.debug = level >= 4 ? console.log : function () {};
+  logging.verbose = level >= 5 ? console.log : function () {};
+}
