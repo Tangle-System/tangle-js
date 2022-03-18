@@ -972,7 +972,6 @@ export class TangleDevice {
       logging.debug(`error_code=${error_code}`);
 
       if (error_code === 0) {
-
         const config_size = reader.readUint32();
         logging.debug(`config_size=${config_size}`);
 
@@ -980,15 +979,18 @@ export class TangleDevice {
         logging.debug(`config_bytes=${config_bytes}`);
 
         const decoder = new TextDecoder();
-        const config = decoder.decode(new Uint8Array(config_bytes))
+        const config = decoder.decode(new Uint8Array(config_bytes));
         logging.debug(`config=${config}`);
-  
-        return config;
 
+        if (config.charAt(config.length - 1) == "\0") {
+          logging.warn("NULL config character detected");
+          return config.slice(0, config.length - 1);
+        }
+
+        return config;
       } else {
         throw "Fail";
       }
-
     });
   }
 
