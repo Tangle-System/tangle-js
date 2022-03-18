@@ -1,4 +1,4 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex } from "./functions.js";
+import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex, detectAndroid, detectSafari, detectChrome, detectWindows, detectLinux, detectIPhone, detectMacintosh } from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -775,6 +775,7 @@ export class TangleInterface {
                 await this.connector
                   .deliver(item.a)
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {
@@ -787,6 +788,7 @@ export class TangleInterface {
                 await this.connector
                   .transmit(item.a)
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {
@@ -821,6 +823,7 @@ export class TangleInterface {
                 await this.connector
                   .deliver(payload.slice(0, index))
                   .then(() => {
+                    this.process(new DataView(new Uint8Array(item.a).buffer));
                     item.resolve();
                   })
                   .catch(error => {
