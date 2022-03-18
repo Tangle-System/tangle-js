@@ -1353,18 +1353,21 @@ export class TangleDevice {
 
   hideHomeButton(hide = true) {
     if (detectTangleConnect()) {
+      //@ts-ignore
       window.tangleConnect.hideHomeButton(hide);
     }
   }
 
   goHome() {
     if (detectTangleConnect()) {
+      //@ts-ignore
       window.tangleConnect.goHome();
     }
   }
 
   setRotation(rotation) {
     if (detectTangleConnect()) {
+      //@ts-ignore
       window.tangleConnect.rotation(rotation);
     }
   }
