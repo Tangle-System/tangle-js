@@ -820,10 +820,12 @@ export class TangleInterface {
                   }
                 }
 
+                const data = payload.slice(0, index);
+
                 await this.connector
-                  .deliver(payload.slice(0, index))
+                  .deliver(data)
                   .then(() => {
-                    this.process(new DataView(new Uint8Array(item.a).buffer));
+                    this.process(new DataView(data.buffer));
                     item.resolve();
                   })
                   .catch(error => {
@@ -919,6 +921,8 @@ export class TangleInterface {
   process(bytecode) {
     let tangleBytes = new TnglReader(bytecode);
 
+    logging.debug(tangleBytes);
+
     while (tangleBytes.available > 0) {
       switch (tangleBytes.peekFlag()) {
         case NETWORK_FLAGS.FLAG_CONF_BYTES:
@@ -930,7 +934,7 @@ export class TangleInterface {
             //const bytecode_offset = tangleBytes.position() + offset;
             tangleBytes.foward(conf_size);
 
-            logging.debug("conf_size=%u", conf_size);
+            logging.verbose(`conf_size=${conf_size}`, conf_size);
             //logging.debug("bytecode_offset=%u", bytecode_offset);
 
             // control::feed(bytecode, bytecode_offset, conf_size);
@@ -946,7 +950,7 @@ export class TangleInterface {
             //const bytecode_offset = tangleBytes.position() + offset;
             tangleBytes.foward(tngl_size);
 
-            logging.debug("tngl_size=%u", tngl_size);
+            logging.verbose(`tngl_size=${tngl_size}`, tngl_size);
             //logging.debug("bytecode_offset=%u", bytecode_offset);
 
             // Runtime::feed(bytecode, bytecode_offset, tngl_size);
@@ -1066,8 +1070,8 @@ export class TangleInterface {
           break;
 
         default:
-          // logging.error("ERROR");
-          tangleBytes.readUint8();
+          logging.error("ERROR");
+          //tangleBytes.readUint8();
           break;
       }
     }
