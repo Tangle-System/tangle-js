@@ -1,4 +1,4 @@
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, detectTangleConnect, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -39,7 +39,7 @@ export class TangleDevice {
     this.#ownerSignature = null;
     this.#ownerKey = null;
 
-    this.interface = new TangleInterface(this, reconnectionInterval, );
+    this.interface = new TangleInterface(this, reconnectionInterval);
 
     if (connectorType != "none") {
       this.interface.assignConnector(connectorType);
@@ -937,8 +937,7 @@ export class TangleDevice {
     );
   }
 
-
-   /**
+  /**
    * @returns {Promise} config;
    *
    *
@@ -1042,14 +1041,13 @@ export class TangleDevice {
     });
   }
 
-    /**
+  /**
    * @param {string} config;
    *
    *
    *
    *
    */
-
 
   updateNetworkConfig(config) {
     logging.debug("> Updating config of whole network...");
@@ -1345,4 +1343,29 @@ export class TangleDevice {
     });
   }
 
+  /**
+   * Change language for modals
+   * @param {"en"|"cs"} lng
+   */
+  setLanguage(lng) {
+    //changeLanguage(lng);
+  }
+
+  hideHomeButton(hide = true) {
+    if (detectTangleConnect()) {
+      window.tangleConnect.hideHomeButton(hide);
+    }
+  }
+
+  goHome() {
+    if (detectTangleConnect()) {
+      window.tangleConnect.goHome();
+    }
+  }
+
+  setRotation(rotation) {
+    if (detectTangleConnect()) {
+      window.tangleConnect.rotation(rotation);
+    }
+  }
 }
