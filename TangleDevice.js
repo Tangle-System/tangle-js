@@ -6,7 +6,7 @@ import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./lib/socketio.js";
-import { logging } from "./Logging.js";
+import { logging, setLoggingLevel } from "./Logging.js";
 import { t, changeLanguage } from "./i18n.js";
 
 /////////////////////////////////////////////////////////////////////////
@@ -1368,5 +1368,9 @@ export class TangleDevice {
     if (detectTangleConnect()) {
       window.tangleConnect.rotation(rotation);
     }
+  }
+
+  setDebugLevel(level) {
+    setLoggingLevel(level);
   }
 }
