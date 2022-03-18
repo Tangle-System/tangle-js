@@ -222,24 +222,24 @@ export class TangleInterface {
       return Promise.resolve();
     }
 
+    if (connector_type == "default") {
+      if (detectTangleConnect()) {
+        connector_type = "tangleconnect";
+      } else if (navigator.bluetooth) {
+        connector_type = "webbluetooth";
+      } else if (navigator.serial) {
+        connector_type = "webserial";
+      } else {
+        connector_type = "none";
+      }
+    }
+
     return this.destroyConnector()
       .catch(() => {})
       .then(() => {
         switch (connector_type) {
           case "none":
             this.connector = null;
-            break;
-
-          case "default":
-            if (detectTangleConnect()) {
-              this.connector = new TangleConnectConnector(this);
-            } else if (navigator.bluetooth) {
-              this.connector = new TangleWebBluetoothConnector(this);
-            } else if (navigator.serial) {
-              this.connector = new TangleWebSerialConnector(this);
-            } else {
-              this.connector = new TangleDummyConnector(this);
-            }
             break;
 
           case "dummy":
