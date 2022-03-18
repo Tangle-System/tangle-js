@@ -1,4 +1,4 @@
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, detectTangleConnect, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -938,8 +938,7 @@ export class TangleDevice {
     );
   }
 
-
-   /**
+  /**
    * @returns {Promise} config;
    *
    *
@@ -973,7 +972,6 @@ export class TangleDevice {
       logging.debug(`error_code=${error_code}`);
 
       if (error_code === 0) {
-
         const config_size = reader.readUint32();
         logging.debug(`config_size=${config_size}`);
 
@@ -981,15 +979,13 @@ export class TangleDevice {
         logging.debug(`config_bytes=${config_bytes}`);
 
         const decoder = new TextDecoder();
-        const config = decoder.decode(new Uint8Array(config_bytes))
+        const config = decoder.decode(new Uint8Array(config_bytes));
         logging.debug(`config=${config}`);
-  
-        return config;
 
+        return config;
       } else {
         throw "Fail";
       }
-
     });
   }
 
@@ -1041,14 +1037,13 @@ export class TangleDevice {
     });
   }
 
-    /**
+  /**
    * @param {string} config;
    *
    *
    *
    *
    */
-
 
   updateNetworkConfig(config) {
     logging.debug("> Updating config of whole network...");
@@ -1350,5 +1345,23 @@ export class TangleDevice {
    */
   setLanguage(lng) {
     changeLanguage(lng);
+  }
+
+  hideHomeButton(hide = true) {
+    if (detectTangleConnect()) {
+      window.tangleConnect.hideHomeButton(hide);
+    }
+  }
+
+  goHome() {
+    if (detectTangleConnect()) {
+      window.tangleConnect.goHome();
+    }
+  }
+
+  setRotation(rotation) {
+    if (detectTangleConnect()) {
+      window.tangleConnect.rotation(rotation);
+    }
   }
 }
