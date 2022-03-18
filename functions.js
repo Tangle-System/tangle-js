@@ -190,20 +190,58 @@ export function numberToBytes(value, byteCount) {
   return byteArray;
 }
 
-var androidDetected = navigator.userAgent.toLowerCase().indexOf("android") > -1;
+// WIN11, Google Chrome:            Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.82 Safari/537.36
+// Iphone 11, iOS 15.3.1, Safari:   Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Mobile/15E148 Safari/604.1
+// Iphone 11, iOS 15.3.1, Bluefy:   Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Bluefy/3.3.4
+// Macbook M1, Google Chrome:       Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36
+// Macbook M1, Safari:              Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15
+
+const androidDetected = navigator.userAgent.toLowerCase().indexOf("android") > -1;
 export function detectAndroid() {
   return androidDetected;
 }
 
-var bluefyDetected = navigator.userAgent.toLowerCase().indexOf("bluefy") > -1;
+const iphoneDetected = navigator.userAgent.toLowerCase().indexOf("iphone") > -1;
+export function detectIPhone() {
+  return iphoneDetected;
+}
+
+const macintoshDetected = navigator.userAgent.toLowerCase().indexOf("macintosh") > -1;
+export function detectMacintosh() {
+  return macintoshDetected;
+}
+
+const windowsDetected = navigator.userAgent.toLowerCase().indexOf("windows") > -1;
+export function detectWindows() {
+  return windowsDetected;
+}
+
+const linuxDetected = navigator.userAgent.toLowerCase().indexOf("linux") > -1;
+export function detectLinux() {
+  return linuxDetected;
+}
+
+const chromeDetected = navigator.userAgent.toLowerCase().indexOf("chrome") > -1;
+export function detectChrome() {
+  return chromeDetected;
+}
+
+const bluefyDetected = navigator.userAgent.toLowerCase().indexOf("bluefy") > -1;
 export function detectBluefy() {
   return bluefyDetected;
 }
 
-var tangleConnectDetected = "tangleConnect" in window;
+const safariDetected = navigator.userAgent.toLowerCase().indexOf("safari") > -1 && navigator.userAgent.toLowerCase().indexOf("chrome") == -1;
+export function detectSafari() {
+  return safariDetected;
+}
+
+const tangleConnectDetected = "tangleConnect" in window;
 export function detectTangleConnect() {
   return tangleConnectDetected;
 }
+
+
 
 //////////////////////////////////////////////////////
 
