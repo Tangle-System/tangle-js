@@ -67,7 +67,7 @@ export class TangleWebSerialConnector {
 
     this.#interfaceReference = interfaceReference;
 
-    this.PORT_OPTIONS = { baudRate: 1000000, dataBits: 8, stopBits: 1, parity: "none" };
+    this.PORT_OPTIONS = { baudRate: 1000000, dataBits: 8, stopBits: 1, parity: "none", bufferSize: 65535, flowControl: "none" };
 
     this.#serialPort = null;
     this.#writing = false;
@@ -120,9 +120,13 @@ export class TangleWebSerialConnector {
           // logging.warn(match);
 
           if (match === ">>>BEGIN<<<") {
-            this.#beginCallback && this.#beginCallback();
+            this.#beginCallback && this.#beginCallback(true);
           } else if (match === ">>>END<<<") {
             this.disconnect();
+          } else if ( match === ">>>BOOT<<<") {
+            this.disconnect();
+            this.#beginCallback && this.#beginCallback(false);
+            this.#feedbackCallback && this.#feedbackCallback(false);
           } else if (match === ">>>SUCCESS<<<") {
             this.#feedbackCallback && this.#feedbackCallback(true);
           } else if (match === ">>>FAIL<<<") {
@@ -249,7 +253,15 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(timeout = 5000) {
+  connect(timeout = 10000) {
+  
+    if (timeout <= 0) {
+      logging.debug("> Connect timeout have expired");
+      return Promise.reject("ConnectionFailed");
+    }
+
+    const start = new Date().getTime();
+
     if (!this.#serialPort) {
       return Promise.reject("NotSelected");
     }
@@ -285,16 +297,21 @@ criteria example:
             reject("ConnectTimeout");
           }, timeout);
 
-          this.#beginCallback = () => {
+          this.#beginCallback = result => {
             clearTimeout(timeout_handle);
             this.#beginCallback = null;
 
             setTimeout(() => {
-              this.#connected = true;
-              logging.debug("> Serial Connector Connected");
-              this.#interfaceReference.emit("#connected");
-              resolve({ connector: this.type });
-            }, 100);
+              if (result) {
+                this.#connected = true;
+                logging.debug("> Serial Connector Connected");
+                this.#interfaceReference.emit("#connected");
+                resolve({ connector: this.type });
+              } else {
+                const passed = new Date().getTime() - start;
+                resolve(this.connect(timeout - passed));
+              }
+            }, 5000);
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();

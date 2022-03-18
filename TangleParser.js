@@ -1,6 +1,6 @@
 
 
-import { mapValue } from "./functions.js";
+import { mapValue, uint8ArrayToHexString } from "./functions.js";
 import { logging } from "./Logging.js";
 import { TnglWriter } from "./TnglWriter.js";
 
@@ -702,6 +702,7 @@ export class TnglCodeParser {
     let tnglBytes = this.#compiler.tnglBytes;
 
     logging.debug(tnglBytes);
+    logging.info(uint8ArrayToHexString(tnglBytes));
     return tnglBytes;
   }
 
