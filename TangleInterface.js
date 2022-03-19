@@ -1,4 +1,25 @@
-import { colorToBytes, createNanoEvents, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes, detectBluefy, noSleep, detectTangleConnect, mapValue, rgbToHex, detectAndroid, detectSafari, detectChrome, detectWindows, detectLinux, detectIPhone, detectMacintosh } from "./functions.js";
+import {
+  colorToBytes,
+  createNanoEvents,
+  hexStringToUint8Array,
+  labelToBytes,
+  numberToBytes,
+  percentageToBytes,
+  sleep,
+  stringToBytes,
+  detectBluefy,
+  noSleep,
+  detectTangleConnect,
+  mapValue,
+  rgbToHex,
+  detectAndroid,
+  detectSafari,
+  detectChrome,
+  detectWindows,
+  detectLinux,
+  detectIPhone,
+  detectMacintosh,
+} from "./functions.js";
 import { TangleDummyConnector } from "./TangleDummyConnector.js";
 import { TangleWebBluetoothConnector } from "./TangleWebBluetoothConnector.js";
 import { TangleWebSerialConnector } from "./TangleWebSerialConnector.js";
@@ -251,7 +272,6 @@ export class TangleInterface {
             break;
 
           case "webbluetooth":
-
             if (detectTangleConnect() || detectBluefy() || (detectAndroid() && detectChrome()) || (detectMacintosh() && detectChrome()) || (detectWindows() && detectChrome()) || (detectLinux() && detectChrome())) {
               // NOP
             } else {
@@ -300,7 +320,7 @@ export class TangleInterface {
                 window.confirm("Tato platforma nejspíš není podporována.");
               }
             }
-            
+
             this.connector = new TangleWebBluetoothConnector(this);
 
             break;
