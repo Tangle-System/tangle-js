@@ -28,10 +28,6 @@ export class TangleDevice {
   #reconnectRC;
 
   constructor(connectorType = "default", reconnectionInterval = 1000) {
-    if (!connectorType) {
-      connectorType = "default";
-    }
-
     this.timeline = new TimeTrack();
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
@@ -41,7 +37,7 @@ export class TangleDevice {
 
     this.interface = new TangleInterface(this, reconnectionInterval);
 
-    if (connectorType != "none") {
+    if (connectorType) {
       this.interface.assignConnector(connectorType);
     }
 
@@ -1353,6 +1349,7 @@ export class TangleDevice {
 
   hideHomeButton(hide = true) {
     if (detectTangleConnect()) {
+      logging.info("Hiding home button");
       //@ts-ignore
       window.tangleConnect.hideHomeButton(hide);
     }
@@ -1360,6 +1357,7 @@ export class TangleDevice {
 
   goHome() {
     if (detectTangleConnect()) {
+      logging.info("Going home");
       //@ts-ignore
       window.tangleConnect.goHome();
     }
@@ -1367,8 +1365,9 @@ export class TangleDevice {
 
   setRotation(rotation) {
     if (detectTangleConnect()) {
+      logging.info("Setting rotation to " + rotation);
       //@ts-ignore
-      window.tangleConnect.rotation(rotation);
+      window.tangleConnect.setRotation(rotation);
     }
   }
 
