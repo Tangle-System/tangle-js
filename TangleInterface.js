@@ -236,6 +236,11 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
+
+    if(!connector_type) {
+      connector_type = "none";
+    }
+
     logging.debug(`> Assigning ${connector_type} connector...`);
 
     if ((!this.connector && connector_type === "none") || (this.connector && this.connector.type === connector_type)) {
@@ -545,7 +550,7 @@ export class TangleInterface {
         return this.connect(this.#reconnectionInterval).catch(() => {
           logging.warn("Reconnection failed.");
         });
-      }, 1000);
+      }, 2000);
     }
 
     if (this.#disconnectQuery) {
