@@ -1234,7 +1234,9 @@ criteria example:
       return Promise.reject("DeviceDisconnected");
     }
 
-    return this.#connection.updateFirmware(firmware);
+    return this.#connection.updateFirmware(firmware).finally(() => {
+      return this.disconnect();
+    });
   }
 
   destroy() {
