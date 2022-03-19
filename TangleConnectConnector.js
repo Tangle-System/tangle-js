@@ -278,6 +278,11 @@ export class TangleConnectConnector {
 
     // @ts-ignore
     window.tangleConnect.emit = (event, param) => {
+
+      if(event === "#bytecode") {
+        this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+      }
+
       this.#interfaceReference.emit(event, param);
     };
 
