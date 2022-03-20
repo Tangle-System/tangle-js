@@ -561,7 +561,7 @@ export class TangleDevice {
 
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
-  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = true) {
+  connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = false) {
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -614,7 +614,7 @@ export class TangleDevice {
 
     return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
       .then(() => {
-        return this.interface.connect(10000, false);
+        return this.interface.connect(10000);
       })
       .catch(error => {
         logging.error(error);
