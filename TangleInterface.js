@@ -256,7 +256,7 @@ export class TangleInterface {
       } else if (navigator.serial) {
         connector_type = "webserial";
       } else {
-        connector_type = "none";
+        connector_type = "webbluetooth";
       }
     }
 
