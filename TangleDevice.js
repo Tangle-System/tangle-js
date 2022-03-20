@@ -709,6 +709,16 @@ export class TangleDevice {
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
+    if (event_value > 2147483647) {
+      logging.error("Invalid event value");
+      event_value = 2147483647;
+    }
+
+    if (event_value < -2147483648) {
+      logging.error("Invalid event value");
+      event_value = -2147483648;
+    }
+
     const func = device_id => {
       const payload = is_lazy
         ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT, ...numberToBytes(event_value, 4), ...labelToBytes(event_label), device_id]
@@ -728,6 +738,11 @@ export class TangleDevice {
   // event_value example: "#00aaff"
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitColorEvent(id=" + device_ids + ")");
+
+    if (!event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
+      logging.error("Invalid event value");
+      event_value = "#000000";
+    }
 
     const func = device_id => {
       const payload = is_lazy
@@ -750,6 +765,16 @@ export class TangleDevice {
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitPercentageEvent(id=" + device_ids + ")");
 
+    if (event_value > 100.0) {
+      logging.error("Invalid event value");
+      event_value = 100.0;
+    }
+
+    if (event_value < -100.0) {
+      logging.error("Invalid event value");
+      event_value = -100.0;
+    }
+
     const func = device_id => {
       const payload = is_lazy
         ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT, ...percentageToBytes(event_value), ...labelToBytes(event_label), device_id]
@@ -770,6 +795,16 @@ export class TangleDevice {
   // !!! PARAMETER CHANGE !!!
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitLabelEvent(id=" + device_ids + ")");
+
+    if (typeof event_value !== "string") {
+      logging.error("Invalid event value");
+      event_value = "";
+    }
+
+    if (event_value.length > 5) {
+      logging.error("Invalid event value");
+      event_value = event_value.slice(0, 5);
+    }
 
     const func = device_id => {
       const payload = is_lazy
