@@ -283,7 +283,7 @@ export class TangleInterface {
               // iPhone outside Bluefy and TangleConnect
               if (detectIPhone()) {
                 // @ts-ignore
-                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Bluefy", "Otevřít App Store").then(result => {
+                window.confirm("Tento webový prohlížeč není podporován. Prosím, otevřete aplikaci v prohlížeči Bluefy.", "Otevřít App Store.").then(result => {
                   if (result) {
                     // redirect na Bluefy v app store
                     window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
@@ -293,7 +293,7 @@ export class TangleInterface {
               // Macs outside Google Chrome
               else if (detectMacintosh()) {
                 // @ts-ignore
-                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                window.confirm("Tento webový prohlížeč není podporován. Prosím, otevřete aplikaci v prohlížeči Google Chrome.", "Instalovat Google Chrome").then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
@@ -303,7 +303,7 @@ export class TangleInterface {
               // Android outside Google Chrome
               else if (detectAndroid()) {
                 // @ts-ignore
-                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                window.confirm("Tento webový prohlížeč není podporován. Prosím, otevřete aplikaci v prohlížeči Google Chrome.", "Instalovat Google Chrome").then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
@@ -313,7 +313,7 @@ export class TangleInterface {
               // Windows outside Google Chrome
               else if (detectWindows()) {
                 // @ts-ignore
-                window.confirm("Tento webový prohlížeč není podporován. Prosím otevřete aplikaci v prohlížeči Google Chrome", "Instalovat Google Chrome").then(result => {
+                window.confirm("Tento webový prohlížeč není podporován. Prosím, otevřete aplikaci v prohlížeči Google Chrome.", "Instalovat Google Chrome").then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
