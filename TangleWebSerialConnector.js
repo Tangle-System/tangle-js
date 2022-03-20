@@ -94,13 +94,20 @@ export class TangleWebSerialConnector {
     this.#feedbackCallback = null;
     this.#dataCallback = null;
 
-    this.NETWORK_WRITE = 1;
-    this.DEVICE_WRITE = 2;
-    this.CLOCK_WRITE = 3;
+    this.CODE_WRITE = 100;
+    this.CODE_READ = 200;
 
-    this.NETWORK_REQUEST = 4;
-    this.DEVICE_REQUEST = 5;
-    this.CLOCK_REQUEST = 6;
+    this.CHANNEL_NETWORK = 1;
+    this.CHANNEL_DEVICE = 2;
+    this.CHANNEL_CLOCK = 3;
+
+    this.INITIATE_NETWORK_WRITE = this.CODE_WRITE + this.CHANNEL_NETWORK;
+    this.INITIATE_DEVICE_WRITE = this.CODE_WRITE + this.CHANNEL_DEVICE;
+    this.INITIATE_CLOCK_WRITE = this.CODE_WRITE + this.CHANNEL_CLOCK;
+
+    this.INITIATE_NETWORK_READ = this.CODE_READ + this.CHANNEL_NETWORK;
+    this.INITIATE_DEVICE_READ = this.CODE_READ + this.CHANNEL_DEVICE;
+    this.INITIATE_CLOCK_READ = this.CODE_READ + this.CHANNEL_CLOCK;
   }
 
   /**
@@ -111,7 +118,9 @@ export class TangleWebSerialConnector {
   async #run() {
     while (true) {
       // try {
-      let { value, done } = await this.#receiveStreamReader.read();
+      let { value, done } = await this.#receiveStreamReader.read().catch(e => {
+        logging.error(e);
+      });
 
       // logging.debug(value);
 
@@ -123,7 +132,7 @@ export class TangleWebSerialConnector {
             this.#beginCallback && this.#beginCallback(true);
           } else if (match === ">>>END<<<") {
             this.disconnect();
-          } else if ( match === ">>>BOOT<<<") {
+          } else if (match === ">>>BOOT<<<") {
             this.disconnect();
             this.#beginCallback && this.#beginCallback(false);
             this.#feedbackCallback && this.#feedbackCallback(false);
@@ -133,7 +142,8 @@ export class TangleWebSerialConnector {
             logging.warn(match);
             this.#feedbackCallback && this.#feedbackCallback(false);
           } else if (match.match(/>>>DATA=/)) {
-            let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i);  // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
+            logging.verbose("match", match);
+            let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i); // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
             reg && this.#dataCallback && this.#dataCallback(hexStringToArray(reg[1]));
           }
 
@@ -152,6 +162,7 @@ export class TangleWebSerialConnector {
         logging.debug("Reader done");
         break;
       }
+
       // } catch (e) {
       //   logging.error(e);
       //   error = e;
@@ -254,7 +265,6 @@ criteria example:
   }
 
   connect(timeout = 10000) {
-  
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
@@ -386,19 +396,19 @@ criteria example:
       });
   }
 
-  // serial_connector_packet_type_t packet_type;
+  // serial_connector_channel_type_t channel_type;
   // uint32_t packet_size;
   // uint32_t packet_receive_timeout;
   // uint32_t packet_crc32;
   // uint32_t header_crc32;
 
-  // enum serial_connector_packet_type_t : uint32_t {
+  // enum serial_connector_channel_type_t : uint32_t {
   //   NETWORK_WRITE = 1,
   //   DEVICE_WRITE = 2,
   //   CLOCK_WRITE = 3
   // };
 
-  #write(packet_type, payload, tries = 3) {
+  #initiate(initiate_code, payload, tries) {
     if (!tries) {
       return Promise.reject("WriteFailed");
     }
@@ -410,7 +420,7 @@ criteria example:
     const header_writer = new TnglWriter(32);
     const timeout = 25 + payload.length / this.#divisor;
 
-    header_writer.writeUint32(packet_type);
+    header_writer.writeUint32(initiate_code);
     header_writer.writeUint32(payload.length);
     header_writer.writeUint32(timeout);
     header_writer.writeUint32(crc32(payload));
@@ -442,7 +452,7 @@ criteria example:
           logging.debug("Trying to recover...");
           setTimeout(() => {
             this.#transmitStreamWriter.releaseLock();
-            resolve(this.#write(packet_type, payload, tries - 1));
+            resolve(this.#initiate(initiate_code, payload, tries - 1));
           }, 100);
         }
       };
@@ -460,42 +470,40 @@ criteria example:
     });
   }
 
-  #writeNetwork(payload) {
-    return this.#write(this.NETWORK_WRITE, payload);
+  #write(channel_type, payload) {
+    return this.#initiate(this.CODE_WRITE + channel_type, payload, 3);
   }
 
-  #writeDevice(payload) {
-    return this.#write(this.DEVICE_WRITE, payload);
-  }
-
-  #writeClock(payload) {
-    return this.#write(this.CLOCK_WRITE, payload);
-  }
-
-  #request(request_type, payload, tries = 3) {
-    if (!tries) {
-      return Promise.reject("RequestFailed");
-    }
-
+  #read(channel_type) {
     let response = null;
 
     this.#dataCallback = data => {
-      response = data;
+      response = new DataView(data.buffer);
       this.#dataCallback = null;
     };
 
-    return this.#write(request_type, payload, tries).then(() => {
+    return this.#initiate(this.CODE_READ + channel_type, null, 3).then(() => {
       return response;
     });
   }
 
-  #readClock() {
-    return this.#request(this.CLOCK_REQUEST);
+  #request(channel_type, payload, read_response) {
+    return this.#write(channel_type, payload).then(() => {
+      if (read_response) {
+        return this.#read(channel_type);
+      } else {
+        return Promise.resolve(null);
+      }
+    });
   }
 
-  #requestDevice(request) {
-    return this.#request(this.DEVICE_REQUEST, request);
-  }
+  // #readClock() {
+  //   return this.#read(this.CLOCK);
+  // }
+
+  // #requestDevice(request) {
+  //   return this.#request(this.DEVICE_REQUEST, request);
+  // }
 
   // deliver handles the communication with the Tangle network in a way
   // that the command is guaranteed to arrive
@@ -511,7 +519,7 @@ criteria example:
       return Promise.resolve();
     }
 
-    return this.#writeNetwork(payload);
+    return this.#write(this.CHANNEL_NETWORK, payload);
   }
 
   // transmit handles the communication with the Tangle network in a way
@@ -528,7 +536,7 @@ criteria example:
       return Promise.resolve();
     }
 
-    return this.#writeNetwork(payload);
+    return this.#write(this.CHANNEL_NETWORK, payload);
   }
 
   // request handles the requests on the Tangle network. The command request
@@ -543,11 +551,7 @@ criteria example:
       return Promise.resolve();
     }
 
-    if (read_response) {
-      return Promise.reject("NotImplemented");
-    }
-
-    return this.#requestDevice(payload);
+    return this.#request(this.CHANNEL_DEVICE, payload, read_response);
   }
 
   // synchronizes the device internal clock with the provided TimeTrack clock
@@ -562,7 +566,7 @@ criteria example:
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
         try {
-          await this.#writeClock([...toBytes(clock.millis(), 4)]);
+          await this.#write(this.CHANNEL_CLOCK, [...toBytes(clock.millis(), 4)]);
           logging.debug("Clock write success");
           resolve();
           return;
@@ -590,9 +594,9 @@ criteria example:
       for (let index = 0; index < 3; index++) {
         await sleep(1000);
         try {
-          const bytes = await this.#readClock();
+          const bytes = await this.#read(this.CHANNEL_CLOCK);
 
-          const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          const reader = new TnglReader(bytes);
           const timestamp = reader.readInt32();
 
           // const timestamp = await this.#promise;
@@ -649,7 +653,7 @@ criteria example:
           logging.debug("OTA RESET");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-          await this.#writeDevice(bytes);
+          await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
         await sleep(100);
@@ -659,7 +663,7 @@ criteria example:
           logging.debug("OTA BEGIN");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-          await this.#writeDevice(bytes);
+          await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
         await sleep(8000); // need to wait 10 seconds to let the ESP erase the flash.
@@ -675,7 +679,7 @@ criteria example:
 
             const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
 
-            await this.#writeDevice(bytes);
+            await this.#write(this.CHANNEL_DEVICE, bytes);
             written += index_to - index_from;
 
             const percentage = Math.floor((written * 10000) / firmware.length) / 100;
@@ -695,7 +699,7 @@ criteria example:
           logging.debug("OTA END");
 
           const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-          await this.#writeDevice(bytes);
+          await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
         await sleep(3000);

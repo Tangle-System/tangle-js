@@ -961,7 +961,7 @@ criteria example:
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
-  connect(timeout = 5000, supportLegacy = true) {
+  connect(timeout = 5000, supportLegacy = false) {
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
