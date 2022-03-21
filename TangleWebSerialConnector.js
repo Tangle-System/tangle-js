@@ -702,9 +702,9 @@ criteria example:
           await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
-        await sleep(3000);
+        await sleep(2000);
 
-        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.info("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
