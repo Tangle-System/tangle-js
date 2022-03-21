@@ -913,6 +913,33 @@ export class TangleInterface {
 
               case Query.TYPE_FIRMWARE_UPDATE:
                 await this.requestWakeLock();
+
+                var last_update_time;
+                var last_update_percentage;
+                last_update_time = new Date().getTime();
+                last_update_percentage = 0;
+
+                const ota_handle = this.on("ota_progress", (value)=>{
+                  const now = new Date().getTime();
+
+                  const time_delta = now - last_update_time;
+                  logging.verbose("time_delta:", time_delta);
+                  last_update_time = now;
+
+                  const percentage_delta = value - last_update_percentage;
+                  logging.verbose("percentage_delta:", percentage_delta);
+                  last_update_percentage = value;
+
+                  const percentage_left = 100.0 - value;
+                  logging.verbose("percentage_left:", percentage_left);
+
+
+                  const time_left = (percentage_left / percentage_delta) * time_delta;
+                  logging.verbose("time_left:", time_left);
+
+                  this.emit("ota_timeleft", time_left);
+                });
+
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
