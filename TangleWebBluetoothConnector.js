@@ -427,7 +427,6 @@ export class WebBLEConnection {
             logging.debug(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
-            this.#interfaceReference.emit("ota_timeleft", percentage);
 
             index_from += chunk_size;
             index_to = index_from + chunk_size;
@@ -444,7 +443,9 @@ export class WebBLEConnection {
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
-        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        await sleep(2000);
+
+        logging.info("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
