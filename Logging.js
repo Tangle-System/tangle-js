@@ -20,3 +20,5 @@ export function setLoggingLevel(level) {
   logging.debug = level >= 4 ? console.log : function (...msg) {};
   logging.verbose = level >= 5 ? console.log : function (...msg) {};
 }
+
+window.setTJSLoggingLevel = setLoggingLevel;

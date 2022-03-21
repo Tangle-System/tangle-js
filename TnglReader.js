@@ -50,9 +50,16 @@ export class TnglReader {
   readString(bufferLength) {
     if (this._index + bufferLength <= this._dataView.byteLength) {
       let string = "";
+      let endOfTheString = false;
 
       for (let i = 0; i < bufferLength; i++) {
-        string += String.fromCharCode(this._dataView.getUint8(this._index + i));
+        let charCode = this._dataView.getUint8(this._index + i);
+        if (charCode === 0) {
+          endOfTheString = true;
+        }
+        if (!endOfTheString) {
+          string += String.fromCharCode(charCode);
+        }
       }
 
       return string;
