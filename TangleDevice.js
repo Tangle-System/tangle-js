@@ -1239,7 +1239,7 @@ export class TangleDevice {
       }
       logging.debug(`version=${version}`);
 
-      return version;
+      return  version.trim();
     });
   }
 

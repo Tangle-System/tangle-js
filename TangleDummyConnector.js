@@ -15,12 +15,14 @@ export class TangleDummyConnector {
   #selected;
   #connected;
   #enableErrors;
+  #FWVersion;
 
-  constructor(interfaceReference, enableErrors = false) {
+  constructor(interfaceReference, enableErrors = false, dummyFWVersion = "DUMMY_0.0.0_00000000") {
     this.type = enableErrors ? "edummy" : "dummy";
     
     this.#interfaceReference = interfaceReference;
     this.#enableErrors = enableErrors;
+    this.#FWVersion = dummyFWVersion;
 
     this.#selected = false;
     this.#connected = false;
@@ -430,7 +432,7 @@ criteria example:
             writer.writeUint32(request_uuid);
             writer.writeUint8(error_code);
 
-            writer.writeString("DUMMY_0.0.0_00000000", 32);
+            writer.writeString(this.#FWVersion, 32);
 
             resolve(writer.bytes);
           }
