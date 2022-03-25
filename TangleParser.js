@@ -206,69 +206,156 @@ export class TnglCompiler {
   }
 
   // takes in time string token like "1.2d+9h2m7.2s-123t" and appeds to payload the total time in ms (tics) as a int32_t: [FLAG.TIMESTAMP, BYTE4, BYTE2, BYTE1, BYTE0]
-  compileTimestamp(timestamp) {
+  compileTimestamp(value) {
     // logging.debug(timestamp);
 
-    timestamp.replace(/_/g, ""); // replaces all '_' with nothing
+    // timestamp = timestamp.replace(/_/g, ""); // replaces all '_' with nothing
 
-    let total_tics = 0;
+    // let total_tics = 0;
 
-    while (timestamp) {
-      let reg = timestamp.match(/([+-]?[0-9]*[.]?[0-9]+)([dhmst])/); // for example gets "-1.4d" from "-1.4d23.2m1s"
+    // while (timestamp) {
+    //   let reg = timestamp.match(/([+-]?[0-9]*[.]?[0-9]+)(d|h|m|s|ms)/i); // for example gets "-1.4d" from "-1.4d23.2m1s"
 
-      if (!reg) {
-        // if the regex match failes, then the algorithm is done
-        if (timestamp != "") {
-          logging.error("Error while parsing timestamp");
-          logging.debug("Leftover string:", timestamp);
-        }
-        break;
-      }
+    //   if (!reg) {
+    //     // if the regex match failes, then the algorithm is done
+    //     if (timestamp != "") {
+    //       logging.error("Error while parsing timestamp");
+    //       logging.debug("Leftover string:", timestamp);
+    //     }
+    //     break;
+    //   }
 
-      let value = reg[0]; // gets "-1.4d" from "-1.4d"
-      let unit = reg[2]; // gets "d" from "-1.4d"
-      let number = parseFloat(reg[1]); // gets "-1.4" from "-1.4d"
+    //   let value = reg[0]; // gets "-1.4d" from "-1.4d"
+    //   let number = parseFloat(reg[1]); // gets "-1.4" from "-1.4d"
+    //   let unit = reg[2]; // gets "d" from "-1.4d"
 
-      // logging.debug("value:", value);
-      // logging.debug("unit:", unit);
-      // logging.debug("number:", number);
+    //   logging.debug(`value: ${value}, unit: ${unit}, number: ${number}`);
 
-      switch (unit) {
-        case "d":
-          total_tics += number * 86400000;
-          break;
+    //   switch (unit) {
+    //     case "d":
+    //       total_tics += number * 86400000;
+    //       break;
 
-        case "h":
-          total_tics += number * 3600000;
-          break;
+    //     case "h":
+    //       total_tics += number * 3600000;
+    //       break;
 
-        case "m":
-          total_tics += number * 60000;
-          break;
+    //     case "m":
+    //       total_tics += number * 60000;
+    //       break;
 
-        case "s":
-          total_tics += number * 1000;
-          break;
+    //     case "s":
+    //       total_tics += number * 1000;
+    //       break;
 
-        case "t":
-          total_tics += number;
-          break;
+    //     case "t":
+    //       total_tics += number;
+    //       break;
 
-        default:
-          logging.error("Error while parsing timestamp");
-          break;
-      }
+    //     default:
+    //       logging.error("Error while parsing timestamp");
+    //       break;
+    //   }
 
-      timestamp = timestamp.replace(value, ""); // removes one value from the string
+    //   timestamp = timestamp.replace(value, ""); // removes one value from the string
+    // }
+
+    // if (total_tics === 0) {
+    //   this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
+    // } else {
+    //   this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP);
+    //   this.#tnglWriter.writeInt32(total_tics);
+    // }
+
+    ///////////////////////////////
+
+    if (!value) {
+      this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
+      return;
     }
 
-    // logging.debug("total_tics:", total_tics);
+    value = value.trim();
 
-    if (total_tics === 0) {
+    if (value == "inf" || value == "Inf" || value == "infinity" || value == "Infinity") {
+      this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
+      return;
+    }
+
+    if (value == "-inf" || value == "-Inf" || value == "-infinity" || value == "-Infinity") {
+      this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MIN);
+      return;
+    }
+
+    // if the value is a number
+    if (!isNaN(value)) {
+      value += "s";
+    }
+
+    let days = value.match(/([+-]?[0-9]+[.]?[0-9]*|[.][0-9]+)\s*d/gi);
+    let hours = value.match(/([+-]?[0-9]+[.]?[0-9]*|[.][0-9]+)\s*h/gi);
+    let minutes = value.match(/([+-]?[0-9]+[.]?[0-9]*|[.][0-9]+)\s*m(?!s)/gi);
+    let secs = value.match(/([+-]?[0-9]+[.]?[0-9]*|[.][0-9]+)\s*s/gi);
+    let msecs = value.match(/([+-]?[0-9]+[.]?[0-9]*|[.][0-9]+)\s*(t|ms)/gi);
+
+    // console.log(days);
+    // console.log(hours);
+    // console.log(minutes);
+    // console.log(secs);
+    // console.log(msecs);
+
+    let total = 0;
+
+    while (days && days.length) {
+      let d = parseFloat(days[0]);
+      total += d * 86400000;
+      days.shift();
+    }
+
+    while (hours && hours.length) {
+      let h = parseFloat(hours[0]);
+      total += h * 3600000;
+      hours.shift();
+    }
+
+    while (minutes && minutes.length) {
+      let m = parseFloat(minutes[0]);
+      total += m * 60000;
+      minutes.shift();
+    }
+
+    while (secs && secs.length) {
+      let s = parseFloat(secs[0]);
+      total += s * 1000;
+      secs.shift();
+    }
+
+    while (msecs && msecs.length) {
+      let ms = parseFloat(msecs[0]);
+      total += ms;
+      msecs.shift();
+    }
+
+    logging.debug(`total=${total}`);
+
+    if (total >= 2147483647) {
+      this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
+      return;
+    }
+
+    else if (total <= -2147483648) {
+      this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MIN);
+      return;
+    }
+
+    else if (total === 0) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
-    } else {
+      return;
+    } 
+    
+    else {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP);
-      this.#tnglWriter.writeInt32(total_tics);
+      this.#tnglWriter.writeInt32(total);
+      return;
     }
   }
 
@@ -711,7 +798,7 @@ export class TnglCodeParser {
     htmlrgb: /#[0-9a-f]{6}/i,
     infinity: /[+-]?Infinity/,
     string: /"[\w ]*"/,
-    timestamp: /(_?[+-]?[0-9]*[.]?[0-9]+[dhmst])+/,
+    timestamp: /(_?[+-]?[0-9]*[.]?[0-9]+(d|h|m(?!s)|s|t|ms))+/,
     label: /\$[\w]*/,
     char: /-?'[\W\w]'/,
     byte: /0x[0-9a-f][0-9a-f](?![0-9a-f])/i,

@@ -1,3 +1,5 @@
+import { logging } from "./Logging.js";
+
 export function toBytes(value, byteCount) {
   var byteArray = [];
   for (let index = 0; index < byteCount; index++) {
@@ -552,3 +554,92 @@ function componentToHex(c) {
 export function rgbToHex(r, g, b) {
   return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 }
+
+export function validateTimestamp(value) {
+  if (!value) {
+    return [0, "0s"];
+  }
+
+  // if the value is a number
+  if (!isNaN(value)) {
+    value += "s";
+  }
+
+  value = value.trim();
+
+  if (value == "inf" || value == "Inf" || value == "infinity" || value == "Infinity") {
+    return [2147483647, "Infinity"];
+  }
+
+  if (value == "-inf" || value == "-Inf" || value == "-infinity" || value == "-Infinity") {
+    return [-2147483648, "-Infinity"];
+  }
+
+  let days = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*d/gi);
+  let hours = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*h/gi);
+  let minutes = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*m(?!s)/gi);
+  let secs = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*s/gi);
+  let msecs = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*(t|ms)/gi);
+
+  let result = "";
+  let total = 0;
+
+  logging.verbose(days);
+  logging.verbose(hours);
+  logging.verbose(minutes);
+  logging.verbose(secs);
+  logging.verbose(msecs);
+
+  while (days && days.length) {
+    let d = parseFloat(days[0].replace(/\s/, ""));
+    result += d + "d ";
+    total += d * 86400000;
+    days.shift();
+  }
+
+  while (hours && hours.length) {
+    let h = parseFloat(hours[0].replace(/\s/, ""));
+    result += h + "h ";
+    total += h * 3600000;
+    hours.shift();
+  }
+
+  while (minutes && minutes.length) {
+    let m = parseFloat(minutes[0].replace(/\s/, ""));
+    result += m + "m ";
+    total += m * 60000;
+    minutes.shift();
+  }
+
+  while (secs && secs.length) {
+    let s = parseFloat(secs[0].replace(/\s/, ""));
+    result += s + "s ";
+    total += s * 1000;
+    secs.shift();
+  }
+
+  while (msecs && msecs.length) {
+    let ms = parseFloat(msecs[0].replace(/\s/, ""));
+    result += ms + "ms ";
+    total += ms;
+    msecs.shift();
+  }
+
+  if (total >= 2147483647) {
+    return [2147483647, "Infinity"];
+  } 
+  
+  else if (total <= -2147483648) {
+    return [-2147483648, "-Infinity"];
+  } 
+  
+  else if (result === "") {
+    return [0, "0s"];
+  } 
+  
+  else {
+    return [total, result.trim()];
+  }
+}
+
+window.validateTimestamp = validateTimestamp;
