@@ -335,7 +335,7 @@ export class TnglCompiler {
       msecs.shift();
     }
 
-    logging.debug(`total=${total}`);
+    logging.verbose(`total=${total}`);
 
     if (total >= 2147483647) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
