@@ -419,7 +419,7 @@ export class TangleDevice {
           while (!newDeviceId || (typeof newDeviceId !== "number" && !newDeviceId.match(/^[\d]+/))) {
             newDeviceId = await window
               // @ts-ignore
-              .prompt(t("Prosím, zadejte ID zařízení v rozmezí 0-255"), "0", t("Přidělte ID svému zařízení"), "number", { min: 0, max: 255 });
+              .prompt(t("Prosím, zadejte ID zařízení v rozmezí 0-255."), "0", t("Přidělte ID svému zařízení"), "number", { min: 0, max: 255 });
             // @ts-ignore
 
             if (!newDeviceId) {
@@ -543,7 +543,7 @@ export class TangleDevice {
         logging.debug(error);
         if (error === "BluefyError") {
           // @ts-ignore
-          window.alert(t("Pokud vlastníte lampu se zvlněným podstavcem, kterou se vám nedaří připojit, obraťte se prosím, na naši podporu."), t("Spárování nové lampy se nezdařilo"));
+          window.alert(t("Zkontrolujte, prosím, že máte aktivní Bluetooth v telefonu a lampa je zapojená v zásuvce."), t("Spárování nové lampy se nezdařilo"));
           return;
         }
         if (error === "UserCanceledSelection") {
@@ -621,11 +621,11 @@ export class TangleDevice {
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
-          window.alert(t('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".'), t("Připojení selhalo."));
+          window.alert(t('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".'), t("Připojení selhalo"));
           return;
         }
         //@ts-ignore
-        window.alert(t("Zkuste to, prosím, později.") + "\n\n" + t("Chyba: ") + error.toString(), t("Připojení selhalo."));
+        window.alert(t("Zkuste to, prosím, později.") + "\n\n" + t("Chyba: ") + error.toString(), t("Připojení selhalo"));
       });
   }
 
