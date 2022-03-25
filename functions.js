@@ -243,8 +243,6 @@ export function detectTangleConnect() {
   return tangleConnectDetected;
 }
 
-
-
 //////////////////////////////////////////////////////
 
 export function computeTnglFingerprint(tngl_bytes, tngl_label) {
@@ -506,7 +504,7 @@ const CRC8_TABLE =
   "005EBCE2613FDD83C29C7E20A3FD1F419DC3217FFCA2401E5F01E3BD3E6082DC237D9FC1421CFEA0E1BF5D0380DE3C62BEE0025CDF81633D7C22C09E1D43A1FF4618FAA427799BC584DA3866E5BB5907DB856739BAE406581947A5FB7826C49A653BD987045AB8E6A7F91B45C6987A24F8A6441A99C7257B3A6486D85B05E7B98CD2306EEDB3510F4E10F2AC2F7193CD114FADF3702ECC92D38D6F31B2EC0E50AFF1134DCE90722C6D33D18F0C52B0EE326C8ED0530DEFB1F0AE4C1291CF2D73CA947628ABF517490856B4EA6937D58B5709EBB536688AD495CB2977F4AA4816E9B7550B88D6346A2B7597C94A14F6A8742AC896154BA9F7B6E80A54D7896B35";
 
 export function hexStringToArray(str) {
-  if(!str.length) {
+  if (!str.length) {
     return [];
   }
   var arr = str.match(/[0-9a-f]{2}/gi); // convert into array of hex pairs
@@ -560,9 +558,8 @@ export function validateTimestamp(value) {
     return [0, "0s"];
   }
 
-  // if the value is a number
-  if (!isNaN(value)) {
-    value += "s";
+  if (typeof value == "number") {
+    value = value.toString();
   }
 
   value = value.trim();
@@ -573,6 +570,11 @@ export function validateTimestamp(value) {
 
   if (value == "-inf" || value == "-Inf" || value == "-infinity" || value == "-Infinity") {
     return [-2147483648, "-Infinity"];
+  }
+
+  // if the string value is a number
+  if (!isNaN(value)) {
+    value += "s";
   }
 
   let days = value.match(/([+-]? *[0-9]+[.]?[0-9]*|[.][0-9]+)\s*d/gi);
@@ -627,17 +629,11 @@ export function validateTimestamp(value) {
 
   if (total >= 2147483647) {
     return [2147483647, "Infinity"];
-  } 
-  
-  else if (total <= -2147483648) {
+  } else if (total <= -2147483648) {
     return [-2147483648, "-Infinity"];
-  } 
-  
-  else if (result === "") {
+  } else if (result === "") {
     return [0, "0s"];
-  } 
-  
-  else {
+  } else {
     return [total, result.trim()];
   }
 }
