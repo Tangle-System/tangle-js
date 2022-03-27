@@ -71,6 +71,8 @@ export const DEVICE_FLAGS = Object.freeze({
 export const NETWORK_FLAGS = Object.freeze({
   /* command flags */
 
+  FLAG_RSSI_DATA: 100,
+
   FLAG_CONF_BYTES: 240,
   FLAG_TNGL_BYTES: 248,
   FLAG_SET_TIMELINE: 249,
@@ -154,6 +156,10 @@ export class TangleInterface {
 
   #reconnectionInterval;
 
+  #lastUpdateTime;
+  #lastUpdatePercentage;
+
+
   constructor(deviceReference, reconnectionInterval = 1000) {
     this.#deviceReference = deviceReference;
 
@@ -174,6 +180,31 @@ export class TangleInterface {
     this.#disconnectQuery = null;
 
     this.#reconnectionInterval = reconnectionInterval;
+
+    this.#lastUpdateTime = new Date().getTime();
+    this.#lastUpdatePercentage = 0;
+
+    this.#eventEmitter.on("ota_progress", (value)=>{
+
+      const now = new Date().getTime();
+
+      const time_delta = now - this.lastUpdateTime;
+      logging.verbose("time_delta:", time_delta);
+      this.lastUpdateTime = now;
+
+      const percentage_delta = value - this.lastUpdatePercentage;
+      logging.verbose("percentage_delta:", percentage_delta);
+      this.lastUpdatePercentage = value;
+
+      const percentage_left = 100.0 - value;
+      logging.verbose("percentage_left:", percentage_left);
+
+
+      const time_left = (percentage_left / percentage_delta) * time_delta;
+      logging.verbose("time_left:", time_left);
+
+      this.emit("ota_timeleft", time_left);
+    });
 
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
@@ -481,7 +512,7 @@ export class TangleInterface {
     // return this.connector.selected();
   }
 
-  connect(timeout = 10000, supportLegacy = true) {
+  connect(timeout = 10000, supportLegacy = false) {
     if (timeout < 1000) {
       logging.error("Timeout is too short.");
       return Promise.reject("InvalidTimeout");
@@ -913,33 +944,6 @@ export class TangleInterface {
 
               case Query.TYPE_FIRMWARE_UPDATE:
                 await this.requestWakeLock();
-
-                var last_update_time;
-                var last_update_percentage;
-                last_update_time = new Date().getTime();
-                last_update_percentage = 0;
-
-                const ota_handle = this.on("ota_progress", (value)=>{
-                  const now = new Date().getTime();
-
-                  const time_delta = now - last_update_time;
-                  logging.verbose("time_delta:", time_delta);
-                  last_update_time = now;
-
-                  const percentage_delta = value - last_update_percentage;
-                  logging.verbose("percentage_delta:", percentage_delta);
-                  last_update_percentage = value;
-
-                  const percentage_left = 100.0 - value;
-                  logging.verbose("percentage_left:", percentage_left);
-
-
-                  const time_left = (percentage_left / percentage_delta) * time_delta;
-                  logging.verbose("time_left:", time_left);
-
-                  this.emit("ota_timeleft", time_left);
-                });
-
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
@@ -987,7 +991,7 @@ export class TangleInterface {
   process(bytecode) {
     let tangleBytes = new TnglReader(bytecode);
 
-    logging.debug(tangleBytes);
+    logging.verbose(tangleBytes);
 
     while (tangleBytes.available > 0) {
       switch (tangleBytes.peekFlag()) {
@@ -1135,9 +1139,36 @@ export class TangleInterface {
           }
           break;
 
+          case NETWORK_FLAGS.FLAG_RSSI_DATA:
+            {
+              let obj = {};
+
+              logging.debug("FLAG_RSSI_DATA");
+              tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_RSSI_DATA
+
+              obj.device_mac = tangleBytes.readBytes(6).map(v => v.toString(16).padStart(2,"0")).join(":");
+              logging.verbose("obj.device_mac =", obj.device_mac);
+
+              const rssi_data_items = tangleBytes.readUint32();
+              obj.rssi = [];
+
+              for (let i = 0; i < rssi_data_items; i++) {
+                let item = {};
+                item.mac = tangleBytes.readBytes(6).map(v => v.toString(16).padStart(2,"0")).join(":");
+                item.value = tangleBytes.readInt8();
+                logging.verbose("mac =", item.mac);
+                logging.verbose("rssi =", item.value);
+                obj.rssi.push(item);
+              }
+
+              logging.debug(obj);
+              this.#eventEmitter.emit("rssi_data", obj);
+            }
+            break;
+
         default:
           logging.error("ERROR");
-          //tangleBytes.readUint8();
+          throw "UnknownNetworkFlag";
           break;
       }
     }
