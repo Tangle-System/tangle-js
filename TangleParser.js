@@ -701,10 +701,10 @@ export class TnglCodeParser {
   }
 
   parseTnglCode(tngl_code) {
-    logging.debug(tngl_code);
+    logging.verbose(tngl_code);
 
     const tokens = this.#tokenize(tngl_code, TnglCodeParser.#parses);
-    logging.debug(tokens);
+    logging.verbose(tokens);
 
     for (let index = 0; index < tokens.length; index++) {
       const element = tokens[index];
@@ -788,7 +788,7 @@ export class TnglCodeParser {
 
     let tnglBytes = this.#compiler.tnglBytes;
 
-    logging.debug(tnglBytes);
+    logging.verbose(tnglBytes);
     logging.info(uint8ArrayToHexString(tnglBytes));
     return tnglBytes;
   }

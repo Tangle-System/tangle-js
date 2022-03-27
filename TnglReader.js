@@ -10,7 +10,7 @@ export class TnglReader {
 
       for (let i = byteCount - 1; i >= 0; i--) {
         value <<= 8;
-        value |= this._dataView.getUint8(this._index + i);
+        value |= this._dataView.getInt8(this._index + i);
       }
 
       return unsigned ? value >>> 0 : value;
@@ -75,6 +75,10 @@ export class TnglReader {
 
   readFlag() {
     return this.readValue(1, true);
+  }
+
+  readInt8() {
+    return this.readValue(1, false);
   }
 
   readUint8() {
