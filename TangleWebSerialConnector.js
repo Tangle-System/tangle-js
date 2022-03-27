@@ -120,6 +120,7 @@ export class TangleWebSerialConnector {
       // try {
       let { value, done } = await this.#receiveStreamReader.read().catch(e => {
         logging.error(e);
+        return { value: null, done: true };
       });
 
       // logging.debug(value);
@@ -321,7 +322,7 @@ criteria example:
                 const passed = new Date().getTime() - start;
                 resolve(this.connect(timeout - passed));
               }
-            }, 5000);
+            }, 1000);
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();

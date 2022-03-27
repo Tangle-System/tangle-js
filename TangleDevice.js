@@ -620,11 +620,15 @@ export class TangleDevice {
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
-          window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
+          // window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
+          return;
+        }
+        if(error === "SecurityError") {
+          console.error(error);
           return;
         }
         //@ts-ignore
-        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo.");
+        // window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo."); // Problematicke když se objevi dva popupy
       });
   }
 
