@@ -159,7 +159,6 @@ export class TangleInterface {
   #lastUpdateTime;
   #lastUpdatePercentage;
 
-
   constructor(deviceReference, reconnectionInterval = 1000) {
     this.#deviceReference = deviceReference;
 
@@ -184,8 +183,7 @@ export class TangleInterface {
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
 
-    this.#eventEmitter.on("ota_progress", (value)=>{
-
+    this.#eventEmitter.on("ota_progress", value => {
       const now = new Date().getTime();
 
       const time_delta = now - this.lastUpdateTime;
@@ -198,7 +196,6 @@ export class TangleInterface {
 
       const percentage_left = 100.0 - value;
       logging.verbose("percentage_left:", percentage_left);
-
 
       const time_left = (percentage_left / percentage_delta) * time_delta;
       logging.verbose("time_left:", time_left);
@@ -267,8 +264,7 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-
-    if(!connector_type) {
+    if (!connector_type) {
       connector_type = "none";
     }
 
@@ -300,20 +296,23 @@ export class TangleInterface {
             break;
 
           case "dummy":
-            this.connector = new TangleDummyConnector(this, false, );
+            this.connector = new TangleDummyConnector(this, false);
             break;
 
           case "vdummy":
-            return window
-            // @ts-ignore
-            .prompt("Simulace FW verze dummy connecoru", "DUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
-              placeholder: "DUMMY_0.0.0_00000000",
-              regex: /^[\w\d]+_\d.\d.\d_[\d]{8}/,
-              invalidText: "FW verze není správná",
-              maxlength: 32
-            }).then(version=>{
-              this.connector = new TangleDummyConnector(this, false, version);
-            })
+            return (
+              window
+                // @ts-ignore
+                .prompt("Simulace FW verze dummy connecoru", "DUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
+                  placeholder: "DUMMY_0.0.0_00000000",
+                  regex: /^[\w\d]+_\d.\d.\d_[\d]{8}/,
+                  invalidText: "FW verze není správná",
+                  maxlength: 32,
+                })
+                .then(version => {
+                  this.connector = new TangleDummyConnector(this, false, version);
+                })
+            );
 
             break;
 
@@ -1139,35 +1138,41 @@ export class TangleInterface {
           }
           break;
 
-          case NETWORK_FLAGS.FLAG_RSSI_DATA:
-            {
-              let obj = {};
+        case NETWORK_FLAGS.FLAG_RSSI_DATA:
+          {
+            let obj = {};
 
-              logging.debug("FLAG_RSSI_DATA");
-              tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_RSSI_DATA
+            logging.verbose("FLAG_RSSI_DATA");
+            tangleBytes.readFlag(); // NETWORK_FLAGS.FLAG_RSSI_DATA
 
-              obj.device_mac = tangleBytes.readBytes(6).map(v => v.toString(16).padStart(2,"0")).join(":");
-              logging.verbose("obj.device_mac =", obj.device_mac);
+            obj.device_mac = tangleBytes
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":");
+            logging.verbose("obj.device_mac =", obj.device_mac);
 
-              const rssi_data_items = tangleBytes.readUint32();
-              obj.rssi = [];
+            const rssi_data_items = tangleBytes.readUint32();
+            obj.rssi = [];
 
-              for (let i = 0; i < rssi_data_items; i++) {
-                let item = {};
-                item.mac = tangleBytes.readBytes(6).map(v => v.toString(16).padStart(2,"0")).join(":");
-                item.value = tangleBytes.readInt8();
-                logging.verbose("mac =", item.mac);
-                logging.verbose("rssi =", item.value);
-                obj.rssi.push(item);
-              }
-
-              logging.debug(obj);
-              this.#eventEmitter.emit("rssi_data", obj);
+            for (let i = 0; i < rssi_data_items; i++) {
+              let item = {};
+              item.mac = tangleBytes
+                .readBytes(6)
+                .map(v => v.toString(16).padStart(2, "0"))
+                .join(":");
+              item.value = tangleBytes.readInt8();
+              logging.verbose("mac =", item.mac);
+              logging.verbose("rssi =", item.value);
+              obj.rssi.push(item);
             }
-            break;
+
+            logging.debug(obj);
+            this.#eventEmitter.emit("rssi_data", obj);
+          }
+          break;
 
         default:
-          logging.error("ERROR");
+          logging.error("ERROR flag=", tangleBytes.readFlag());
           throw "UnknownNetworkFlag";
           break;
       }
