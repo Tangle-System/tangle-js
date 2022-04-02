@@ -184,6 +184,24 @@ export class TangleInterface {
     this.#lastUpdatePercentage = 0;
 
     this.#eventEmitter.on("ota_progress", value => {
+      // const now = new Date().getTime();
+
+      // const time_delta = now - this.lastUpdateTime;
+      // logging.verbose("time_delta:", time_delta);
+      // this.lastUpdateTime = now;
+
+      // const percentage_delta = value - this.lastUpdatePercentage;
+      // logging.verbose("percentage_delta:", percentage_delta);
+      // this.lastUpdatePercentage = value;
+
+      // const percentage_left = 100.0 - value;
+      // logging.verbose("percentage_left:", percentage_left);
+
+      // const time_left = (percentage_left / percentage_delta) * time_delta;
+      // logging.verbose("time_left:", time_left);
+
+      // this.emit("ota_timeleft", time_left);
+
       const now = new Date().getTime();
 
       const time_delta = now - this.lastUpdateTime;
