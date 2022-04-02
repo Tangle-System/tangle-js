@@ -8,15 +8,23 @@ export class TnglReader {
     if (this._index + byteCount <= this._dataView.byteLength) {
       let value = 0;
 
-      for (let i = byteCount - 1; i >= 0; i--) {
-        value <<= 8;
-        value |= this._dataView.getUint8(this._index + i);
+      if (byteCount == 1) {
+        if (unsigned) {
+          value = this._dataView.getUint8(this._index);
+        } else {
+          value = this._dataView.getInt8(this._index);
+        }
+      } else {
+        for (let i = byteCount - 1; i >= 0; i--) {
+          value <<= 8;
+          value |= this._dataView.getUint8(this._index + i);
+        }
       }
 
       return unsigned ? value >>> 0 : value;
     } else {
-      console.warn("End of the data");
-      throw "Peeked out of range";
+      console.error("End of the data");
+      throw "PeekOutOfRange";
     }
   }
 
@@ -42,7 +50,7 @@ export class TnglReader {
 
       return bytes;
     } else {
-      console.warn("End of the data");
+      console.error("End of the data");
       throw "Bytes read out of range";
     }
   }
@@ -75,6 +83,10 @@ export class TnglReader {
 
   readFlag() {
     return this.readValue(1, true);
+  }
+
+  readInt8() {
+    return this.readValue(1, false);
   }
 
   readUint8() {

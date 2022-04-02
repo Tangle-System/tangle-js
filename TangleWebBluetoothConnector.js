@@ -1068,6 +1068,7 @@ criteria example:
 
           clearTimeout(timeout_handle);
 
+          logging.debug("> Getting the Bluetooth Service...");
           return server.getPrimaryService(this.TANGLE_SERVICE_UUID);
         }
       })

@@ -624,6 +624,10 @@ export class TangleDevice {
           window.alert(t('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".'), t("Připojení selhalo"));
           return;
         }
+        if (error === "SecurityError") {
+          console.error(error);
+          return;
+        }
         //@ts-ignore
         window.alert(t("Zkuste to, prosím, později.") + "\n\n" + t("Chyba: ") + error.toString(), t("Připojení selhalo"));
       });
@@ -1239,7 +1243,7 @@ export class TangleDevice {
       }
       logging.debug(`version=${version}`);
 
-      return  version.trim();
+      return version.trim();
     });
   }
 
