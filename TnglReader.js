@@ -30,13 +30,16 @@ export class TnglReader {
     // }
     // return unsigned ? value >>> 0 : value;
 
-    value = value >>> 0;
-
     if (unsigned) {
-      return value;
+      return value >>> 0;
     } else {
-      if ((value & masks[byteCount]) != 0) {
-        return value - offsets[byteCount];
+      if (byteCount < 4) {
+        value >>>= 0;
+        if ((value & masks[byteCount]) != 0) {
+          return value - offsets[byteCount];
+        }
+      } else {
+        return value;
       }
     }
   }
