@@ -1187,7 +1187,7 @@ export class TangleInterface {
                 .readBytes(6)
                 .map(v => v.toString(16).padStart(2, "0"))
                 .join(":");
-              item.value = tangleBytes.readInt16() >> 8;
+              item.value = tangleBytes.readInt16() / 256;
               logging.verbose("mac =", item.mac);
               logging.verbose("rssi =", item.value);
               obj.rssi.push(item);
