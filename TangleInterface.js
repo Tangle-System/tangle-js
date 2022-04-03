@@ -183,6 +183,15 @@ export class TangleInterface {
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
 
+    // this.#otaStart = new Date().getTime();
+
+    // this.#eventEmitter.on("ota_status", value => {
+      
+    //   switch(value) {
+
+    //   }
+    // });
+
     this.#eventEmitter.on("ota_progress", value => {
       // const now = new Date().getTime();
 
@@ -1178,7 +1187,7 @@ export class TangleInterface {
                 .readBytes(6)
                 .map(v => v.toString(16).padStart(2, "0"))
                 .join(":");
-              item.value = tangleBytes.readInt8();
+              item.value = tangleBytes.readInt32() / 1000;
               logging.verbose("mac =", item.mac);
               logging.verbose("rssi =", item.value);
               obj.rssi.push(item);
