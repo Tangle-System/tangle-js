@@ -42,6 +42,9 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
 
+  FLAG_CONNECTED_PEERS_INFO_REQUEST: 224,
+  FLAG_CONNECTED_PEERS_INFO_RESPONSE: 225,
+
   FLAG_DEVICE_CONFIG_REQUEST: 226,
   FLAG_DEVICE_CONFIG_RESPONSE: 227,
   FLAG_ROM_PHY_VDD33_REQUEST: 228,
@@ -72,6 +75,8 @@ export const NETWORK_FLAGS = Object.freeze({
   /* command flags */
 
   FLAG_RSSI_DATA: 100,
+  FLAG_PEER_CONNECTED: 101,
+  FLAG_PEER_DISCONNECTED: 102,
 
   FLAG_CONF_BYTES: 240,
   FLAG_TNGL_BYTES: 248,
@@ -186,7 +191,7 @@ export class TangleInterface {
     // this.#otaStart = new Date().getTime();
 
     // this.#eventEmitter.on("ota_status", value => {
-      
+
     //   switch(value) {
 
     //   }
@@ -1195,6 +1200,34 @@ export class TangleInterface {
 
             logging.debug(obj);
             this.#eventEmitter.emit("rssi_data", obj);
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_PEER_CONNECTED:
+          {
+            logging.verbose("FLAG_PEER_CONNECTED");
+            tangleBytes.readFlag(); // TangleFlag::FLAG_PEER_CONNECTED
+
+            const device_mac = tangleBytes
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":");
+
+            this.#eventEmitter.emit("peer_connected", device_mac);
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_PEER_DISCONNECTED:
+          {
+            logging.verbose("FLAG_PEER_DISCONNECTED");
+            tangleBytes.readFlag(); // TangleFlag::FLAG_PEER_DISCONNECTED
+
+            const device_mac = tangleBytes
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":");
+
+            this.#eventEmitter.emit("peer_connected", device_mac);
           }
           break;
 

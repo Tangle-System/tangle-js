@@ -1413,4 +1413,57 @@ export class TangleDevice {
   setDebugLevel(level) {
     setLoggingLevel(level);
   }
+
+  getConnectedPeersInfo() {
+    logging.debug("> Requesting connected peers info...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_CONNECTED_PEERS_INFO_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      logging.debug("> Got response:", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_CONNECTED_PEERS_INFO_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      logging.debug(`error_code=${error_code}`);
+
+      let count = 0;
+      let peers = [];
+
+      if (error_code === 0) {
+      
+        count = reader.readUint8();
+
+        for (let index = 0; index < count; index++) {
+         
+          
+          peers.push(reader
+            .readBytes(6)
+            .map(v => v.toString(16).padStart(2, "0"))
+            .join(":"));
+          
+        }
+      
+      
+      } else {
+        throw "Fail";
+      }
+      logging.debug(`count=${count}, peers=`, peers);
+
+      return  peers;
+    });
+  }
+
 }
