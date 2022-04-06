@@ -271,6 +271,8 @@ criteria example:
       return Promise.reject("ConnectionFailed");
     }
 
+    timeout += 5000;
+
     const start = new Date().getTime();
 
     if (!this.#serialPort) {
