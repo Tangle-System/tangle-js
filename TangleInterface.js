@@ -37,7 +37,9 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_OTA_WRITE: 0, // legacy
   FLAG_OTA_END: 254, // legacy
   FLAG_OTA_RESET: 253, // legacy
+  
   FLAG_DEVICE_REBOOT_REQUEST: 5, // legacy
+  FLAG_DEVICE_DISCONNECT_REQUEST: 6,
 
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
@@ -601,16 +603,6 @@ export class TangleInterface {
     const item = new Query(Query.TYPE_DISCONNECT);
     this.#process(item);
     return item.promise;
-
-    //========================================
-
-    // this.#reconection = false;
-
-    // if (!this.#processing || force) {
-    //   return this.connector.disconnect();
-    // } else {
-    //   return Promise.reject("CommunicationInProgress");
-    // }
   }
 
   #onDisconnected = event => {
@@ -821,6 +813,7 @@ export class TangleInterface {
 
               case Query.TYPE_CONNECT:
                 this.#reconection = true;
+                logging.verbose("TYPE_CONNECT begin");
                 await this.connector
                   .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
@@ -834,6 +827,7 @@ export class TangleInterface {
                         return this.connector.setClock(this.clock);
                       })
                       .finally(() => {
+                        logging.verbose("TYPE_CONNECT end");
                         item.resolve(device);
                       });
                   })
@@ -860,7 +854,10 @@ export class TangleInterface {
                 this.#reconection = false;
                 this.#disconnectQuery = new Query();
                 await this.connector
-                  .disconnect()
+                  .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .then(() => {
+                    return this.connector.disconnect();
+                  })
                   .then(this.#disconnectQuery.promise)
                   .then(() => {
                     this.#disconnectQuery = null;
@@ -993,7 +990,13 @@ export class TangleInterface {
               case Query.TYPE_DESTROY:
                 this.#reconection = false;
                 await this.connector
-                  .destroy()
+                  .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .then(() => {
+                    return this.connector.disconnect();
+                  })
+                  .then(() => {
+                    return this.connector.destroy();
+                  })
                   .then(() => {
                     this.connector = null;
                     item.resolve();
@@ -1227,7 +1230,7 @@ export class TangleInterface {
               .map(v => v.toString(16).padStart(2, "0"))
               .join(":");
 
-            this.#eventEmitter.emit("peer_connected", device_mac);
+            this.#eventEmitter.emit("peer_disconnected", device_mac);
           }
           break;
 
