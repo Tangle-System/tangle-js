@@ -963,6 +963,8 @@ criteria example:
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
   connect(timeout = 5000, supportLegacy = false) {
+    logging.verbose(`connect(timeout=${timeout},supportLegacy=${supportLegacy})`);
+
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
@@ -1057,8 +1059,6 @@ criteria example:
                   throw "ConnectionFailed";
                 }
 
-                clearTimeout(timeout_handle);
-
                 logging.debug("> Getting the Bluetooth Service...");
                 return server.getPrimaryService(service_uuid);
               })
@@ -1066,14 +1066,14 @@ criteria example:
         } else {
           // NOT SUPPORT LEGACY FW SERVICE UUIDS
 
-          clearTimeout(timeout_handle);
-
           logging.debug("> Getting the Bluetooth Service...");
           return server.getPrimaryService(this.TANGLE_SERVICE_UUID);
         }
       })
       .then(service => {
         logging.debug("> Getting the Service Characteristic...");
+
+        clearTimeout(timeout_handle);
 
         return this.#connection.attach(service, this.TERMINAL_CHAR_UUID, this.CLOCK_CHAR_UUID, this.DEVICE_CHAR_UUID);
       })
@@ -1182,6 +1182,8 @@ criteria example:
   // synchronizes the device internal clock with the provided TimeTrack clock
   // of the application as precisely as possible
   setClock(clock) {
+    logging.verbose("setClock()");
+
     if (!this.#connected()) {
       return Promise.reject("DeviceDisconnected");
     }
@@ -1207,6 +1209,8 @@ criteria example:
   // returns a TimeTrack clock object that is synchronized with the internal clock
   // of the device as precisely as possible
   getClock() {
+    logging.verbose("getClock()");
+
     if (!this.#connected()) {
       return Promise.reject("DeviceDisconnected");
     }

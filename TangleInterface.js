@@ -37,10 +37,15 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_OTA_WRITE: 0, // legacy
   FLAG_OTA_END: 254, // legacy
   FLAG_OTA_RESET: 253, // legacy
+  
   FLAG_DEVICE_REBOOT_REQUEST: 5, // legacy
+  FLAG_DEVICE_DISCONNECT_REQUEST: 6,
 
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
+
+  FLAG_CONNECTED_PEERS_INFO_REQUEST: 224,
+  FLAG_CONNECTED_PEERS_INFO_RESPONSE: 225,
 
   FLAG_DEVICE_CONFIG_REQUEST: 226,
   FLAG_DEVICE_CONFIG_RESPONSE: 227,
@@ -72,6 +77,8 @@ export const NETWORK_FLAGS = Object.freeze({
   /* command flags */
 
   FLAG_RSSI_DATA: 100,
+  FLAG_PEER_CONNECTED: 101,
+  FLAG_PEER_DISCONNECTED: 102,
 
   FLAG_CONF_BYTES: 240,
   FLAG_TNGL_BYTES: 248,
@@ -182,6 +189,15 @@ export class TangleInterface {
 
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
+
+    // this.#otaStart = new Date().getTime();
+
+    // this.#eventEmitter.on("ota_status", value => {
+
+    //   switch(value) {
+
+    //   }
+    // });
 
     this.#eventEmitter.on("ota_progress", value => {
       // const now = new Date().getTime();
@@ -587,16 +603,6 @@ export class TangleInterface {
     const item = new Query(Query.TYPE_DISCONNECT);
     this.#process(item);
     return item.promise;
-
-    //========================================
-
-    // this.#reconection = false;
-
-    // if (!this.#processing || force) {
-    //   return this.connector.disconnect();
-    // } else {
-    //   return Promise.reject("CommunicationInProgress");
-    // }
   }
 
   #onDisconnected = event => {
@@ -807,6 +813,7 @@ export class TangleInterface {
 
               case Query.TYPE_CONNECT:
                 this.#reconection = true;
+                logging.verbose("TYPE_CONNECT begin");
                 await this.connector
                   .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
@@ -820,6 +827,7 @@ export class TangleInterface {
                         return this.connector.setClock(this.clock);
                       })
                       .finally(() => {
+                        logging.verbose("TYPE_CONNECT end");
                         item.resolve(device);
                       });
                   })
@@ -846,7 +854,10 @@ export class TangleInterface {
                 this.#reconection = false;
                 this.#disconnectQuery = new Query();
                 await this.connector
-                  .disconnect()
+                  .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .then(() => {
+                    return this.connector.disconnect();
+                  })
                   .then(this.#disconnectQuery.promise)
                   .then(() => {
                     this.#disconnectQuery = null;
@@ -979,7 +990,13 @@ export class TangleInterface {
               case Query.TYPE_DESTROY:
                 this.#reconection = false;
                 await this.connector
-                  .destroy()
+                  .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .then(() => {
+                    return this.connector.disconnect();
+                  })
+                  .then(() => {
+                    return this.connector.destroy();
+                  })
                   .then(() => {
                     this.connector = null;
                     item.resolve();
@@ -1178,7 +1195,7 @@ export class TangleInterface {
                 .readBytes(6)
                 .map(v => v.toString(16).padStart(2, "0"))
                 .join(":");
-              item.value = tangleBytes.readInt8();
+              item.value = tangleBytes.readInt16() / 256;
               logging.verbose("mac =", item.mac);
               logging.verbose("rssi =", item.value);
               obj.rssi.push(item);
@@ -1186,6 +1203,34 @@ export class TangleInterface {
 
             logging.debug(obj);
             this.#eventEmitter.emit("rssi_data", obj);
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_PEER_CONNECTED:
+          {
+            logging.verbose("FLAG_PEER_CONNECTED");
+            tangleBytes.readFlag(); // TangleFlag::FLAG_PEER_CONNECTED
+
+            const device_mac = tangleBytes
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":");
+
+            this.#eventEmitter.emit("peer_connected", device_mac);
+          }
+          break;
+
+        case NETWORK_FLAGS.FLAG_PEER_DISCONNECTED:
+          {
+            logging.verbose("FLAG_PEER_DISCONNECTED");
+            tangleBytes.readFlag(); // TangleFlag::FLAG_PEER_DISCONNECTED
+
+            const device_mac = tangleBytes
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":");
+
+            this.#eventEmitter.emit("peer_disconnected", device_mac);
           }
           break;
 
