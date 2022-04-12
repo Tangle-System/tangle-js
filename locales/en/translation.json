@@ -18,5 +18,9 @@
   "Unikátní jméno pro vaši lampu vám ji pomůže odlišit od ostatních.": "A unique name for your lamp will help you distinguish it from others.",
   "Zkusit znovu": "Try again",
   "Zkuste to, prosím, později.": "Try again later please",
-  "Zpět": "Back"
+  "Zpět": "Back",
+  "Prohlížeč není podporován": "This browser is not supported",
+  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.": "Unfortunately, it is not possible to control NARA from this web browser. Please open app in Google Chrome.",
+  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.": "Unfortunately, it is not possible to control NARU from this web browser. Please open the app in the Bluefy browser.",
+  "Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.": "Unfortunately, it is probably not possible to control NARA from this web browser."
 }
