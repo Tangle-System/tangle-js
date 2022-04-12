@@ -1453,20 +1453,16 @@ export class TangleDevice {
       let peers = [];
 
       if (error_code === 0) {
-      
-        count = reader.readUint8();
+        count = reader.readUint16();
 
         for (let index = 0; index < count; index++) {
-         
-          
-          peers.push(reader
-            .readBytes(6)
-            .map(v => v.toString(16).padStart(2, "0"))
-            .join(":"));
-          
+          peers.push({
+            mac: reader
+              .readBytes(6)
+              .map(v => v.toString(16).padStart(2, "0"))
+              .join(":"),
+          });
         }
-      
-      
       } else {
         throw "Fail";
       }
