@@ -148,6 +148,55 @@ export class TangleDevice {
     return this.setConnector(connector_type);
   }
 
+  resetCSOBAppState() {
+    this.eventsData = {};
+    this.socket.emit("fjoqhehnuvsdoiqsj_blockly_sync", this.eventsData);
+  }
+
+  connectCSOBAsMaster() {
+    this.eventsData = {};
+
+    this.socket = io("wss://tiktok.host.tangle.cz", { transports: ["websocket"] });
+
+    this.socket.on("connect", () => {
+      logging.debug("> Connected as event dispatcher");
+      this.interface.emit("connected", { target: this });
+    });
+
+    this.socket.on("disconnect", () => {
+      logging.debug("> Disconnected as event dispatcher");
+      this.interface.emit("disconnected", { target: this });
+    });
+
+    this.socket.on("sync", () => {
+      console.log("syncing now")
+      this.socket.emit("fjoqhehnuvsdoiqsj_blockly_sync", this.eventsData);
+    });
+
+    this.socket.on('fjoqhehnuvsdoiqsj_blockly_receive',({event,value,type}) => {
+      console.log("EVENT RECEIVED", {event,value,type});
+      
+      this.eventsData[event] = value;
+
+      let emitValue = value;
+      if(!type || type === "percentage") {
+        if(value === true) {
+          emitValue = 100;
+        } else if(value === false) {
+          emitValue = 0;
+        } 
+
+        if(typeof value === "string") {
+          this.emitPercentageEvent(emitValue, 100);
+        } else {
+          this.emitPercentageEvent(event, emitValue);
+        }
+
+        this.socket.emit('fjoqhehnuvsdoiqsj_blockly', {event,value})
+      }
+    });
+  }
+
   connectRemoteControl() {
     this.#reconnectRC = true;
 
