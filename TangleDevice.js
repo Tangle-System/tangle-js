@@ -160,14 +160,14 @@ export class TangleDevice {
 
     this.socket.on("connect", () => {
       logging.debug("> Connected as event dispatcher");
-      this.interface.emit("connected", { target: this });
+      // this.interface.emit("connected", { target: this });
 
       this.socket.emit('fjoqhehnuvsdoiqsj_blockly_connect', true);
     });
 
     this.socket.on("disconnect", () => {
       logging.debug("> Disconnected as event dispatcher");
-      this.interface.emit("disconnected", { target: this });
+      // this.interface.emit("disconnected", { target: this });
     });
 
     this.socket.on("sync", () => {
