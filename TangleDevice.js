@@ -1471,4 +1471,20 @@ export class TangleDevice {
     });
   }
 
+  deviceSleep() {
+    logging.debug("> Sleep device...");
+
+    const request_uuid = this.#getUUID();
+    const payload = [DEVICE_FLAGS.FLAG_SLEEP_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return this.interface.request(payload, false);
+  }
+
+  networkSleep() {
+    logging.debug("> Sleep device...");
+
+    const request_uuid = this.#getUUID();
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SLEEP_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return this.interface.execute(payload, null);
+  }
+
 }
