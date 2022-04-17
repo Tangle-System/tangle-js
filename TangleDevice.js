@@ -175,26 +175,31 @@ export class TangleDevice {
       this.socket.emit("fjoqhehnuvsdoiqsj_blockly_sync", this.eventsData);
     });
 
-    this.socket.on('fjoqhehnuvsdoiqsj_blockly_receive',({event,value,type}) => {
-      console.log("EVENT RECEIVED", {event,value,type});
-      
+    this.socket.on('fjoqhehnuvsdoiqsj_blockly_receive', ({ event, value, type }) => {
+      console.log("EVENT RECEIVED", { event, value, type });
+
       this.eventsData[event] = value;
 
       let emitValue = value;
-      if(!type || type === "percentage") {
-        if(value === true) {
+      if (!type || type === "percentage") {
+        if (value === true) {
           emitValue = 100;
-        } else if(value === false) {
+        } else if (value === false) {
           emitValue = 0;
-        } 
-
-        if(typeof value === "string") {
-          this.emitPercentageEvent(emitValue, 100);
-        } else {
-          this.emitPercentageEvent(event, emitValue);
         }
 
-        this.socket.emit('fjoqhehnuvsdoiqsj_blockly', {event,value})
+        try {
+          if (typeof value === "string") {
+            await this.emitPercentageEvent(emitValue, 100);
+          } else {
+            await this.emitPercentageEvent(event, emitValue);
+          }
+          this.socket.emit('fjoqhehnuvsdoiqsj_blockly', { event, value })
+        } catch (err) {
+          this.socket.emit('fjoqhehnuvsdoiqsj_blockly_error', { event, value })
+        }
+
+
       }
     });
   }
@@ -674,7 +679,7 @@ export class TangleDevice {
           // window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
           return;
         }
-        if(error === "SecurityError") {
+        if (error === "SecurityError") {
           console.error(error);
           return;
         }
@@ -1246,7 +1251,7 @@ export class TangleDevice {
       const removed_device_mac_bytes = reader.readBytes(6);
 
       return this.rebootAndDisconnectDevice()
-        .catch(() => {})
+        .catch(() => { })
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
           if (removed_device_mac_bytes.length >= 6) {
@@ -1302,7 +1307,7 @@ export class TangleDevice {
       }
       logging.debug(`version=${version}`);
 
-      return  version.trim();
+      return version.trim();
     });
   }
 
@@ -1518,7 +1523,7 @@ export class TangleDevice {
       }
       logging.debug(`count=${count}, peers=`, peers);
 
-      return  peers;
+      return peers;
     });
   }
 
