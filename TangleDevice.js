@@ -175,7 +175,7 @@ export class TangleDevice {
       this.socket.emit("fjoqhehnuvsdoiqsj_blockly_sync", this.eventsData);
     });
 
-    this.socket.on('fjoqhehnuvsdoiqsj_blockly_receive', ({ event, value, type }) => {
+    this.socket.on('fjoqhehnuvsdoiqsj_blockly_receive',async ({ event, value, type }) => {
       console.log("EVENT RECEIVED", { event, value, type });
 
       this.eventsData[event] = value;
@@ -195,8 +195,9 @@ export class TangleDevice {
             await this.emitPercentageEvent(event, emitValue);
           }
           this.socket.emit('fjoqhehnuvsdoiqsj_blockly', { event, value })
-        } catch (err) {
-          this.socket.emit('fjoqhehnuvsdoiqsj_blockly_error', { event, value })
+        } 
+        catch (err) {
+          this.socket.emit('fjoqhehnuvsdoiqsj_blockly_error', {err,event,emitValue})
         }
 
 
