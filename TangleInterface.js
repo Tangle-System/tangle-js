@@ -1131,13 +1131,13 @@ export class TangleInterface {
             const event_device_id = tangleBytes.readUint8(); // 1 byte
             logging.debug(`event_device_id = ${event_device_id}`);
 
-            if (is_lazy) {
-              let event = { value: event_value, label: event_label, id: event_device_id };
-              this.emit("event", event);
-            } else {
-              let event = { value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
-              this.emit("event", event);
-            }
+            // if (is_lazy) {
+            //   let event = { value: event_value, label: event_label, id: event_device_id };
+            //   this.emit("event", event);
+            // } else {
+            //   let event = { value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
+            //   this.emit("event", event);
+            // }
           }
           break;
 

@@ -1,4 +1,4 @@
-import { sleep, toBytes, numberToBytes, crc8, crc32, hexStringToArray, rgbToHex } from "./functions.js";
+import { sleep, toBytes, numberToBytes, crc8, crc32, hexStringToArray, rgbToHex, stringToBytes } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglWriter } from "./TnglWriter.js";
@@ -265,13 +265,12 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(timeout = 10000) {
+  connect(timeout = 25000) {
+
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
     }
-
-    timeout += 5000;
 
     const start = new Date().getTime();
 
@@ -328,7 +327,7 @@ criteria example:
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
-          this.#transmitStreamWriter.write(new Uint8Array(["\n".charCodeAt(0)]));
+          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n",12)));
           this.#transmitStreamWriter.releaseLock();
         });
       })
