@@ -133,7 +133,7 @@ export class TangleWebSerialConnector {
             this.#beginCallback && this.#beginCallback(true);
           } else if (match === ">>>END<<<") {
             this.disconnect();
-          } else if (match === ">>>BOOT<<<") {
+          } else if (match === ">>>READY<<<") {
             this.disconnect();
             this.#beginCallback && this.#beginCallback(false);
             this.#feedbackCallback && this.#feedbackCallback(false);
@@ -438,7 +438,7 @@ criteria example:
           this.#transmitStreamWriter.releaseLock();
           reject("ResponseTimeout");
         },
-        timeout < 5000 ? 10000 : timeout * 2,
+        timeout < 5000 ? 20000 : timeout * 4,
       );
 
       this.#feedbackCallback = success => {
