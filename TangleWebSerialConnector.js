@@ -331,6 +331,7 @@ criteria example:
         });
       })
       .catch(error => {
+        logging.error(error);
         return this.disconnect().then(() => {
           throw error;
         });

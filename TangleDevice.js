@@ -859,7 +859,7 @@ export class TangleDevice {
         //@ts-ignore
         .then(result => {
           if (result) {
-            return this.setNetworkDatarate(2000000).catch(() => {
+            return this.setNetworkDatarate(1000000).catch(() => {
               window.alert("Nastavení rychlejšího přenosu dat se nezdařilo.");
             });
           } else {

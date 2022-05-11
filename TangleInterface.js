@@ -1040,7 +1040,7 @@ export class TangleInterface {
             //const bytecode_offset = tangleBytes.position() + offset;
             tangleBytes.foward(conf_size);
 
-            logging.verbose(`conf_size=${conf_size}`, conf_size);
+            logging.verbose("conf_size=", conf_size);
             //logging.debug("bytecode_offset=%u", bytecode_offset);
 
             // control::feed(bytecode, bytecode_offset, conf_size);
@@ -1237,8 +1237,8 @@ export class TangleInterface {
           break;
 
         default:
-          logging.error("ERROR flag=", tangleBytes.readFlag());
-          throw "UnknownNetworkFlag";
+          logging.error(`ERROR flag=${tangleBytes.readFlag()}, available=${tangleBytes.available}`);
+          //throw "UnknownNetworkFlag";
           break;
       }
     }
