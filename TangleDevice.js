@@ -28,7 +28,7 @@ export class TangleDevice {
   #reconnectRC;
 
   constructor(connectorType = "default", reconnectionInterval = 1000) {
-    this.timeline = new TimeTrack();
+    this.timeline = new TimeTrack(0, true);
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 

@@ -1,11 +1,15 @@
 import { createNanoEvents } from "./functions.js";
 
 export class TimeTrack {
-  constructor(timestamp) {
+  constructor(timestamp, paused) {
     this.memory_ = 0;
     this.paused_ = false;
 
     this.eventEmitter_ = createNanoEvents();
+
+    if (paused) {
+      this.pause();
+    }
 
     if (timestamp) {
       this.setMillis(timestamp);
