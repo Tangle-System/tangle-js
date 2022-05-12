@@ -8,6 +8,8 @@ import "./TnglWriter.js";
 import { io } from "./socketio.js";
 import { logging, setLoggingLevel } from "./Logging.js";
 
+
+let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////
 
 // should not create more than one object!
@@ -623,7 +625,7 @@ export class TangleDevice {
           // window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
           return;
         }
-        if(error === "SecurityError") {
+        if (error === "SecurityError") {
           console.error(error);
           return;
         }
@@ -708,9 +710,27 @@ export class TangleDevice {
     }
   }
 
+  resendAll() {
+    Object.keys(lastEvents).forEach(key => {
+      switch (lastEvents[key].type) {
+        case "percentage":
+          this.emitPercentageEvent(key, lastEvents[key].value);
+          break;
+        case "timestamp":
+          this.emitTimestampEvent(key, lastEvents[key].value);
+          break;
+        case "color":
+          this.emitColorEvent(key, lastEvents[key].value);
+          break;
+      }
+    })
+  }
+
   // event_label example: "evt1"
   // event_value example: 1000
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
+    lastEvents[event_label] = { value: event_value, type: "timestamp" };
+
     // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
     if (event_value > 2147483647) {
@@ -742,6 +762,7 @@ export class TangleDevice {
   // event_value example: "#00aaff"
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitColorEvent(id=" + device_ids + ")");
+    lastEvents[event_label] = { value: event_value, type: "color" };
 
     if (!event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
       logging.error("Invalid event value");
@@ -768,7 +789,7 @@ export class TangleDevice {
   // !!! PARAMETER CHANGE !!!
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitPercentageEvent(id=" + device_ids + ")");
-
+    lastEvents[event_label] = { value: event_value, type: "percentage" };
     if (event_value > 100.0) {
       logging.error("Invalid event value");
       event_value = 100.0;
@@ -799,6 +820,7 @@ export class TangleDevice {
   // !!! PARAMETER CHANGE !!!
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitLabelEvent(id=" + device_ids + ")");
+    lastEvents[event_label] = { value: event_value, type: "label" };
 
     if (typeof event_value !== "string") {
       logging.error("Invalid event value");
@@ -1195,7 +1217,7 @@ export class TangleDevice {
       const removed_device_mac_bytes = reader.readBytes(6);
 
       return this.rebootAndDisconnectDevice()
-        .catch(() => {})
+        .catch(() => { })
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
           if (removed_device_mac_bytes.length >= 6) {
@@ -1251,7 +1273,7 @@ export class TangleDevice {
       }
       logging.debug(`version=${version}`);
 
-      return  version.trim();
+      return version.trim();
     });
   }
 
@@ -1467,7 +1489,7 @@ export class TangleDevice {
       }
       logging.debug(`count=${count}, peers=`, peers);
 
-      return  peers;
+      return peers;
     });
   }
 
