@@ -9,6 +9,7 @@ import { io } from "./lib/socketio.js";
 import { logging, setLoggingLevel } from "./Logging.js";
 import { t, changeLanguage } from "./i18n.js";
 
+let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////
 
 // should not create more than one object!
@@ -29,7 +30,7 @@ export class TangleDevice {
   #reconnectRC;
 
   constructor(connectorType = "default", reconnectionInterval = 1000) {
-    this.timeline = new TimeTrack();
+    this.timeline = new TimeTrack(0, true);
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
 
@@ -613,9 +614,9 @@ export class TangleDevice {
 
     logging.debug(criteria);
 
-    return (autoConnect ? this.interface.autoSelect(criteria, 1000, 5000) : this.interface.userSelect(criteria))
+    return (autoConnect ? this.interface.autoSelect(criteria) : this.interface.userSelect(criteria))
       .then(() => {
-        return this.interface.connect(10000);
+        return this.interface.connect();
       })
       .catch(error => {
         logging.error(error);
@@ -634,7 +635,9 @@ export class TangleDevice {
   }
 
   disconnect() {
-    return this.interface.disconnect();
+    return this.interface.disconnect().catch(e => {
+      logging.warn(e);
+    });
   }
 
   connected() {
@@ -709,9 +712,27 @@ export class TangleDevice {
     }
   }
 
+  resendAll() {
+    Object.keys(lastEvents).forEach(key => {
+      switch (lastEvents[key].type) {
+        case "percentage":
+          this.emitPercentageEvent(key, lastEvents[key].value);
+          break;
+        case "timestamp":
+          this.emitTimestampEvent(key, lastEvents[key].value);
+          break;
+        case "color":
+          this.emitColorEvent(key, lastEvents[key].value);
+          break;
+      }
+    });
+  }
+
   // event_label example: "evt1"
   // event_value example: 1000
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
+    lastEvents[event_label] = { value: event_value, type: "timestamp" };
+
     // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
     if (event_value > 2147483647) {
@@ -743,6 +764,7 @@ export class TangleDevice {
   // event_value example: "#00aaff"
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitColorEvent(id=" + device_ids + ")");
+    lastEvents[event_label] = { value: event_value, type: "color" };
 
     if (!event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
       logging.error("Invalid event value");
@@ -769,7 +791,7 @@ export class TangleDevice {
   // !!! PARAMETER CHANGE !!!
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitPercentageEvent(id=" + device_ids + ")");
-
+    lastEvents[event_label] = { value: event_value, type: "percentage" };
     if (event_value > 100.0) {
       logging.error("Invalid event value");
       event_value = 100.0;
@@ -800,6 +822,7 @@ export class TangleDevice {
   // !!! PARAMETER CHANGE !!!
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitLabelEvent(id=" + device_ids + ")");
+    lastEvents[event_label] = { value: event_value, type: "label" };
 
     if (typeof event_value !== "string") {
       logging.error("Invalid event value");
@@ -843,6 +866,10 @@ export class TangleDevice {
 
   updateDeviceFirmware(firmware) {
     //logging.debug("updateDeviceFirmware()");
+    if(firmware.length < 100000) {
+      logging.error("Invalid firmware image");
+      return Promise.reject("InvalidFirmwareImage");
+    }
     return this.interface.updateFW(firmware).then(() => {
       this.disconnect();
     });
@@ -860,7 +887,7 @@ export class TangleDevice {
         //@ts-ignore
         .then(result => {
           if (result) {
-            return this.setNetworkDatarate(2000000).catch(() => {
+            return this.setNetworkDatarate(1000000).catch(() => {
               window.alert(t("Nastavení rychlejšího přenosu dat se nezdařilo."));
             });
           } else {
@@ -1468,7 +1495,7 @@ export class TangleDevice {
       }
       logging.debug(`count=${count}, peers=`, peers);
 
-      return  peers;
+      return peers;
     });
   }
 
@@ -1487,5 +1514,4 @@ export class TangleDevice {
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SLEEP_REQUEST, ...numberToBytes(request_uuid, 4)];
     return this.interface.execute(payload, null);
   }
-
 }

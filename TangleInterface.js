@@ -30,6 +30,7 @@ import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
 import { logging } from "./Logging.js";
+import { FlutterConnector } from "./FlutterConnector.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -173,7 +174,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack(0);
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (null);
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | FlutterConnector | TangleWebSocketsConnector} */ (null);
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -345,6 +346,7 @@ export class TangleInterface {
                   invalidText: "FW verze není správná",
                   maxlength: 32,
                 })
+                // @ts-ignore
                 .then(version => {
                   this.connector = new TangleDummyConnector(this, false, version);
                 })
@@ -416,6 +418,10 @@ export class TangleInterface {
 
           case "tangleconnect":
             this.connector = new TangleConnectConnector(this);
+            break;
+
+          case "flutter":
+            this.connector = new FlutterConnector(this);
             break;
 
           case "websockets":
@@ -1040,7 +1046,7 @@ export class TangleInterface {
             //const bytecode_offset = tangleBytes.position() + offset;
             tangleBytes.foward(conf_size);
 
-            logging.verbose(`conf_size=${conf_size}`, conf_size);
+            logging.verbose("conf_size=", conf_size);
             //logging.debug("bytecode_offset=%u", bytecode_offset);
 
             // control::feed(bytecode, bytecode_offset, conf_size);
@@ -1075,7 +1081,8 @@ export class TangleInterface {
         case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
           {
             let is_lazy = false;
-            let event_value;
+            let event_value = null;
+            let event_type = "unknown";
 
             switch (tangleBytes.readFlag()) {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
@@ -1083,6 +1090,7 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_EVENT:
                 logging.verbose("FLAG_EVENT");
                 event_value = null;
+                event_type = "none";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT:
@@ -1090,6 +1098,7 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT:
                 logging.verbose("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
+                event_type = "timestamp";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
@@ -1098,6 +1107,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_COLOR_EVENT");
                 const bytes = tangleBytes.readBytes(3);
                 event_value = rgbToHex(bytes[0], bytes[1], bytes[2]);
+                event_type = "color";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT:
@@ -1105,6 +1115,7 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT:
                 logging.verbose("FLAG_PERCENTAGE_EVENT");
                 event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
+                event_type = "percentage";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
@@ -1112,6 +1123,7 @@ export class TangleInterface {
               case NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT:
                 logging.verbose("FLAG_LABEL_EVENT");
                 event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
+                event_type = "label";
                 break;
 
               default:
@@ -1132,10 +1144,10 @@ export class TangleInterface {
             logging.debug(`event_device_id = ${event_device_id}`);
 
             if (is_lazy) {
-              let event = { value: event_value, label: event_label, id: event_device_id };
+              let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
               this.emit("event", event);
             } else {
-              let event = { value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
+              let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
               this.emit("event", event);
             }
           }
@@ -1237,8 +1249,8 @@ export class TangleInterface {
           break;
 
         default:
-          logging.error("ERROR flag=", tangleBytes.readFlag());
-          throw "UnknownNetworkFlag";
+          logging.error(`ERROR flag=${tangleBytes.readFlag()}, available=${tangleBytes.available}`);
+          //throw "UnknownNetworkFlag";
           break;
       }
     }
