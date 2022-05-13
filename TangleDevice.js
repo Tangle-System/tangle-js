@@ -865,6 +865,10 @@ export class TangleDevice {
 
   updateDeviceFirmware(firmware) {
     //logging.debug("updateDeviceFirmware()");
+    if(firmware.length < 100000) {
+      logging.error("Invalid firmware image");
+      return Promise.reject("InvalidFirmwareImage");
+    }
     return this.interface.updateFW(firmware).then(() => {
       this.disconnect();
     });

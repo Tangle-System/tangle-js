@@ -7,8 +7,8 @@ export const DEBUG_LEVEL_VERBOSE = 5;
 
 export const logging = {
   error: console.error,
-  warn: function (...msg) {},
-  info: function (...msg) {},
+  warn: console.warn,
+  info: console.log,
   debug: function (...msg) {},
   verbose: function (...msg) {},
 };
