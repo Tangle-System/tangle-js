@@ -37,7 +37,7 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_OTA_WRITE: 0, // legacy
   FLAG_OTA_END: 254, // legacy
   FLAG_OTA_RESET: 253, // legacy
-  
+
   FLAG_DEVICE_REBOOT_REQUEST: 5, // legacy
   FLAG_DEVICE_DISCONNECT_REQUEST: 6,
 
@@ -324,7 +324,7 @@ export class TangleInterface {
     }
 
     return this.destroyConnector()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         switch (connector_type) {
           case "none":
@@ -350,7 +350,6 @@ export class TangleInterface {
                 })
             );
 
-            break;
 
           case "edummy":
             this.connector = new TangleDummyConnector(this, true);
@@ -366,7 +365,7 @@ export class TangleInterface {
                 window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.", "Prohlížeč není podporován").then(result => {
                   if (result) {
                     // redirect na Bluefy v app store
-                    window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
+                    // window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
                   }
                 });
               }
@@ -376,7 +375,7 @@ export class TangleInterface {
                 window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
                   if (result) {
                     // redirect na Google Chrome
-                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                    // window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
                   }
                 });
               }
@@ -386,7 +385,7 @@ export class TangleInterface {
                 window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
                   if (result) {
                     // redirect na Google Chrome
-                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                    // window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
                   }
                 });
               }
@@ -396,7 +395,7 @@ export class TangleInterface {
                 window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
                   if (result) {
                     // redirect na Google Chrome
-                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                    // window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
                   }
                 });
               }
@@ -424,7 +423,6 @@ export class TangleInterface {
 
           default:
             throw "UnknownConnector";
-            break;
         }
       });
   }
