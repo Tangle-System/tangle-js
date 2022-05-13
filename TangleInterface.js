@@ -30,6 +30,7 @@ import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
 import { logging } from "./Logging.js";
+import { FlutterConnector } from "./FlutterConnector.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -173,7 +174,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack(0);
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | TangleWebSocketsConnector} */ (null);
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | FlutterConnector | TangleWebSocketsConnector} */ (null);
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -345,6 +346,7 @@ export class TangleInterface {
                   invalidText: "FW verze není správná",
                   maxlength: 32,
                 })
+                // @ts-ignore
                 .then(version => {
                   this.connector = new TangleDummyConnector(this, false, version);
                 })
@@ -416,6 +418,10 @@ export class TangleInterface {
 
           case "tangleconnect":
             this.connector = new TangleConnectConnector(this);
+            break;
+
+          case "flutter":
+            this.connector = new FlutterConnector(this);
             break;
 
           case "websockets":

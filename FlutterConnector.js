@@ -5,304 +5,364 @@ import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-// Connector connects the application with one Tangle Device, that is then in a
-// position of a controller for other Tangle Devices
-export class TangleConnectConnector {
-  #interfaceReference;
+class FlutterConnection {
+  static #simulatedFails = false;
 
-  #promise;
-  // #resolve; // function that will resolve current promise
-  // #reject; // function that will reject current promise
+  static {
+    console.log("Initing FlutterConnection");
 
-  constructor(interfaceReference) {
-    this.type = "tangleconnect";
+    // @ts-ignore
+    window.flutterConnection = {};
 
-    this.#interfaceReference = interfaceReference;
+    // @ts-ignore
+    window.flutterConnection.resolve = null;
 
-    this.#promise = null;
+    // @ts-ignore
+    window.flutterConnection.reject = null;
 
-    if (!("tangleConnect" in window)) {
-      // simulate Tangle Connect
+    // @ts-ignore
+    window.flutterConnection.emit = null;
+
+    // // target="_blank" global handler
+    // // @ts-ignore
+    // window.flutterConnection.hasOwnProperty("open") &&
+    //   /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+    //     e.preventDefault();
+    //     // @ts-ignore
+    //     for (let el of e.path) {
+    //       if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+    //         e.preventDefault();
+    //         const url = el.getAttribute("href");
+    //         // console.log(url);
+    //         // @ts-ignore
+    //         window.flutterConnection.open(url);
+    //         break;
+    //       }
+    //     }
+    //   });
+
+    if ("flutter_inappwebview" in window) {
+      logging.warn("flutter_inappwebview in window detected");
+    } else {
+      logging.warn("flutter_inappwebview in window NOT detected");
+      logging.info("Simulating Flutter Functions");
 
       var _connected = false;
       var _selected = false;
 
-      function _fail(chance) {
-        //return Math.random() < chance;
-        return false;
+      function _fail(failChance) {
+        if (FlutterConnection.#simulatedFails) {
+          return Math.random() < failChance;
+        } else {
+          return false;
+        }
       }
 
       // @ts-ignore
-      window.tangleConnect = {};
+      window.flutter_inappwebview = {};
 
       // @ts-ignore
-      window.tangleConnect.userSelect = async function (criteria, timeout = 60000) {
-        if (_connected) {
-          // @ts-ignore
-          await window.tangleConnect.disconnect();
-        }
-        await sleep(Math.random() * 5000); // userSelect logic
-        if (_fail(0.5)) {
-          // @ts-ignore
-          window.tangleConnect.reject("UserCanceledSelection");
-          return;
-        }
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("SelectionFailed");
-          return;
-        }
-        _selected = true;
-        // @ts-ignore
-        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
-      };
+      window.flutter_inappwebview.callHandler = async function (handler, a, b, c, d) {
+        //
+        switch (handler) {
+          //
+          case "userSelect": // params: (criteria_json, timeout_number)
+            {
+              // disconnect if already connected
+              if (_connected) {
+                // @ts-ignore
+                await window.flutter_inappwebview.callHandler("disconnect");
+              }
+              await sleep(Math.random() * 5000); // do the userSelect task filtering devices by the criteria_json parameter
+              if (_fail(0.5)) {
+                // @ts-ignore
+                window.flutterConnection.reject("UserCanceledSelection"); // reject with "UserCanceledSelection" message if user cancels selection
+                return;
+              }
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("SelectionFailed");
+                return;
+              }
+              _selected = true;
+              // @ts-ignore
+              window.flutterConnection.resolve('{"connector":"tangleconnect"}');
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.autoSelect = async function (criteria, scan_period = 1000, timeout = 10000) {
-        if (_connected) {
-          // @ts-ignore
-          await window.tangleConnect.disconnect();
-        }
-        await sleep(Math.random() * 5000); // autoSelect logic
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("SelectionFailed");
-          return;
-        }
-        _selected = true;
-        // @ts-ignore
-        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
-      };
+          case "autoSelect": // params: (criteria_json, scan_period_number, timeout_number)
+            {
+              if (_connected) {
+                // @ts-ignore
+                await window.flutter_inappwebview.callHandler("disconnect"); // handle disconnection inside the flutter app
+              }
+              await sleep(Math.random() * 5000); // do the autoSelect task filtering devices by the criteria_json parameter and scanning minimum time scan_period_number, maximum timeout_number
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("SelectionFailed"); // if the selection fails, return "SelectionFailed"
+                return;
+              }
+              _selected = true;
+              // @ts-ignore
+              window.flutterConnection.resolve('{"connector":"tangleconnect"}'); // resolve with json containing the information about the connected device
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.selected = async function () {
-        if (_selected) {
-          // @ts-ignore
-          window.tangleConnect.resolve('{"connector":"tangleconnect"}');
-        } else {
-          // @ts-ignore
-          window.tangleConnect.resolve();
-        }
-      };
+          case "selected":
+            {
+              // params: ()
+              if (_selected) {
+                // @ts-ignore
+                window.flutterConnection.resolve('{"connector":"tangleconnect"}'); // if the device is selected, return json
+              } else {
+                // @ts-ignore
+                window.flutterConnection.resolve(); // if no device is selected resolve nothing
+              }
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.unselect = async function () {
-        if (_connected) {
-          // @ts-ignore
-          await window.tangleConnect.disconnect();
-        }
-        await sleep(10); // unselect logic
-        _selected = false;
-        // @ts-ignore
-        window.tangleConnect.resolve();
-      };
+          case "unselect":
+            {
+              // params: ()
+              if (_connected) {
+                // @ts-ignore
+                await window.flutterConnection.disconnect();
+              }
+              await sleep(10); // unselect logic
+              _selected = false;
+              // @ts-ignore
+              window.flutterConnection.resolve();
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.connect = async function (timeout) {
-        if (!_selected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceNotSelected");
-          return;
-        }
-        await sleep(Math.random() * 5000); // connecting logic
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("ConnectionFailed");
-          return;
-        }
-        _connected = true;
-        // @ts-ignore
-        window.tangleConnect.emit("#connected");
-        // @ts-ignore
-        window.tangleConnect.resolve('{"connector":"tangleconnect"}');
-        // after connection the TangleConnect can any time emit #disconnect event.
-        setTimeout(() => {
-          // @ts-ignore
-          window.tangleConnect.emit("#disconnected");
-          //}, Math.random() * 60000);
-        }, 60000);
-      };
+          case "connect":
+            {
+              // params: (timeout_number)
+              if (!_selected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceNotSelected");
+                return;
+              }
+              await sleep(Math.random() * 5000); // connecting logic
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("ConnectionFailed");
+                return;
+              }
+              _connected = true;
+              // @ts-ignore
+              window.flutterConnection.emit("#connected");
+              // @ts-ignore
+              window.flutterConnection.resolve('{"connector":"tangleconnect"}');
+              // after connection the TangleConnect can any time emit #disconnect event.
+              setTimeout(() => {
+                // @ts-ignore
+                window.flutterConnection.emit("#disconnected");
+                //}, Math.random() * 60000);
+              }, 60000);
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.disconnect = async function () {
-        if (_connected) {
-          await sleep(100); // disconnecting logic
-          _connected = false;
-          // @ts-ignore
-          window.tangleConnect.emit("#disconnected");
-        }
-        // @ts-ignore
-        window.tangleConnect.resolve(); // always resolves even if there are internal errors
-      };
+          case "disconnect":
+            {
+              // params: ()
+              if (_connected) {
+                await sleep(100); // disconnecting logic
+                _connected = false;
+                // @ts-ignore
+                window.flutterConnection.emit("#disconnected");
+              }
+              // @ts-ignore
+              window.flutterConnection.resolve(); // always resolves even if there are internal errors
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.connected = async function () {
-        if (_connected) {
-          // @ts-ignore
-          window.tangleConnect.resolve('{"connector":"tangleconnect"}');
-        } else {
-          // @ts-ignore
-          window.tangleConnect.resolve();
-        }
-      };
+          case "connected":
+            {
+              // params: ()
+              if (_connected) {
+                // @ts-ignore
+                window.flutterConnection.resolve('{"connector":"tangleconnect"}');
+              } else {
+                // @ts-ignore
+                window.flutterConnection.resolve();
+              }
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.deliver = async function () {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
-        }
-        await sleep(25); // delivering logic
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeliverFailed");
-          return;
-        }
-        // @ts-ignore
-        window.tangleConnect.resolve();
-      };
+          case "deliver":
+            {
+              // params: (payload_bytes)
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              await sleep(25); // delivering logic
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeliverFailed");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.resolve();
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.transmit = async function () {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
-        }
-        await sleep(10); // transmiting logic
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("TransmitFailed");
-          return;
-        }
-        // @ts-ignore
-        window.tangleConnect.resolve();
-      };
+          case "transmit":
+            {
+              // params: (payload_bytes)
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              await sleep(10); // transmiting logic
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("TransmitFailed");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.resolve();
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.request = async function () {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
-        }
-        await sleep(50); // requesting logic
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("RequestFailed");
-          return;
-        }
+          case "request":
+            {
+              // params: (payload_bytes, read_response)
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              await sleep(50); // requesting logic
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("RequestFailed");
+                return;
+              }
 
-        // @ts-ignore
-        window.tangleConnect.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
-      };
+              // @ts-ignore
+              window.flutterConnection.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.readClock = async function () {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
-        }
-        await sleep(50); // reading clock logic.
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("ClockReadFailed");
-          return;
-        }
-        // @ts-ignore
-        window.tangleConnect.resolve([0, 0, 0, 0]); // returns timestamp as an 32-bit signed number
-      };
+          case "writeClock":
+            {
+              // params: (clock_bytes)
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              await sleep(10); // writing clock logic.
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("ClockWriteFailed");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.resolve();
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.writeClock = async function (bytes) {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
-        }
-        await sleep(10); // writing clock logic.
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.reject("ClockWriteFailed");
-          return;
-        }
-        // @ts-ignore
-        window.tangleConnect.resolve();
-      };
+          case "readClock":
+            {
+              // params: ()
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              await sleep(50); // reading clock logic.
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.reject("ClockReadFailed");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.resolve([0, 0, 0, 0]); // returns timestamp as an 32-bit signed number
+            }
+            break;
 
-      // @ts-ignore
-      window.tangleConnect.updateFW = async function () {
-        if (!_connected) {
-          // @ts-ignore
-          window.tangleConnect.reject("DeviceDisconnected");
-          return;
+          case "updateFW":
+            {
+              // params: (bytes)
+              if (!_connected) {
+                // @ts-ignore
+                window.flutterConnection.reject("DeviceDisconnected");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.emit("ota_status", "begin");
+              await sleep(10000); // preparing FW logic.
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.emit("ota_status", "fail");
+                // @ts-ignore
+                window.flutterConnection.reject("UpdateFailed");
+                return;
+              }
+              for (let i = 1; i <= 100; i++) {
+                // @ts-ignore
+                window.flutterConnection.emit("ota_progress", i);
+                await sleep(25); // writing FW logic.
+                if (_fail(0.01)) {
+                  // @ts-ignore
+                  window.flutterConnection.emit("ota_status", "fail");
+                  // @ts-ignore
+                  window.flutterConnection.reject("UpdateFailed");
+                  return;
+                }
+              }
+              await sleep(1000); // finishing FW logic.
+              if (_fail(0.1)) {
+                // @ts-ignore
+                window.flutterConnection.emit("ota_status", "fail");
+                // @ts-ignore
+                window.flutterConnection.reject("UpdateFailed");
+                return;
+              }
+              // @ts-ignore
+              window.flutterConnection.emit("ota_status", "success");
+              // @ts-ignore
+              window.flutterConnection.resolve();
+            }
+            break;
+
+          default:
+            logging.error("Unknown handler");
+            break;
         }
-        // @ts-ignore
-        window.tangleConnect.emit("ota_status", "begin");
-        await sleep(10000); // preparing FW logic.
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.emit("ota_status", "fail");
-          // @ts-ignore
-          window.tangleConnect.reject("UpdateFailed");
-          return;
-        }
-        for (let i = 1; i <= 100; i++) {
-          // @ts-ignore
-          window.tangleConnect.emit("ota_progress", i);
-          await sleep(25); // writing FW logic.
-          if (_fail(0.01)) {
-            // @ts-ignore
-            window.tangleConnect.emit("ota_status", "fail");
-            // @ts-ignore
-            window.tangleConnect.reject("UpdateFailed");
-            return;
-          }
-        }
-        await sleep(1000); // finishing FW logic.
-        if (_fail(0.1)) {
-          // @ts-ignore
-          window.tangleConnect.emit("ota_status", "fail");
-          // @ts-ignore
-          window.tangleConnect.reject("UpdateFailed");
-          return;
-        }
-        // @ts-ignore
-        window.tangleConnect.emit("ota_status", "success");
-        // @ts-ignore
-        window.tangleConnect.resolve();
       };
     }
+  }
+}
+
+// Connector connects the application with one Tangle Device, that is then in a
+// position of a controller for other Tangle Devices
+export class FlutterConnector extends FlutterConnection {
+  #interfaceReference;
+
+  #promise;
+
+  constructor(interfaceReference) {
+    super();
+
+    this.type = "tangleconnect";
+
+    this.#interfaceReference = interfaceReference;
+    this.#promise = null;
 
     // @ts-ignore
-    window.tangleConnect.emit = (event, param) => {
-
-      if(event === "#bytecode") {
+    window.flutterConnection.emit = (event, param) => {
+      if (event === "#bytecode") {
         this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
       }
 
       this.#interfaceReference.emit(event, param);
     };
-
-    // target="_blank" global handler
-    // @ts-ignore
-    window.tangleConnect.hasOwnProperty("open") &&
-      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
-        e.preventDefault();
-        // @ts-ignore
-        for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-            e.preventDefault();
-            const url = el.getAttribute("href");
-            // console.log(url);
-            // @ts-ignore
-            window.tangleConnect.open(url);
-            break;
-          }
-        }
-      });
   }
 
   available() {
@@ -314,7 +374,7 @@ export class TangleConnectConnector {
       // @ts-ignore
       // window.alert(message, "Error: TC response timeouted");
       // @ts-ignore
-      window.tangleConnect.reject("ResponseTimeout " + message);
+      window.flutterConnection.reject("ResponseTimeout " + message);
     }, timeout);
     return promise.finally(() => {
       clearTimeout(id);
@@ -326,14 +386,14 @@ export class TangleConnectConnector {
     for (let i = 0; i < 1000; i++) {
       this.#promise = new Promise((resolve, reject) => {
         // @ts-ignore
-        window.tangleConnect.resolve = resolve;
+        window.flutterConnection.resolve = resolve;
         // @ts-ignore
-        window.tangleConnect.reject = reject;
+        window.flutterConnection.reject = reject;
       });
 
       // logging.debug("ping")
       // @ts-ignore
-      window.tangleConnect.ping();
+      window.flutterConnection.ping();
       await this.#promise;
       // logging.debug("pong")
     }
@@ -382,25 +442,24 @@ criteria example:
   // if no criteria are set, then show all Tangle devices visible.
   // first bonds the BLE device with the PC/Phone/Tablet if it is needed.
   // Then selects the device
-  userSelect(criteria, timeout = 60000) {
-    // this.#selected = true;
-    // //logging.debug("choose()");
+  userSelect(criteria_object, timeout_number = 60000) {
+    const criteria_json = JSON.stringify(criteria_object);
 
-    logging.debug(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
+    logging.debug(`userSelect(criteria=${criteria_json}, timeout=${timeout_number})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = function (json) {
-        resolve(json ? JSON.parse(json) : null);
+      window.flutterConnection.resolve = function (j) {
+        resolve(j ? JSON.parse(j) : null);
       };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.userSelect(JSON.stringify(criteria), timeout);
+    window.flutter_inappwebview.callHandler("userSelect", criteria_json, timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout * 2, "userSelect");
+    return this.#applyTimeout(this.#promise, timeout_number * 2, "userSelect");
   }
 
   // takes the criteria, scans for scan_period and automatically selects the device,
@@ -412,28 +471,29 @@ criteria example:
   // if no criteria are provided, all Tangle enabled devices (with all different FWs and Owners and such)
   // are eligible.
 
-  autoSelect(criteria, scan_period = 1000, timeout = 10000) {
+  autoSelect(criteria_object, scanPeriod_number = 1000, timeout_number = 10000) {
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
-    logging.debug(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
+    const criteria_json = JSON.stringify(criteria_object);
+
+    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scanPeriod_number}, timeout=${timeout_number})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = function (json) {
-        resolve(json ? JSON.parse(json) : null);
+      window.flutterConnection.resolve = function (j) {
+        resolve(j ? JSON.parse(j) : null);
       };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
-    // ! for now autoselect calls userSelect
     // @ts-ignore
-    window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period, timeout);
+    window.flutter_inappwebview.callHandler("autoSelect", criteria_json, scan_period_number, timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout * 2.0, "autoSelect");
+    return this.#applyTimeout(this.#promise, timeout_number * 2.0, "autoSelect");
   }
 
   selected() {
@@ -441,15 +501,15 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = function (json) {
-        resolve(json ? JSON.parse(json) : null);
+      window.flutterConnection.resolve = function (j) {
+        resolve(j ? JSON.parse(j) : null);
       };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.selected();
+    window.flutter_inappwebview.callHandler("selected");
 
     return this.#applyTimeout(this.#promise, 1000);
   }
@@ -459,13 +519,13 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = resolve;
+      window.flutterConnection.resolve = resolve;
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.unselect();
+    window.flutter_inappwebview.callHandler("unselect");
 
     return this.#applyTimeout(this.#promise, 1000, "unselect");
   }
@@ -475,45 +535,27 @@ criteria example:
   timeout ms 
 
   */
-  connect(timeout = 10000) {
-    logging.debug(`connect(timeout=${timeout})`);
+  connect(timeout_number = 10000) {
+    logging.debug(`connect(timeout=${timeout_number})`);
 
-    if (timeout < 1000) {
+    if (timeout_number < 1000) {
       logging.error("Invalid timeout. Must be more than 1000 ms.");
-      timeout = 1000;
+      timeout_number = 1000;
     }
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = function (json) {
-        resolve(json ? JSON.parse(json) : null);
+      window.flutterConnection.resolve = function (j) {
+        resolve(j ? JSON.parse(j) : null);
       };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.connect(timeout);
+    window.flutter_inappwebview.callHandler("connect", timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout < 5000 ? 10000 : timeout * 2.0, "connect");
-  }
-
-  connected() {
-    logging.debug(`connected()`);
-
-    this.#promise = new Promise((resolve, reject) => {
-      // @ts-ignore
-      window.tangleConnect.resolve = function (json) {
-        resolve(json ? JSON.parse(json) : null);
-      };
-      // @ts-ignore
-      window.tangleConnect.reject = reject;
-    });
-
-    // @ts-ignore
-    window.tangleConnect.connected();
-
-    return this.#applyTimeout(this.#promise, 1000, "connected");
+    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect");
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -522,69 +564,87 @@ criteria example:
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = resolve;
+      window.flutterConnection.resolve = resolve;
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.disconnect();
+    window.flutter_inappwebview.callHandler("disconnect");
 
     return this.#applyTimeout(this.#promise, 10000, "disconnect");
   }
 
-  // deliver handles the communication with the Tangle network in a way
-  // that the command is guaranteed to arrive
-  deliver(payload) {
-    logging.debug(`deliver(payload=[${payload}])`);
+  connected() {
+    logging.debug(`connected()`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = resolve;
+      window.flutterConnection.resolve = function (j) {
+        resolve(j ? JSON.parse(j) : null);
+      };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.deliver(payload);
+    window.flutter_inappwebview.callHandler("connected");
+
+    return this.#applyTimeout(this.#promise, 1000, "connected");
+  }
+
+  // deliver handles the communication with the Tangle network in a way
+  // that the command is guaranteed to arrive
+  deliver(payload_bytes) {
+    logging.debug(`deliver(payload=[${payload_bytes}])`);
+
+    this.#promise = new Promise((resolve, reject) => {
+      // @ts-ignore
+      window.flutterConnection.resolve = resolve;
+      // @ts-ignore
+      window.flutterConnection.reject = reject;
+    });
+
+    // @ts-ignore
+    window.flutter_inappwebview.callHandler("deliver", payload_bytes);
 
     return this.#applyTimeout(this.#promise, 10000, "deliver");
   }
 
   // transmit handles the communication with the Tangle network in a way
   // that the command is NOT guaranteed to arrive
-  transmit(payload) {
-    logging.debug(`transmit(payload=[${payload}])`);
+  transmit(payload_bytes) {
+    logging.debug(`transmit(payload=[${payload_bytes}])`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = resolve;
+      window.flutterConnection.resolve = resolve;
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.transmit(payload);
+    window.flutter_inappwebview.callHandler("transmit", payload_bytes);
 
     return this.#applyTimeout(this.#promise, 10000, "transmit");
   }
 
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
-  request(payload, read_response = true) {
-    logging.debug(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
+  request(payload_bytes, read_response = true) {
+    logging.debug(`request(payload=[${payload_bytes}], read_response=${read_response ? "true" : "false"})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = response => {
+      window.flutterConnection.resolve = response => {
         resolve(new DataView(new Uint8Array(response).buffer));
       };
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.request(payload, read_response);
+    window.flutter_inappwebview.callHandler("request", payload_bytes, read_response);
 
     return this.#applyTimeout(this.#promise, 10000, "request");
   }
@@ -603,18 +663,15 @@ criteria example:
 
           this.#promise = new Promise((resolve, reject) => {
             // @ts-ignore
-            window.tangleConnect.resolve = resolve;
+            window.flutterConnection.resolve = resolve;
             // @ts-ignore
-            window.tangleConnect.reject = reject;
+            window.flutterConnection.reject = reject;
           });
 
           const timestamp = clock.millis();
-          const bytes = toBytes(timestamp, 4);
+          const clock_bytes = toBytes(timestamp, 4);
           // @ts-ignore
-          window.tangleConnect.writeClock(bytes);
-
-          // const timestamp = clock.millis();
-          // window.tangleConnect.writeClock(timestamp);
+          window.flutter_inappwebview.callHandler("writeClock", clock_bytes);
 
           await this.#applyTimeout(this.#promise, 5000, "writeClock");
           logging.debug("Clock write success:", timestamp);
@@ -645,13 +702,13 @@ criteria example:
 
           this.#promise = new Promise((resolve, reject) => {
             // @ts-ignore
-            window.tangleConnect.resolve = resolve;
+            window.flutterConnection.resolve = resolve;
             // @ts-ignore
-            window.tangleConnect.reject = reject;
+            window.flutterConnection.reject = reject;
           });
 
           // @ts-ignore
-          window.tangleConnect.readClock();
+          window.flutter_inappwebview.callHandler("readClock");
 
           const bytes = await this.#applyTimeout(this.#promise, 5000, "readClock");
 
@@ -679,18 +736,18 @@ criteria example:
 
   // TODO - emit "ota_progress" events
 
-  updateFW(firmware) {
-    logging.debug(`updateFW(firmware.length=${firmware.length})`);
+  updateFW(firmware_bytes) {
+    logging.debug(`updateFW(firmware.length=${firmware_bytes.length})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = resolve;
+      window.flutterConnection.resolve = resolve;
       // @ts-ignore
-      window.tangleConnect.reject = reject;
+      window.flutterConnection.reject = reject;
     });
 
     // @ts-ignore
-    window.tangleConnect.updateFW(firmware);
+    window.flutter_inappwebview.callHandler("updateFW", firmware_bytes);
 
     return this.#applyTimeout(this.#promise, 600000, "updateFW");
   }
