@@ -8,7 +8,6 @@ import "./TnglWriter.js";
 import { io } from "./socketio.js";
 import { logging, setLoggingLevel } from "./Logging.js";
 
-
 let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////
 
@@ -635,7 +634,9 @@ export class TangleDevice {
   }
 
   disconnect() {
-    return this.interface.disconnect();
+    return this.interface.disconnect().catch(e => {
+      logging.warn(e);
+    });
   }
 
   connected() {
@@ -723,7 +724,7 @@ export class TangleDevice {
           this.emitColorEvent(key, lastEvents[key].value);
           break;
       }
-    })
+    });
   }
 
   // event_label example: "evt1"
@@ -1217,7 +1218,7 @@ export class TangleDevice {
       const removed_device_mac_bytes = reader.readBytes(6);
 
       return this.rebootAndDisconnectDevice()
-        .catch(() => { })
+        .catch(() => {})
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
           if (removed_device_mac_bytes.length >= 6) {
@@ -1508,5 +1509,4 @@ export class TangleDevice {
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SLEEP_REQUEST, ...numberToBytes(request_uuid, 4)];
     return this.interface.execute(payload, null);
   }
-
 }
