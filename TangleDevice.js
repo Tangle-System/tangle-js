@@ -865,7 +865,7 @@ export class TangleDevice {
 
   updateDeviceFirmware(firmware) {
     //logging.debug("updateDeviceFirmware()");
-    if(firmware.length < 100000) {
+    if (firmware.length < 100000) {
       logging.error("Invalid firmware image");
       return Promise.reject("InvalidFirmwareImage");
     }
@@ -1511,6 +1511,14 @@ export class TangleDevice {
 
     const request_uuid = this.#getUUID();
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SLEEP_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return this.interface.execute(payload, null);
+  }
+
+  saveState() {
+    logging.debug("> Saving state...");
+
+    const request_uuid = this.#getUUID();
+    const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SAVE_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
     return this.interface.execute(payload, null);
   }
 }
