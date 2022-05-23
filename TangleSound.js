@@ -2,19 +2,23 @@ import { createNanoEvents, mapValue } from './functions.js'
 import { FFT } from './dsp.js'
 
 export class TangleSound {
-  #microphoneRunning;
   #stream;
+  #gain_node;
+  #microphone_stream;
+  #audioContext;
+  #script_processor_get_audio_samples;
+  #events;
 
   constructor() {
-    this.#microphoneRunning = false;
-    this.microphone_stream = null;
-    this.gain_node = null;
-    this.script_processor_get_audio_samples = null;
+    this.running = false;
+    this.#microphone_stream = null;
+    this.#gain_node = null;
+    this.#script_processor_get_audio_samples = null;
     this.BUFF_SIZE = 2048;
-    this.audioContext = new AudioContext();
+    this.#audioContext = new AudioContext();
     this.#stream = null;
 
-    this.events = createNanoEvents();
+    this.#events = createNanoEvents();
   }
 
   connect() {
@@ -44,27 +48,27 @@ export class TangleSound {
 
   start_microphone() {
     // TODO - this should be handled better
-    this.#microphoneRunning = true;
+    this.running = true;
 
-    this.gain_node = this.audioContext.createGain();
-    this.gain_node.connect(this.audioContext.destination);
+    this.#gain_node = this.#audioContext.createGain();
+    this.#gain_node.connect(this.#audioContext.destination);
 
-    this.microphone_stream = this.audioContext.createMediaStreamSource(this.#stream);
+    this.#microphone_stream = this.#audioContext.createMediaStreamSource(this.#stream);
 
-    this.script_processor_get_audio_samples = this.audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
-    this.script_processor_get_audio_samples.connect(this.gain_node);
+    this.#script_processor_get_audio_samples = this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
+    this.#script_processor_get_audio_samples.connect(this.#gain_node);
 
-    console.log("Sample rate of soundcard: " + this.audioContext.sampleRate);
-    var fft = new FFT(this.BUFF_SIZE, this.audioContext.sampleRate);
+    console.log("Sample rate of soundcard: " + this.#audioContext.sampleRate);
+    var fft = new FFT(this.BUFF_SIZE, this.#audioContext.sampleRate);
 
-    this.microphone_stream.connect(this.script_processor_get_audio_samples);
+    this.#microphone_stream.connect(this.#script_processor_get_audio_samples);
 
     // var bufferCount = 0;
 
 
     // Tato funkce se provede pokaždé když dojde k naplnění bufferu o velikosti 2048 vzorků.
     // Při vzorkovacím kmitočku 48 kHz se tedy zavolá jednou za cca 42 ms.
-    this.script_processor_get_audio_samples.onaudioprocess = (e) => {
+    this.#script_processor_get_audio_samples.onaudioprocess = (e) => {
       // console.log("audio processing")
 
       var samples = e.inputBuffer.getChannelData(0);
@@ -96,10 +100,12 @@ export class TangleSound {
       var out = mapValue(rms_loudness_spectrum, 0.00001, 0.9, 0, 255)
 
       // console.log("spectrum avarge loudnes: "+ out);
-      this.#handleControlSend(out);
-      if (!this.#microphoneRunning) {
-        this.microphone_stream.disconnect();
-        this.gain_node.disconnect();
+      // this.#handleControlSend(out);
+      this.#events.emit('loudness', out);
+
+      if (!this.running) {
+        this.#microphone_stream.disconnect();
+        this.#gain_node.disconnect();
       }
 
       // if (bufferCount >= 5){
@@ -116,15 +122,15 @@ export class TangleSound {
   }
 
   stop() {
-    this.#microphoneRunning = false;
+    this.running = false;
   }
 
-  #handleControlSend(value) {
-    this.events.emit('control', {
-      type: 'loudness',
-      value: value
-    });
+  on(...args) {
+    this.#events.on(...args);
   }
-
+  // this.#events.emit('control', {
+  //   type: 'loudness',
+  //   value: value
+  // });
 }
 
