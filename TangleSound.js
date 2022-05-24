@@ -46,7 +46,7 @@ export class TangleSound {
     } else { alert('getUserMedia not supported in this browser.'); }
   }
 
-  start_microphone() {
+  start() {
     // TODO - this should be handled better
     this.running = true;
 
