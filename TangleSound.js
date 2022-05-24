@@ -1,70 +1,89 @@
 import { createNanoEvents, mapValue } from './functions.js'
 import { FFT } from './dsp.js'
+import { logging } from './Logging.js';
 
 export class TangleSound {
   #stream;
   #gain_node;
-  #microphone_stream;
+  #source;
   #audioContext;
   #script_processor_get_audio_samples;
   #events;
+  #fft;
 
   constructor() {
     this.running = false;
-    this.#microphone_stream = null;
+    this.#source = null;
     this.#gain_node = null;
     this.#script_processor_get_audio_samples = null;
     this.BUFF_SIZE = 2048;
     this.#audioContext = new AudioContext();
     this.#stream = null;
+    this.#fft = null;
 
     this.#events = createNanoEvents();
   }
 
-  connect() {
+  /**
+   * 
+   * @param {mediaStream|"microphone"|undefined} mediaStream 
+   */
+  async connect(mediaStream) {
     // Uává velikost bloků ze kterých bude vypočítávána průměrná hlasitos.
     // Maximální velikost je 2048 vzorků.
     // Hodnota musí být vždy násobkem dvou.
     // Pokud bude buffer menší bude se také rychleji posílat výpočet efektivní hodnoty. 
+    if (!mediaStream || mediaStream === "microphone") {
+      // Dotaz na povolení přístupu k mikrofonu
+      if (!navigator.getUserMedia)
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
+          navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-    // Dotaz na povolení přístupu k mikrofonu
-    if (!navigator.getUserMedia)
-      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-        navigator.mozGetUserMedia || navigator.msGetUserMedia;
+      if (navigator.getUserMedia) {
+        await new Promise((resolve, reject) => {
+          navigator.getUserMedia({ audio: true },
+            (stream) => {
+              this.#stream = stream;
+              this.#source = this.#audioContext.createMediaStreamSource(this.#stream);
+              resolve()
+              logging.debug('TangleSound.connect', 'Connected microphone');
+            },
+            (e) => {
+              alert('Error capturing audio.');
+              reject(e)
+            }
+          );
+        })
+      } else { alert('getUserMedia not supported in this browser.'); }
+    } else {
+      this.#stream = mediaStream;
+      this.#source = this.#audioContext.createMediaStreamSource(mediaStream);
+      logging.debug('TangleSound.connect', 'Connected mediaStream');
+    }
 
-    if (navigator.getUserMedia) {
 
-      navigator.getUserMedia({ audio: true },
-        (stream) => {
-          // this.start_microphone(stream);
-          this.#stream = stream;
-        },
-        (e) => {
-          alert('Error capturing audio.');
-        }
-      );
-    } else { alert('getUserMedia not supported in this browser.'); }
   }
 
   start() {
-    // TODO - this should be handled better
-    this.running = true;
-
     this.#gain_node = this.#audioContext.createGain();
     this.#gain_node.connect(this.#audioContext.destination);
 
-    this.#microphone_stream = this.#audioContext.createMediaStreamSource(this.#stream);
 
+    // TODO use audio worklet https://developer.chrome.com/blog/audio-worklet/
     this.#script_processor_get_audio_samples = this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
     this.#script_processor_get_audio_samples.connect(this.#gain_node);
 
     console.log("Sample rate of soundcard: " + this.#audioContext.sampleRate);
-    var fft = new FFT(this.BUFF_SIZE, this.#audioContext.sampleRate);
+    this.#fft = new FFT(this.BUFF_SIZE, this.#audioContext.sampleRate);
 
-    this.#microphone_stream.connect(this.#script_processor_get_audio_samples);
+    this.#source.connect(this.#script_processor_get_audio_samples);
 
+
+    // TODO - this should be handled better
+    this.running = true;
     // var bufferCount = 0;
 
+    console.log("running samples")
 
     // Tato funkce se provede pokaždé když dojde k naplnění bufferu o velikosti 2048 vzorků.
     // Při vzorkovacím kmitočku 48 kHz se tedy zavolá jednou za cca 42 ms.
@@ -73,8 +92,8 @@ export class TangleSound {
 
       var samples = e.inputBuffer.getChannelData(0);
       var rms_loudness_spectrum = 0;
-      fft.forward(samples); //Vyypočtení fft ze vzorků.
-      var spectrum = fft.spectrum; // Získání spektra o délce bufeer/2 v našem případě 1024 harmonických.
+      this.#fft.forward(samples); //Vyypočtení fft ze vzorků.
+      var spectrum = this.#fft.spectrum; // Získání spektra o délce bufeer/2 v našem případě 1024 harmonických.
 
       //--- Výpočet frekvence ---//
       //
@@ -102,9 +121,10 @@ export class TangleSound {
       // console.log("spectrum avarge loudnes: "+ out);
       // this.#handleControlSend(out);
       this.#events.emit('loudness', out);
+      // logging.debug('loudness', out);
 
       if (!this.running) {
-        this.#microphone_stream.disconnect();
+        this.#source.disconnect();
         this.#gain_node.disconnect();
       }
 
@@ -127,6 +147,10 @@ export class TangleSound {
 
   on(...args) {
     this.#events.on(...args);
+  }
+
+  setBuffSize(size) {
+    this.BUFF_SIZE = size;
   }
   // this.#events.emit('control', {
   //   type: 'loudness',
