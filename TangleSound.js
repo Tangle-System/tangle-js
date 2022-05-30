@@ -26,9 +26,9 @@ export class TangleSound {
 
   /**
    * 
-   * @param {mediaStream|"microphone"|undefined} mediaStream 
+   * @param {MediaStream|"microphone"} mediaStream 
    */
-  async connect(mediaStream) {
+  async connect(mediaStream = null) {
     // Uává velikost bloků ze kterých bude vypočítávána průměrná hlasitos.
     // Maximální velikost je 2048 vzorků.
     // Hodnota musí být vždy násobkem dvou.
@@ -146,11 +146,11 @@ export class TangleSound {
   }
 
   on(...args) {
-    this.#events.on(...args);
+    return this.#events.on(...args);
   }
 
   setBuffSize(size) {
-    this.BUFF_SIZE = size;
+    return this.BUFF_SIZE = size;
   }
   // this.#events.emit('control', {
   //   type: 'loudness',
