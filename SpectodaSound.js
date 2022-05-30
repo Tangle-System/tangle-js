@@ -2,7 +2,7 @@ import { createNanoEvents, mapValue } from './functions.js'
 import { FFT } from './dsp.js'
 import { logging } from './Logging.js';
 
-export class TangleSound {
+export class SpectodaSound {
   #stream;
   #gain_node;
   #source;
