@@ -470,7 +470,7 @@ criteria example:
   // if no criteria are provided, all Tangle enabled devices (with all different FWs and Owners and such)
   // are eligible.
 
-  autoSelect(criteria_object, scanPeriod_number = 1000, timeout_number = 10000) {
+  autoSelect(criteria_object, scan_period_number = 1000, timeout_number = 10000) {
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -478,7 +478,7 @@ criteria example:
 
     const criteria_json = JSON.stringify(criteria_object);
 
-    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scanPeriod_number}, timeout=${timeout_number})`);
+    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scan_period_number}, timeout=${timeout_number})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -754,10 +754,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
