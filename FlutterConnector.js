@@ -6,9 +6,9 @@ import { logging } from "./Logging.js";
 /////////////////////////////////////////////////////////////////////////////////////
 
 class FlutterConnection {
-  static #simulatedFails = false;
+  #simulatedFails = false;
 
-  static {
+  constructor() {
     console.log("Initing FlutterConnection");
 
     // @ts-ignore
@@ -51,7 +51,7 @@ class FlutterConnection {
       var _selected = false;
 
       function _fail(failChance) {
-        if (FlutterConnection.#simulatedFails) {
+        if (this.#simulatedFails) {
           return Math.random() < failChance;
         } else {
           return false;
