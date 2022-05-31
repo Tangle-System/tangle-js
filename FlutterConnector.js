@@ -11,11 +11,11 @@ class FlutterConnection {
   constructor() {
     // @ts-ignore
     if (window.flutterConnection) {
-      logging.log("FlutterConnection already inited");
+      console.log("FlutterConnection already inited");
       return;
     }
 
-    logging.log("Initing FlutterConnection");
+    console.log("Initing FlutterConnection");
 
     // @ts-ignore
     window.flutterConnection = {};
