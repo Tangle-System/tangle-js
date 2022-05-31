@@ -9,7 +9,13 @@ class FlutterConnection {
   #simulatedFails = false;
 
   constructor() {
-    console.log("Initing FlutterConnection");
+    // @ts-ignore
+    if (window.flutterConnection) {
+      logging.log("FlutterConnection already inited");
+      return;
+    }
+
+    logging.log("Initing FlutterConnection");
 
     // @ts-ignore
     window.flutterConnection = {};
