@@ -88,11 +88,13 @@ const TNGL_FLAGS = Object.freeze({
   /* events */
   GENERATOR_LAST_EVENT_VALUE: 144,
   GENERATOR_SMOOTHOUT: 145,
-  GENERATOR_SINE: 146,
-  GENERATOR_SAW: 147,
-  GENERATOR_TRIANGLE: 148,
-  GENERATOR_SQUARE: 149,
-  GENERATOR_PERLIN_NOISE: 150,
+  GENERATOR_LAG_VALUE: 146,
+  // RESERVED
+  GENERATOR_SINE: 150,
+  GENERATOR_SAW: 151,
+  GENERATOR_TRIANGLE: 152,
+  GENERATOR_SQUARE: 153,
+  GENERATOR_PERLIN_NOISE: 154,
 
   /* variable operations gates */
   VARIABLE_READ: 160,
@@ -629,6 +631,9 @@ export class TnglCompiler {
         break;
       case "genSmoothOut":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_SMOOTHOUT);
+        break;
+        case "genLagValue":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_LAG_VALUE);
         break;
 
       /* === variable operations === */
