@@ -20,7 +20,7 @@ export class SpectodaSound {
     this.#gain_node = null;
     this.#script_processor_get_audio_samples = null;
     this.BUFF_SIZE = 2048;
-    this.#audioContext = new AudioContext();
+    this.#audioContext;
     this.#stream = null;
     this.#fft = null;
 
@@ -36,6 +36,9 @@ export class SpectodaSound {
     // Maximální velikost je 2048 vzorků.
     // Hodnota musí být vždy násobkem dvou.
     // Pokud bude buffer menší bude se také rychleji posílat výpočet efektivní hodnoty. 
+    if (!this.#audioContext) {
+      this.#audioContext = new AudioContext()
+    }
     if (!mediaStream || mediaStream === "microphone") {
       // Dotaz na povolení přístupu k mikrofonu
       if (!navigator.getUserMedia)
