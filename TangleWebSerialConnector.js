@@ -1,9 +1,9 @@
+import { logging } from "./Logging.js";
 import { sleep, toBytes, numberToBytes, crc8, crc32, hexStringToArray, rgbToHex, stringToBytes } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglWriter } from "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 
 ///////////////////////////////////////////////////////////////////////////////////
 

@@ -1,8 +1,8 @@
 // npm install --save-dev @types/web-bluetooth
 /// <reference types="web-bluetooth" />
 
-import { detectAndroid, detectBluefy, detectSafari, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
 import { logging } from "./Logging.js";
+import { detectAndroid, detectBluefy, detectSafari, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";

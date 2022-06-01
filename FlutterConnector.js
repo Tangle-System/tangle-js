@@ -1,21 +1,22 @@
+import { logging } from "./Logging.js";
 import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
+var simulatedFails = false;
+
 class FlutterConnection {
-  #simulatedFails = false;
 
   constructor() {
     // @ts-ignore
     if (window.flutterConnection) {
-      console.log("FlutterConnection already inited");
+      logging.debug("FlutterConnection already inited");
       return;
     }
 
-    console.log("Initing FlutterConnection");
+    logging.debug("Initing FlutterConnection");
 
     // @ts-ignore
     window.flutterConnection = {};
@@ -48,16 +49,16 @@ class FlutterConnection {
     //   });
 
     if ("flutter_inappwebview" in window) {
-      logging.warn("flutter_inappwebview in window detected");
+      logging.debug("flutter_inappwebview in window detected");
     } else {
-      logging.warn("flutter_inappwebview in window NOT detected");
+      logging.debug("flutter_inappwebview in window NOT detected");
       logging.info("Simulating Flutter Functions");
 
       var _connected = false;
       var _selected = false;
 
       function _fail(failChance) {
-        if (this.#simulatedFails) {
+        if (simulatedFails) {
           return Math.random() < failChance;
         } else {
           return false;
@@ -760,10 +761,10 @@ criteria example:
   destroy() {
     //this.#interfaceReference = null; // dont know if I need to destroy this reference.. But I guess I dont need to?
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }

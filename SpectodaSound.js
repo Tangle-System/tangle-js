@@ -1,6 +1,6 @@
+import { logging } from './Logging.js';
 import { createNanoEvents, mapValue } from './functions.js'
 import { FFT } from './dsp.js'
-import { logging } from './Logging.js';
 
 export class SpectodaSound {
   #stream;

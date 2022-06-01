@@ -1,3 +1,4 @@
+import { logging } from "./Logging.js";
 import {
   colorToBytes,
   createNanoEvents,
@@ -29,7 +30,6 @@ import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 import { FlutterConnector } from "./FlutterConnector.js";
 
 export const DEVICE_FLAGS = Object.freeze({

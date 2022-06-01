@@ -1,7 +1,7 @@
 
 
-import { mapValue, uint8ArrayToHexString } from "./functions.js";
 import { logging } from "./Logging.js";
+import { mapValue, uint8ArrayToHexString } from "./functions.js";
 import { TnglWriter } from "./TnglWriter.js";
 
 const CONSTANTS = Object.freeze({
