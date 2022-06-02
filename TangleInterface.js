@@ -866,6 +866,7 @@ export class TangleInterface {
                 this.#disconnectQuery = new Query();
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .catch(() => {})
                   .then(() => {
                     return this.connector.disconnect();
                   })
@@ -1002,6 +1003,7 @@ export class TangleInterface {
                 this.#reconection = false;
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .catch(() => {})
                   .then(() => {
                     return this.connector.disconnect();
                   })

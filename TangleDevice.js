@@ -1184,8 +1184,9 @@ export class TangleDevice {
     logging.debug("> Rebooting and disconnecting device...");
 
     this.interface.reconnection(false);
-
-    return this.rebootDevice().then(() => {
+    
+    const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+    return this.interface.request(payload, false).then(() => {
       return this.interface.disconnect();
     });
   }
