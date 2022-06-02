@@ -1,3 +1,4 @@
+import { logging } from "./Logging.js";
 import {
   colorToBytes,
   createNanoEvents,
@@ -29,7 +30,6 @@ import { TimeTrack } from "./TimeTrack.js";
 import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 import { FlutterConnector } from "./FlutterConnector.js";
 
 export const DEVICE_FLAGS = Object.freeze({
@@ -38,12 +38,15 @@ export const DEVICE_FLAGS = Object.freeze({
   FLAG_OTA_WRITE: 0, // legacy
   FLAG_OTA_END: 254, // legacy
   FLAG_OTA_RESET: 253, // legacy
-  
+
   FLAG_DEVICE_REBOOT_REQUEST: 5, // legacy
   FLAG_DEVICE_DISCONNECT_REQUEST: 6,
 
   FLAG_CONFIG_UPDATE_REQUEST: 10,
   FLAG_CONFIG_UPDATE_RESPONSE: 11,
+
+  FLAG_SAVE_STATE_REQUEST: 220,
+  FLAG_SAVE_STATE_RESPONSE: 221,
 
   FLAG_SLEEP_REQUEST: 222,
   FLAG_SLEEP_RESPONSE: 223,
@@ -863,6 +866,7 @@ export class TangleInterface {
                 this.#disconnectQuery = new Query();
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .catch(() => {})
                   .then(() => {
                     return this.connector.disconnect();
                   })
@@ -999,6 +1003,7 @@ export class TangleInterface {
                 this.#reconection = false;
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
+                  .catch(() => {})
                   .then(() => {
                     return this.connector.disconnect();
                   })

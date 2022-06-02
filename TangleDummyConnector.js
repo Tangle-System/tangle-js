@@ -1,9 +1,9 @@
+import { logging } from "./Logging.js";
 import { sleep } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglReader } from "./TnglReader.js";
 import { TnglWriter } from "./TnglWriter.js";
-import { logging } from "./Logging.js";
 
 
 /////////////////////////////////////////////////////////////////////////////////////

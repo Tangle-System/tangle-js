@@ -1,15 +1,22 @@
+import { logging } from "./Logging.js";
 import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
-class FlutterConnection {
-  static #simulatedFails = false;
+var simulatedFails = false;
 
-  static {
-    console.log("Initing FlutterConnection");
+class FlutterConnection {
+
+  constructor() {
+    // @ts-ignore
+    if (window.flutterConnection) {
+      logging.debug("FlutterConnection already inited");
+      return;
+    }
+
+    logging.debug("Initing FlutterConnection");
 
     // @ts-ignore
     window.flutterConnection = {};
@@ -42,16 +49,16 @@ class FlutterConnection {
     //   });
 
     if ("flutter_inappwebview" in window) {
-      logging.warn("flutter_inappwebview in window detected");
+      logging.debug("flutter_inappwebview in window detected");
     } else {
-      logging.warn("flutter_inappwebview in window NOT detected");
+      logging.debug("flutter_inappwebview in window NOT detected");
       logging.info("Simulating Flutter Functions");
 
       var _connected = false;
       var _selected = false;
 
       function _fail(failChance) {
-        if (FlutterConnection.#simulatedFails) {
+        if (simulatedFails) {
           return Math.random() < failChance;
         } else {
           return false;
@@ -159,6 +166,7 @@ class FlutterConnection {
                 // @ts-ignore
                 window.flutterConnection.emit("#disconnected");
                 //}, Math.random() * 60000);
+                _connected = false;
               }, 60000);
             }
             break;
@@ -405,7 +413,7 @@ export class FlutterConnector extends FlutterConnection {
 
   /*
 
-criteria: pole objektu, kde plati: [{ tohle and tamto and toto } or { tohle and tamto }]
+criteria: JSON pole objektu, kde plati: [{ tohle AND tamto AND toto } OR { tohle AND tamto }]
 
 možnosti:
   name: string
@@ -426,9 +434,7 @@ criteria example:
     ownerSignature:"baf2398ff5e6a7b8c9d097d54a9f865f"
     productCode:1
   },
-  // all the devices with the name starting with "NARA", without the 0.7.3 FW and 
-  // that are not adopted by anyone
-  // Product code is 2 what means NARA Beta 
+
   {
     namePrefix:"NARA"
     fwVersion:"!0.7.3"
@@ -471,7 +477,7 @@ criteria example:
   // if no criteria are provided, all Tangle enabled devices (with all different FWs and Owners and such)
   // are eligible.
 
-  autoSelect(criteria_object, scanPeriod_number = 1000, timeout_number = 10000) {
+  autoSelect(criteria_object, scan_period_number = 1000, timeout_number = 10000) {
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -479,7 +485,7 @@ criteria example:
 
     const criteria_json = JSON.stringify(criteria_object);
 
-    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scanPeriod_number}, timeout=${timeout_number})`);
+    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scan_period_number}, timeout=${timeout_number})`);
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore

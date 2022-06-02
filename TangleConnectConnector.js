@@ -1,7 +1,7 @@
+import { logging } from "./Logging.js";
 import { sleep, toBytes, detectTangleConnect } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
-import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 

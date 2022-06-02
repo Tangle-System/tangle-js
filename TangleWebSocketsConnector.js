@@ -1,7 +1,7 @@
+import { logging } from "./Logging.js";
 import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./lib/socketio.js";
-import { logging } from "./Logging.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
