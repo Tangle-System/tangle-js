@@ -7,7 +7,6 @@ import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./lib/socketio.js";
-import { logging, setLoggingLevel } from "./Logging.js";
 import { t, changeLanguage } from "./i18n.js";
 
 let lastEvents = {};
@@ -1186,7 +1185,7 @@ export class TangleDevice {
     logging.debug("> Rebooting and disconnecting device...");
 
     this.interface.reconnection(false);
-    
+
     const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.request(payload, false).then(() => {
       return this.interface.disconnect();
