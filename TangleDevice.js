@@ -22,6 +22,7 @@ export class TangleDevice {
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
+  #connecting;
   #adopting;
   #updating;
   #selected;
@@ -42,6 +43,7 @@ export class TangleDevice {
       this.interface.assignConnector(connectorType);
     }
 
+    this.#connecting = false;
     this.#adopting = false;
     this.#updating = false;
 
@@ -295,6 +297,12 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
+    if (this.#adopting) {
+      return Promise.reject("AdoptingInProgress");
+    }
+
+    this.#adopting = true;
+
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -316,7 +324,6 @@ export class TangleDevice {
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
-        this.#adopting = true;
         return this.interface.connect(10000, true);
       })
       .then(async () => {
@@ -563,6 +570,12 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = false) {
+    if (this.#connecting) {
+      return Promise.reject("ConnectingInProgress");
+    }
+
+    this.#connecting = true;
+
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -621,7 +634,7 @@ export class TangleDevice {
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
-          // window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
+          window.alert('Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko "Přidat zařízení".', "Připojení selhalo.");
           return;
         }
         if (error === "SecurityError") {
@@ -629,7 +642,10 @@ export class TangleDevice {
           return;
         }
         //@ts-ignore
-        // window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo."); // Problematicke když se objevi dva popupy
+        window.alert("Zkuste to, prosím, později.\n\nChyba: " + error.toString(), "Připojení selhalo."); // Problematicke když se objevi dva popupy
+      })
+      .finally(() => {
+        this.#connecting = false;
       });
   }
 
@@ -640,6 +656,10 @@ export class TangleDevice {
   }
 
   connected() {
+    if (this.#connecting || this.#adopting) {
+      return Promise.resolve();
+    }
+
     return this.interface.connected();
   }
 
@@ -1184,7 +1204,7 @@ export class TangleDevice {
     logging.debug("> Rebooting and disconnecting device...");
 
     this.interface.reconnection(false);
-    
+
     const payload = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
     return this.interface.request(payload, false).then(() => {
       return this.interface.disconnect();
