@@ -23,6 +23,7 @@ export class TangleDevice {
   #uuidCounter;
   #ownerSignature;
   #ownerKey;
+  #connecting;
   #adopting;
   #updating;
   #selected;
@@ -43,6 +44,7 @@ export class TangleDevice {
       this.interface.assignConnector(connectorType);
     }
 
+    this.#connecting = false;
     this.#adopting = false;
     this.#updating = false;
 
@@ -296,6 +298,12 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
+    if (this.#adopting) {
+      return Promise.reject("AdoptingInProgress");
+    }
+
+    this.#adopting = true;
+
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -317,7 +325,6 @@ export class TangleDevice {
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
-        this.#adopting = true;
         return this.interface.connect(10000, true);
       })
       .then(async () => {
@@ -564,6 +571,12 @@ export class TangleDevice {
   // devices: [ {name:"Lampa 1", mac:"12:34:56:78:9a:bc"}, {name:"Lampa 2", mac:"12:34:56:78:9a:bc"} ]
 
   connect(devices = null, autoConnect = true, ownerSignature = null, ownerKey = null, connectAny = false) {
+    if (this.#connecting) {
+      return Promise.reject("ConnectingInProgress");
+    }
+
+    this.#connecting = true;
+
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
     }
@@ -631,6 +644,9 @@ export class TangleDevice {
         }
         //@ts-ignore
         window.alert(t("Zkuste to, prosím, později.") + "\n\n" + t("Chyba: ") + error.toString(), t("Připojení selhalo"));
+      })
+      .finally(() => {
+        this.#connecting = false;
       });
   }
 
@@ -641,6 +657,10 @@ export class TangleDevice {
   }
 
   connected() {
+    if (this.#connecting || this.#adopting) {
+      return Promise.resolve();
+    }
+
     return this.interface.connected();
   }
 

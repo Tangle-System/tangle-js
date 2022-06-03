@@ -163,7 +163,6 @@ export class TangleInterface {
   #chunkSize;
 
   #reconection;
-  #connecting;
   #selecting;
   #disconnectQuery;
 
@@ -187,7 +186,6 @@ export class TangleInterface {
     this.#chunkSize = 5000;
 
     this.#reconection = false;
-    this.#connecting = false;
     this.#selecting = false;
     this.#disconnectQuery = null;
 
@@ -562,18 +560,10 @@ export class TangleInterface {
       return Promise.reject("InvalidTimeout");
     }
 
-    if (this.#connecting) {
-      return Promise.reject("ConnectingInProgress");
-    }
-
-    this.#connecting = true;
-
     const item = new Query(Query.TYPE_CONNECT, timeout, supportLegacy);
     this.#process(item);
-    return item.promise.finally(() => {
-      this.#connecting = false;
-    });
-
+    return item.promise;
+    
     //========================================
 
     // this.#reconection = true;
