@@ -305,6 +305,7 @@ export class TangleConnectConnector {
       });
   }
 
+  // deprecated. This function will be deleted with refactoring to JavaConnect
   available() {
     return detectTangleConnect();
   }
