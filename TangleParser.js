@@ -337,7 +337,7 @@ export class TnglCompiler {
       msecs.shift();
     }
 
-    logging.verbose(`total=${total}`);
+    // logging.verbose(`total=${total}`);
 
     if (total >= 2147483647) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
@@ -794,6 +794,7 @@ export class TnglCodeParser {
     let tnglBytes = this.#compiler.tnglBytes;
 
     logging.verbose(tnglBytes);
+    logging.debug("Compiled tnglbytes length:", tnglBytes.length);
     logging.info(uint8ArrayToHexString(tnglBytes));
     return tnglBytes;
   }
