@@ -243,6 +243,12 @@ export function detectTangleConnect() {
   return tangleConnectDetected;
 }
 
+const flutterConnectDetected = "flutter_inappwebview" in window;
+export function detectFlutterConnect() {
+  return flutterConnectDetected;
+}
+
+
 //////////////////////////////////////////////////////
 
 export function computeTnglFingerprint(tngl_bytes, tngl_label) {

@@ -11,6 +11,7 @@ import {
   detectBluefy,
   noSleep,
   detectTangleConnect,
+  detectFlutterConnect,
   mapValue,
   rgbToHex,
   detectAndroid,
@@ -314,7 +315,9 @@ export class TangleInterface {
     }
 
     if (connector_type == "default") {
-      if (detectTangleConnect()) {
+      if (detectFlutterConnect()) {
+        connector_type = "flutter";
+      } else if (detectTangleConnect()) {
         connector_type = "tangleconnect";
       } else if (navigator.bluetooth) {
         connector_type = "webbluetooth";

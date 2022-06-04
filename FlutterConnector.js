@@ -8,7 +8,6 @@ import { TnglReader } from "./TnglReader.js";
 var simulatedFails = false;
 
 class FlutterConnection {
-
   constructor() {
     // @ts-ignore
     if (window.flutterConnection) {
@@ -48,7 +47,7 @@ class FlutterConnection {
     //     }
     //   });
 
-    if ("flutter_inappwebview" in window) {
+    if (this.available()) {
       logging.debug("flutter_inappwebview in window detected");
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
@@ -346,6 +345,10 @@ class FlutterConnection {
       };
     }
   }
+
+  available() {
+    return "flutter_inappwebview" in window;
+  }
 }
 
 // Connector connects the application with one Tangle Device, that is then in a
@@ -371,10 +374,6 @@ export class FlutterConnector extends FlutterConnection {
 
       this.#interfaceReference.emit(event, param);
     };
-  }
-
-  available() {
-    return detectTangleConnect();
   }
 
   #applyTimeout(promise, timeout, message) {
