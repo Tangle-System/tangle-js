@@ -32,6 +32,7 @@ import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
 import { FlutterConnector } from "./FlutterConnector.js";
+import { t } from "./i18n.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -356,8 +357,6 @@ export class TangleInterface {
                 })
             );
 
-            break;
-
           case "edummy":
             this.connector = new TangleDummyConnector(this, true);
             break;
@@ -434,7 +433,6 @@ export class TangleInterface {
 
           default:
             throw "UnknownConnector";
-            break;
         }
       });
   }
@@ -566,7 +564,7 @@ export class TangleInterface {
     const item = new Query(Query.TYPE_CONNECT, timeout, supportLegacy);
     this.#process(item);
     return item.promise;
-    
+
     //========================================
 
     // this.#reconection = true;
