@@ -69,9 +69,10 @@ const TNGL_FLAGS = Object.freeze({
   ANIMATION_PROJECTILE: 36,
   ANIMATION_LOADING: 37,
   ANIMATION_COLOR_ROLL: 38,
-  ANIMATION_PALLETTE_ROLL: 39,
-  ANIMATION_INL_ANI: 40,
-  ANIMATION_DEFINED: 41,
+  // ANIMATION_PALLETTE_ROLL: 39,
+  ANIMATION_COLOR_GRADIENT: 40,
+  ANIMATION_INL_ANI: 126,
+  ANIMATION_DEFINED: 127,
 
   /* modifiers */
   MODIFIER_BRIGHTNESS: 128,
@@ -502,8 +503,11 @@ export class TnglCompiler {
       case "animColorRoll":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_ROLL);
         break;
-      case "animPaletteRoll":
-        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_PALLETTE_ROLL);
+      // case "animPaletteRoll":
+      //   this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_PALLETTE_ROLL);
+      //   break;
+      case "animColorGradient":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT);
         break;
 
       // === handlers ===
@@ -632,7 +636,7 @@ export class TnglCompiler {
       case "genSmoothOut":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_SMOOTHOUT);
         break;
-        case "genLagValue":
+      case "genLagValue":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_LAG_VALUE);
         break;
 
