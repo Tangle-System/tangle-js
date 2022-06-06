@@ -5,7 +5,7 @@ export const DEBUG_LEVEL_INFO = 3;
 export const DEBUG_LEVEL_DEBUG = 4;
 export const DEBUG_LEVEL_VERBOSE = 5;
 
-export const logging = {
+export var logging = {
   error: console.error,
   warn: console.warn,
   info: console.log,

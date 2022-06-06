@@ -69,9 +69,10 @@ const TNGL_FLAGS = Object.freeze({
   ANIMATION_PROJECTILE: 36,
   ANIMATION_LOADING: 37,
   ANIMATION_COLOR_ROLL: 38,
-  ANIMATION_PALLETTE_ROLL: 39,
-  ANIMATION_INL_ANI: 40,
-  ANIMATION_DEFINED: 41,
+  ANIMATION_COLOR_GRADIENT3: 39,
+  ANIMATION_COLOR_GRADIENT5: 40,
+  ANIMATION_INL_ANI: 126,
+  ANIMATION_DEFINED: 127,
 
   /* modifiers */
   MODIFIER_BRIGHTNESS: 128,
@@ -337,7 +338,7 @@ export class TnglCompiler {
       msecs.shift();
     }
 
-    logging.verbose(`total=${total}`);
+    // logging.verbose(`total=${total}`);
 
     if (total >= 2147483647) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
@@ -502,8 +503,14 @@ export class TnglCompiler {
       case "animColorRoll":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_ROLL);
         break;
-      case "animPaletteRoll":
-        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_PALLETTE_ROLL);
+      // case "animPaletteRoll":
+      //   this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_PALLETTE_ROLL);
+      //   break;
+      case "animColorGradient3":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT3);
+        break;
+      case "animColorGradient5":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT5);
         break;
 
       // === handlers ===
@@ -632,7 +639,7 @@ export class TnglCompiler {
       case "genSmoothOut":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_SMOOTHOUT);
         break;
-        case "genLagValue":
+      case "genLagValue":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.GENERATOR_LAG_VALUE);
         break;
 
@@ -794,7 +801,8 @@ export class TnglCodeParser {
     let tnglBytes = this.#compiler.tnglBytes;
 
     logging.verbose(tnglBytes);
-    logging.info(uint8ArrayToHexString(tnglBytes));
+    logging.debug(uint8ArrayToHexString(tnglBytes));
+    logging.info("Compiled tnglbytes length:", tnglBytes.length);
     return tnglBytes;
   }
 
