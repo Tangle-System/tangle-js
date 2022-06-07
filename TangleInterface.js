@@ -974,7 +974,11 @@ export class TangleInterface {
               //   break;
 
               case Query.TYPE_FIRMWARE_UPDATE:
-                await this.requestWakeLock();
+                try {
+                  await this.requestWakeLock();
+                } catch (err) {
+                  console.error("Wakelock fail");
+                }
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
