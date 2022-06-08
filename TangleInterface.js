@@ -345,7 +345,7 @@ export class TangleInterface {
             return (
               window
                 // @ts-ignore
-                .prompt("Simulace FW verze dummy connecoru", "DUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
+                .prompt("Simulace FW verze dummy connecoru", "VDUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
                   placeholder: "DUMMY_0.0.0_00000000",
                   regex: /^[\w\d]+_\d.\d.\d_[\d]{8}/,
                   invalidText: "FW verze není správná",
