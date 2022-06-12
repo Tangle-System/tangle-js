@@ -991,7 +991,6 @@ export class TangleInterface {
                   .finally(() => {
                     this.releaseWakeLock();
                   });
-
                 break;
 
               case Query.TYPE_DESTROY:
@@ -1014,7 +1013,6 @@ export class TangleInterface {
                     this.connector = null;
                     item.reject(error);
                   });
-
                 break;
 
               default:

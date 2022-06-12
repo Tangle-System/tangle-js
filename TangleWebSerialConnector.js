@@ -322,7 +322,7 @@ criteria example:
                 const passed = new Date().getTime() - start;
                 resolve(this.connect(timeout - passed));
               }
-            }, 1000);
+            }, 5000);
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
