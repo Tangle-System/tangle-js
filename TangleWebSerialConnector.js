@@ -265,7 +265,7 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(timeout = 10000) {
+  connect(timeout = 12000) {
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
@@ -322,7 +322,7 @@ criteria example:
                 const passed = new Date().getTime() - start;
                 resolve(this.connect(timeout - passed));
               }
-            }, 5000);
+            }, 4000);
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
