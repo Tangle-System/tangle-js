@@ -424,8 +424,7 @@ class NoSleep {
       this.enabled = true;
       return Promise.resolve();
     } else {
-      let playPromise = this.noSleepVideo.play();
-      return playPromise
+      return this.noSleepVideo.play()
         .then(res => {
           this.enabled = true;
           // return res;

@@ -962,7 +962,7 @@ criteria example:
 
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
-  connect(timeout = 7000, supportLegacy = false) {
+  connect(timeout = 10000, supportLegacy = false) {
     logging.verbose(`connect(timeout=${timeout},supportLegacy=${supportLegacy})`);
 
     if (timeout <= 0) {
@@ -987,7 +987,7 @@ criteria example:
         logging.warn("Timeout triggered");
         this.disconnect();
       },
-      timeout < 7000 ? 7000 : timeout,
+      timeout < 10000 ? 10000 : timeout,
     );
 
     logging.debug("> Connecting to Bluetooth device...");

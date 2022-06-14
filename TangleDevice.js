@@ -1392,7 +1392,7 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      logging.debug(`vdd_reading=${vdd_reading}`);
+      logging.info(`vdd_reading=${vdd_reading}`);
 
       return vdd_reading;
     });
@@ -1430,7 +1430,7 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      logging.debug(`pin_reading=${pin_reading}`);
+      logging.info(`pin_reading=${pin_reading}`);
 
       return pin_reading;
     });

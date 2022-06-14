@@ -41,31 +41,26 @@ export class SpectodaSound {
     }
     if (!mediaStream || mediaStream === "microphone") {
       // Dotaz na povolení přístupu k mikrofonu
-      if (!navigator.getUserMedia)
-        navigator.getUserMedia =
-          navigator.getUserMedia ||
-          navigator.webkitGetUserMedia ||
-          navigator.mozGetUserMedia ||
-          navigator.msGetUserMedia;
-
-      if (navigator.getUserMedia) {
+      if (navigator.mediaDevices) {
+        const constraints = (window.constraints = {
+          audio: true,
+          video: false,
+        });
         await new Promise((resolve, reject) => {
-          navigator.getUserMedia(
-            { audio: true },
-            (stream) => {
+          navigator.mediaDevices
+            .getUserMedia(constraints)
+            .then(stream => {
               this.#stream = stream;
-              this.#source = this.#audioContext.createMediaStreamSource(
-                this.#stream
-              );
+              this.#source = this.#audioContext.createMediaStreamSource(this.#stream);
               resolve();
               logging.debug("SpectodaSound.connect", "Connected microphone");
-            },
-            (e) => {
+            })
+            .catch(e => {
               alert("Error capturing audio.");
               reject(e);
-            }
-          );
+            });
         });
+        // await new Promise((resolve, reject) => { navigator.mediaDevices.getUserMedia(constraints).then(resolve).catch(reject)) };
       } else {
         alert("getUserMedia not supported in this browser.");
       }
@@ -81,8 +76,7 @@ export class SpectodaSound {
     this.#gain_node.connect(this.#audioContext.destination);
 
     // TODO use audio worklet https://developer.chrome.com/blog/audio-worklet/
-    this.#script_processor_get_audio_samples =
-      this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
+    this.#script_processor_get_audio_samples = this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
     this.#script_processor_get_audio_samples.connect(this.#gain_node);
 
     console.log("Sample rate of soundcard: " + this.#audioContext.sampleRate);
@@ -99,10 +93,7 @@ export class SpectodaSound {
     // Tato funkce se provede pokaždé když dojde k naplnění bufferu o velikosti 2048 vzorků.
     // Při vzorkovacím kmitočku 48 kHz se tedy zavolá jednou za cca 42 ms.
 
-    this.#script_processor_get_audio_samples.addEventListener(
-      "audioprocess",
-      this.processHandler.bind(this)
-    );
+    this.#script_processor_get_audio_samples.addEventListener("audioprocess", this.processHandler.bind(this));
   }
 
   stop() {
@@ -133,7 +124,7 @@ export class SpectodaSound {
     //------------------------//
 
     // Zde se postupně sečte druhá mocnina všech 1024 vzorků.
-    spectrum.forEach((element) => {
+    spectrum.forEach(element => {
       rms_loudness_spectrum += Math.pow(element, 2);
     });
 
