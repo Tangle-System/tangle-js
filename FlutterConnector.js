@@ -157,10 +157,16 @@ class FlutterConnection {
               }
               _connected = true;
               // @ts-ignore
-              window.flutterConnection.emit("#connected");
               // @ts-ignore
               window.flutterConnection.resolve('{"connector":"tangleconnect"}');
               // after connection the TangleConnect can any time emit #disconnect event.
+
+              await sleep(1000); // unselect logic
+
+              // @ts-ignore
+              window.flutterConnection.emit("#connected");
+
+
               setTimeout(() => {
                 // @ts-ignore
                 window.flutterConnection.emit("#disconnected");

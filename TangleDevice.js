@@ -57,12 +57,12 @@ export class TangleDevice {
     //   this.#onDisconnected(e);
     // });
 
-    this.interface.onConnected(e => {
+    this.interface.onConnected = e => {
       this.#onConnected(e);
-    });
-    this.interface.onDisconnected(e => {
+    };
+    this.interface.onDisconnected = e => {
       this.#onDisconnected(e);
-    });
+    };
 
     // auto clock sync loop
     setInterval(() => {
