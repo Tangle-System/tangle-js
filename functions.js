@@ -1,4 +1,4 @@
-import { logging } from "./Logging.js";
+import { logging, setLoggingLevel } from "./Logging.js";
 
 export function toBytes(value, byteCount) {
   var byteArray = [];
@@ -466,6 +466,7 @@ export function enableDebugMode() {
   document.body.appendChild(script);
   script.onload = function () {
     window.eruda.init();
+    setLoggingLevel(4);
   };
 }
 

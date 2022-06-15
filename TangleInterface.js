@@ -168,6 +168,8 @@ export class TangleInterface {
   #disconnectQuery;
 
   #reconnectionInterval;
+  
+  #connectGuard;
 
   #lastUpdateTime;
   #lastUpdatePercentage;
@@ -191,9 +193,14 @@ export class TangleInterface {
     this.#disconnectQuery = null;
 
     this.#reconnectionInterval = reconnectionInterval;
+    
+    this.#connectGuard = false;
 
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
+
+    this.onConnected = e => {};
+    this.onDisconnected = e => {};
 
     // this.#otaStart = new Date().getTime();
 
@@ -240,6 +247,10 @@ export class TangleInterface {
       logging.verbose("time_left:", time_left);
 
       this.emit("ota_timeleft", time_left);
+    });
+
+    this.#eventEmitter.on("#connected", e => {
+      this.#onConnected(e);
     });
 
     this.#eventEmitter.on("#disconnected", e => {
@@ -566,7 +577,7 @@ export class TangleInterface {
     const item = new Query(Query.TYPE_CONNECT, timeout, supportLegacy);
     this.#process(item);
     return item.promise;
-    
+
     //========================================
 
     // this.#reconection = true;
@@ -601,6 +612,17 @@ export class TangleInterface {
     //   });
   }
 
+  #onConnected = event => {
+    if (this.#connectGuard) {
+      logging.error("Connecting logic error. #connected called when already connected?");
+      logging.warn("Ignoring the #connected event");
+      return;
+    }
+
+    this.#connectGuard = true;
+    this.onConnected();
+  };
+
   disconnect() {
     this.#reconection = false;
 
@@ -610,6 +632,15 @@ export class TangleInterface {
   }
 
   #onDisconnected = event => {
+    if (!this.#connectGuard) {
+      logging.error("Connecting logic error. #disconnected called when already disconnected?");
+      logging.warn("Ignoring the #disconnected event");
+      return;
+    }
+
+    this.#connectGuard = false;
+    this.onDisconnected();
+
     // for (let i = 0; i < this.#queue.length; i++) {
     //   this.#queue[i].reject("Disconnected");
     // }
@@ -821,6 +852,14 @@ export class TangleInterface {
                 await this.connector
                   .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
+
+                    if (!this.#connectGuard) {
+                      logging.error("Connection logic error. #connected not called during successful connect()?");
+                      this.#connectGuard = true;
+                      logging.warn("Emitting #connected");
+                      this.#eventEmitter.emit("#connected");
+                    }
+
                     return this.connector
                       .getClock()
                       .then(clock => {
