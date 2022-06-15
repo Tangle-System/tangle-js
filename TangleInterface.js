@@ -620,7 +620,7 @@ export class TangleInterface {
     }
 
     this.#connectGuard = true;
-    this.onConnected();
+    this.onConnected(event);
   };
 
   disconnect() {
@@ -639,7 +639,7 @@ export class TangleInterface {
     }
 
     this.#connectGuard = false;
-    this.onDisconnected();
+    this.onDisconnected(event);
 
     // for (let i = 0; i < this.#queue.length; i++) {
     //   this.#queue[i].reject("Disconnected");
@@ -855,7 +855,6 @@ export class TangleInterface {
 
                     if (!this.#connectGuard) {
                       logging.error("Connection logic error. #connected not called during successful connect()?");
-                      this.#connectGuard = true;
                       logging.warn("Emitting #connected");
                       this.#eventEmitter.emit("#connected");
                     }
