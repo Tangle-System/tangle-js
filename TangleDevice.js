@@ -50,10 +50,17 @@ export class TangleDevice {
 
     this.#reconnectRC = false;
 
-    this.interface.on("#connected", e => {
+    // this.interface.on("#connected", e => {
+    //   this.#onConnected(e);
+    // });
+    // this.interface.on("#disconnected", e => {
+    //   this.#onDisconnected(e);
+    // });
+
+    this.interface.onConnected(e => {
       this.#onConnected(e);
     });
-    this.interface.on("#disconnected", e => {
+    this.interface.onDisconnected(e => {
       this.#onDisconnected(e);
     });
 
