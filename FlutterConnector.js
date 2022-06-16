@@ -48,7 +48,35 @@ class FlutterConnection {
     //   });
 
     if (this.available()) {
-      logging.debug("flutter_inappwebview in window detected");
+      logging.debug("Flutter Connector available");
+
+      window.addEventListener("#resolve", e => {
+        // @ts-ignore
+        const value = e.detail.value;
+        logging.debug("Triggered #resolve:", value);
+
+        // @ts-ignore
+        window.flutterConnection.resolve(value);
+      });
+
+      window.addEventListener("#reject", e => {
+        // @ts-ignore
+        const value = e.detail.value;
+        logging.debug("Triggered #reject:", value);
+
+        // @ts-ignore
+        window.flutterConnection.reject(value);
+      });
+
+      window.addEventListener("#emit", e => {
+        // @ts-ignore
+        const value = e.detail.value;
+        logging.debug("Triggered #emit:", value);
+
+        // @ts-ignore
+        window.flutterConnection.emit(value);
+      });
+      
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
       logging.info("Simulating Flutter Functions");
@@ -165,7 +193,6 @@ class FlutterConnection {
 
               // @ts-ignore
               window.flutterConnection.emit("#connected");
-
 
               setTimeout(() => {
                 // @ts-ignore
@@ -374,8 +401,9 @@ export class FlutterConnector extends FlutterConnection {
 
     // @ts-ignore
     window.flutterConnection.emit = (event, param) => {
-      if (event === "#bytecode") {
+      if (event === "#notification") {
         this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+        return;
       }
 
       this.#interfaceReference.emit(event, param);
