@@ -77,28 +77,30 @@ export class SpectodaSound {
   }
 
   start() {
-    this.#gain_node = this.#audioContext.createGain();
-    this.#gain_node.connect(this.#audioContext.destination);
+    if (!this.running) {
+      this.#gain_node = this.#audioContext.createGain();
+      this.#gain_node.connect(this.#audioContext.destination);
 
-    // TODO use audio worklet https://developer.chrome.com/blog/audio-worklet/
-    this.#script_processor_get_audio_samples = this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
-    this.#script_processor_get_audio_samples.connect(this.#gain_node);
+      // TODO use audio worklet https://developer.chrome.com/blog/audio-worklet/
+      this.#script_processor_get_audio_samples = this.#audioContext.createScriptProcessor(this.BUFF_SIZE, 1, 1);
+      this.#script_processor_get_audio_samples.connect(this.#gain_node);
 
-    console.log("Sample rate of soundcard: " + this.#audioContext.sampleRate);
-    this.#fft = new FFT(this.BUFF_SIZE, this.#audioContext.sampleRate);
+      console.log("Sample rate of soundcard: " + this.#audioContext.sampleRate);
+      this.#fft = new FFT(this.BUFF_SIZE, this.#audioContext.sampleRate);
 
-    this.#source.connect(this.#script_processor_get_audio_samples);
+      this.#source.connect(this.#script_processor_get_audio_samples);
 
-    // TODO - this should be handled better
-    this.running = true;
-    // var bufferCount = 0;
+      // TODO - this should be handled better
+      this.running = true;
+      // var bufferCount = 0;
 
-    console.log("running samples", this.BUFF_SIZE);
+      console.log("running samples", this.BUFF_SIZE);
 
-    // Tato funkce se provede pokaždé když dojde k naplnění bufferu o velikosti 2048 vzorků.
-    // Při vzorkovacím kmitočku 48 kHz se tedy zavolá jednou za cca 42 ms.
+      // Tato funkce se provede pokaždé když dojde k naplnění bufferu o velikosti 2048 vzorků.
+      // Při vzorkovacím kmitočku 48 kHz se tedy zavolá jednou za cca 42 ms.
 
-    this.#script_processor_get_audio_samples.addEventListener("audioprocess", this.processHandler.bind(this));
+      this.#script_processor_get_audio_samples.addEventListener("audioprocess", this.processHandler.bind(this));
+    }
   }
 
   stop() {
