@@ -43,7 +43,12 @@ export class SpectodaSound {
       // Dotaz na povolení přístupu k mikrofonu
       if (navigator.mediaDevices) {
         const constraints = (window.constraints = {
-          audio: true,
+          audio: {
+            echoCancellation: false,
+            autoGainControl: false,
+            noiseSuppression: false,
+            sampleRate: 48000,
+          },
           video: false,
         });
         await new Promise((resolve, reject) => {
