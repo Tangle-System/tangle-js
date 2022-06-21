@@ -1,18 +1,25 @@
 import { logging } from "./Logging.js";
-import { createNanoEvents, mapValue } from "./functions.js";
+import { createNanoEvents, mapValue, sleep } from "./functions.js";
 import { FFT } from "./dsp.js";
+import { t } from "./i18n.js";
+
+function calculateSensitivityValue(value, sensitivity) {
+  return (value * sensitivity) / 100;
+}
 
 export class SpectodaSound {
   #stream;
   #gain_node;
   #source;
   #audioContext;
+  #bufferedValues;
   /**
    * @type {ScriptProcessorNode}
    */
   #script_processor_get_audio_samples;
   #events;
   #fft;
+  #sensitivity;
 
   constructor() {
     this.running = false;
@@ -23,6 +30,8 @@ export class SpectodaSound {
     this.#audioContext = null;
     this.#stream = null;
     this.#fft = null;
+    this.#bufferedValues = [];
+    this.#sensitivity = 100;
 
     this.#events = createNanoEvents();
   }
@@ -61,13 +70,14 @@ export class SpectodaSound {
               logging.debug("SpectodaSound.connect", "Connected microphone");
             })
             .catch(e => {
-              alert("Error capturing audio.");
+              window.alert(t("Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu."), t("Mikrofon se nepodařilo spustit."));
               reject(e);
             });
         });
         // await new Promise((resolve, reject) => { navigator.mediaDevices.getUserMedia(constraints).then(resolve).catch(reject)) };
       } else {
-        alert("getUserMedia not supported in this browser.");
+        // TODO - check, tato chyba možná vzniká jinak. Navíc ta chyba nemusí být bluefy only
+        window.alert(t("Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu."), t("Mikrofon se nepodařilo spustit."));
       }
     } else {
       this.#stream = mediaStream;
@@ -111,13 +121,36 @@ export class SpectodaSound {
     return this.#events.on(...args);
   }
 
+  getBufferedDataAverage() {
+    if (this.#bufferedValues.length > 0) {
+      const value = this.#bufferedValues.reduce((p, v) => p + v) / this.#bufferedValues.length;
+      this.#bufferedValues = [];
+      return { value, evRate: 20 };
+    }
+  }
+
+  /**
+   *
+   * @param {Function} func
+   */
+  async autoEmitFunctionValue(func) {
+    let data = this.getBufferedDataAverage();
+    if (data) {
+      Promise.all([func(calculateSensitivityValue(data.value, this.#sensitivity)).then(() => this.autoEmitFunctionValue(func))]);
+    } else {
+      Promise.all([sleep(10)]).then(() => this.autoEmitFunctionValue(func));
+    }
+  }
+
   setBuffSize(size) {
     return (this.BUFF_SIZE = size);
   }
 
-  processHandler(e) {
-    console.log("audio processing");
+  setSensitivity(value) {
+    this.#sensitivity = value;
+  }
 
+  processHandler(e) {
     var samples = e.inputBuffer.getChannelData(0);
     var rms_loudness_spectrum = 0;
     this.#fft.forward(samples); //Vyypočtení fft ze vzorků.
@@ -149,6 +182,12 @@ export class SpectodaSound {
     // console.log("spectrum avarge loudnes: "+ out);
     // this.#handleControlSend(out);
     this.#events.emit("loudness", out);
+    this.#bufferedValues.push(out);
+    // this.movingAverageEvRate.push(new Date().getTime())
+    // { timestamp: new Date().getTime(), value:
+    if (this.#bufferedValues.length > 5) {
+      this.#bufferedValues.splice(0, 1);
+    }
     // logging.debug('loudness', out);
 
     if (!this.running) {
