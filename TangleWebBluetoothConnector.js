@@ -1145,6 +1145,7 @@ criteria example:
     logging.debug("> Bluetooth Device disconnected");
     this.#connection.reset();
     if (this.#connectedGuard) {
+      logging.verbose("emitting #disconnected");
       this.#interfaceReference.emit("#disconnected");
     }
   };

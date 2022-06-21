@@ -24,6 +24,7 @@ export class TangleDevice {
   #ownerKey;
   #connecting;
   #adopting;
+  #adoptingGuard;
   #updating;
   #selected;
 
@@ -45,6 +46,7 @@ export class TangleDevice {
 
     this.#connecting = false;
     this.#adopting = false;
+    this.#adoptingGuard = false;
     this.#updating = false;
 
     this.#reconnectRC = false;
@@ -56,11 +58,26 @@ export class TangleDevice {
     //   this.#onDisconnected(e);
     // });
 
-    this.interface.onConnected = e => {
-      this.#onConnected(e);
+    this.interface.onConnected = event => {
+      if (!this.#adopting) {
+        logging.debug("> Device connected");
+        this.interface.emit("connected", { target: this });
+
+        this.requestTimeline().catch(e => {
+          logging.error("Timeline request after reconnection failed.", e);
+        });
+      } else {
+        logging.verbose("connected event skipped because of adopt");
+      }
     };
-    this.interface.onDisconnected = e => {
-      this.#onDisconnected(e);
+
+    this.interface.onDisconnected = event => {
+      if (!this.#adopting) {
+        logging.debug("> Device disconnected");
+        this.interface.emit("disconnected", { target: this });
+      } else {
+        logging.verbose("disconnected event skipped because of adopt");
+      }
     };
 
     // auto clock sync loop
@@ -77,23 +94,6 @@ export class TangleDevice {
     }, 60000);
   }
 
-  #onConnected = event => {
-    if (!this.#adopting) {
-      logging.debug("> Device connected");
-      this.interface.emit("connected", { target: this });
-
-      this.requestTimeline().catch(e => {
-        logging.error("Timeline request after reconnection failed.", e);
-      });
-    }
-  };
-
-  #onDisconnected = event => {
-    if (!this.#adopting) {
-      logging.debug("> Device disconnected");
-      this.interface.emit("disconnected", { target: this });
-    }
-  };
 
   requestWakeLock() {
     return this.interface.requestWakeLock();
@@ -304,11 +304,12 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
-    if (this.#adopting) {
+    
+    if (this.#adoptingGuard) {
       return Promise.reject("AdoptingInProgress");
     }
 
-    this.#adopting = true;
+    this.#adoptingGuard = true;
 
     if (ownerSignature) {
       this.setOwnerSignature(ownerSignature);
@@ -331,6 +332,7 @@ export class TangleDevice {
     return this.interface
       .userSelect(criteria, 60000)
       .then(() => {
+        this.#adopting = true;
         return this.interface.connect(10000, true);
       })
       .then(async () => {
@@ -570,6 +572,7 @@ export class TangleDevice {
         }
       })
       .finally(() => {
+        this.#adoptingGuard = false;
         this.#adopting = false;
       });
   }

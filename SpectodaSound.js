@@ -109,7 +109,7 @@ export class SpectodaSound {
   }
 
   processHandler(e) {
-    console.log("audio processing");
+    logging.debug("audio processing");
 
     var samples = e.inputBuffer.getChannelData(0);
     var rms_loudness_spectrum = 0;
