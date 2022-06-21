@@ -7,6 +7,13 @@ function calculateSensitivityValue(value, sensitivity) {
   return (value * sensitivity) / 100;
 }
 
+// function lerpUp(a, b, t) {
+//   if (b > a) {
+//     t *= 5;
+//   }
+//   return (1 - t) * a + t * b;
+// }
+
 export class SpectodaSound {
   #stream;
   #gain_node;
@@ -20,6 +27,8 @@ export class SpectodaSound {
   #events;
   #fft;
   #sensitivity;
+  #movingAverageGapValues;
+  evRate;
 
   constructor() {
     this.running = false;
@@ -31,7 +40,14 @@ export class SpectodaSound {
     this.#stream = null;
     this.#fft = null;
     this.#bufferedValues = [];
+    this.#movingAverageGapValues = [];
     this.#sensitivity = 100;
+    this.evRate = 100;
+    this.lastValue = 0;
+    /**
+     * @type {"static"|"dynamic"}
+     */
+    this.evRateType = "dynamic";
 
     this.#events = createNanoEvents();
   }
@@ -123,10 +139,29 @@ export class SpectodaSound {
 
   getBufferedDataAverage() {
     if (this.#bufferedValues.length > 0) {
-      const value = this.#bufferedValues.reduce((p, v) => p + v) / this.#bufferedValues.length;
+      let value = this.#bufferedValues.reduce((p, v) => p + v) / this.#bufferedValues.length;
       this.#bufferedValues = [];
-      return { value, evRate: 20 };
+
+      // value = lerpUp(this.lastValue, value, 0.2);
+      this.lastValue = value;
+
+      return { value };
     }
+  }
+
+  calcEventGap() {
+    let gapValues = [...this.#movingAverageGapValues];
+    let evRate;
+    if (gapValues.length > 0) {
+      gapValues = gapValues.map(v => v - gapValues[0]);
+      for (let i = 0; i < gapValues.length; i++) {
+        gapValues[i + 1] -= gapValues[i];
+      }
+      evRate = gapValues.reduce((p, v) => p + v) / gapValues.length;
+      this.evRate = evRate;
+      return evRate;
+    }
+    evRate = evRate > 20 ? evRate : 20;
   }
 
   /**
@@ -135,6 +170,7 @@ export class SpectodaSound {
    */
   async autoEmitFunctionValue(func) {
     let data = this.getBufferedDataAverage();
+    console.log(data);
     if (data) {
       Promise.all([func(calculateSensitivityValue(data.value, this.#sensitivity)).then(() => this.autoEmitFunctionValue(func))]);
     } else {
@@ -183,10 +219,13 @@ export class SpectodaSound {
     // this.#handleControlSend(out);
     this.#events.emit("loudness", out);
     this.#bufferedValues.push(out);
-    // this.movingAverageEvRate.push(new Date().getTime())
+    this.#movingAverageGapValues.push(new Date().getTime());
     // { timestamp: new Date().getTime(), value:
     if (this.#bufferedValues.length > 5) {
       this.#bufferedValues.splice(0, 1);
+    }
+    if (this.#bufferedValues.length > 100) {
+      this.#movingAverageGapValues.splice(0, 1);
     }
     // logging.debug('loudness', out);
 
