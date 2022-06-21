@@ -170,11 +170,12 @@ export class SpectodaSound {
    */
   async autoEmitFunctionValue(func) {
     let data = this.getBufferedDataAverage();
-    console.log(data);
     if (data) {
-      Promise.all([func(calculateSensitivityValue(data.value, this.#sensitivity)).then(() => this.autoEmitFunctionValue(func))]);
+      func(calculateSensitivityValue(data.value, this.#sensitivity)).finally(() => this.autoEmitFunctionValue(func));
     } else {
-      Promise.all([sleep(10)]).then(() => this.autoEmitFunctionValue(func));
+      if (this.running) {
+        sleep(10).finally(() => this.autoEmitFunctionValue(func));
+      }
     }
   }
 
