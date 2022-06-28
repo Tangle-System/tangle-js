@@ -77,6 +77,7 @@ class FlutterConnection {
         window.flutterConnection.emit(value);
       });
       
+      
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
       logging.info("Simulating Flutter Functions");
@@ -401,8 +402,12 @@ export class FlutterConnector extends FlutterConnection {
 
     // @ts-ignore
     window.flutterConnection.emit = (event, param) => {
+      logging.info(`Got event ${event} with param ${param}`);
+
       if (event === "#notification") {
-        this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+        const dataview = new DataView(new Uint8Array(param).buffer);
+        logging.info("Processing notification", dataview);
+        this.#interfaceReference.process(dataview);
         return;
       }
 
