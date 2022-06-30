@@ -2,6 +2,16 @@ import { createNanoEvents, mapValue } from './functions.js'
 import { FFT } from './dsp.js'
 import { logging } from './Logging.js';
 
+
+class SpectodaWorkletNode extends AudioWorkletNode {
+  constructor(context) {
+    super(context, 'spectodasound-worklet-processor');
+  }
+  process(inputs, outputs, parameters) {
+    // audio processing code here.
+  }
+}
+
 export class SpectodaSound {
   #stream;
   #gain_node;
@@ -38,6 +48,9 @@ export class SpectodaSound {
     // Pokud bude buffer menší bude se také rychleji posílat výpočet efektivní hodnoty. 
     if (!this.#audioContext) {
       this.#audioContext = new AudioContext()
+      this.#audioContext.audioWorklet.addModule('spectoda-sound-processors.js').then(() => {
+        let node = new SpectodaWorkletNode(context);
+      });
     }
     if (!mediaStream || mediaStream === "microphone") {
       // Dotaz na povolení přístupu k mikrofonu
