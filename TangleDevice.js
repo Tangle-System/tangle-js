@@ -3,7 +3,6 @@ import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
-import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./socketio.js";
@@ -31,6 +30,10 @@ export class TangleDevice {
   #reconnectRC;
 
   constructor(connectorType = "default", reconnectionInterval = 1000) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     this.timeline = new TimeTrack(0, true);
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
@@ -304,7 +307,7 @@ export class TangleDevice {
   // }
 
   adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
-    
+
     if (this.#adoptingGuard) {
       return Promise.reject("AdoptingInProgress");
     }
@@ -1253,7 +1256,7 @@ export class TangleDevice {
       const removed_device_mac_bytes = reader.readBytes(6);
 
       return this.rebootAndDisconnectDevice()
-        .catch(() => {})
+        .catch(() => { })
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
           if (removed_device_mac_bytes.length >= 6) {
