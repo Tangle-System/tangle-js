@@ -6,6 +6,8 @@ import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./socketio.js";
+import {TangleMsgBox} from "../webcomponents/dialog-component.js";
+
 
 let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////

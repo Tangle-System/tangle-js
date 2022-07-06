@@ -531,7 +531,6 @@ export function hexStringToArray(str) {
   return new Uint8Array(arr);
 }
 
-window.hexStringToArray = hexStringToArray;
 
 const CRC8_DATA = hexStringToArray(CRC8_TABLE);
 
@@ -656,5 +655,3 @@ export function validateTimestamp(value) {
     return [total, result.trim()];
   }
 }
-
-window.validateTimestamp = validateTimestamp;
