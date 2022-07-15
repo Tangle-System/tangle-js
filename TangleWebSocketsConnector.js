@@ -4,7 +4,7 @@ import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./socketio.js";
 
 // const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
-const WEBSOCKET_URL = "http://localhost:3000/"
+export const WEBSOCKET_URL = "http://localhost:3000/"
 /////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleWebSocketsConnector {
