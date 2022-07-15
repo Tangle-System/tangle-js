@@ -24,6 +24,7 @@ import "./TnglReader.js";
 import { TnglReader } from "./TnglReader.js";
 import "./TnglWriter.js";
 import { io } from "./socketio.js";
+import { WEBSOCKET_URL } from "./TangleWebSocketsConnector.js";
 
 let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////
@@ -182,7 +183,7 @@ export class TangleDevice {
     if (!this.socket) {
       // TODO - scopovani dle apky
       // TODO - authentifikace
-      this.socket = io("WEBSOCKET_URL", {
+      this.socket = io(WEBSOCKET_URL, {
         transports: ["websocket"],
       });
 
