@@ -3,7 +3,8 @@ import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js
 import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./socketio.js";
 
-
+// const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
+const WEBSOCKET_URL = "http://localhost:3000/"
 /////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleWebSocketsConnector {
@@ -46,7 +47,7 @@ export class TangleWebSocketsConnector {
         this.#connected = true;
 
         if (!this.socket) {
-          this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ['websocket'] });
+          this.socket = io("WEBSOCKET_URL", { transports: ['websocket'] });
 
           logging.debug(this.socket);
 
@@ -69,7 +70,7 @@ export class TangleWebSocketsConnector {
           });
 
           this.socket.on("connect_error", (error) => {
-            logging.debug('connect_error',error)
+            logging.debug('connect_error', error)
             setTimeout(() => {
               this.socket.connect();
             }, 1000);
@@ -212,10 +213,10 @@ export class TangleWebSocketsConnector {
 
   destroy() {
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
