@@ -168,7 +168,7 @@ export class TangleInterface {
   #disconnectQuery;
 
   #reconnectionInterval;
-  
+
   #connectGuard;
 
   #lastUpdateTime;
@@ -193,7 +193,7 @@ export class TangleInterface {
     this.#disconnectQuery = null;
 
     this.#reconnectionInterval = reconnectionInterval;
-    
+
     this.#connectGuard = false;
 
     this.#lastUpdateTime = new Date().getTime();
@@ -256,6 +256,48 @@ export class TangleInterface {
     this.#eventEmitter.on("#disconnected", e => {
       this.#onDisconnected(e);
     });
+
+    // open external links in Flutter SC
+    if (detectFlutterConnect()) {
+      // target="_blank" global handler
+      // @ts-ignore
+
+      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+        e.preventDefault();
+        // @ts-ignore
+        for (let el of e.path) {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+            e.preventDefault();
+            const url = el.getAttribute("href");
+            // console.log(url);
+            // @ts-ignore
+            window.flutter_inappwebview.callHandler("openExternalUrl", url);
+            break;
+          }
+        }
+      });
+    }
+
+    // open external links in JAVA TC
+    else if (detectTangleConnect()) {
+      // target="_blank" global handler
+      // @ts-ignore
+      window.tangleConnect.hasOwnProperty("openExternal") &&
+        /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+          e.preventDefault();
+          // @ts-ignore
+          for (let el of e.path) {
+            if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+              e.preventDefault();
+              const url = el.getAttribute("href");
+              // console.log(url);
+              // @ts-ignore
+              window.tangleConnect.open(url);
+              break;
+            }
+          }
+        });
+    }
 
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
@@ -852,7 +894,6 @@ export class TangleInterface {
                 await this.connector
                   .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
-
                     if (!this.#connectGuard) {
                       logging.error("Connection logic error. #connected not called during successful connect()?");
                       logging.warn("Emitting #connected");

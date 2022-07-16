@@ -286,23 +286,23 @@ export class TangleConnectConnector {
       this.#interfaceReference.emit(event, param);
     };
 
-    // target="_blank" global handler
-    // @ts-ignore
-    window.tangleConnect.hasOwnProperty("open") &&
-      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
-        e.preventDefault();
-        // @ts-ignore
-        for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-            e.preventDefault();
-            const url = el.getAttribute("href");
-            // console.log(url);
-            // @ts-ignore
-            window.tangleConnect.open(url);
-            break;
-          }
-        }
-      });
+    // // target="_blank" global handler
+    // // @ts-ignore
+    // window.tangleConnect.hasOwnProperty("open") &&
+    //   /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+    //     e.preventDefault();
+    //     // @ts-ignore
+    //     for (let el of e.path) {
+    //       if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+    //         e.preventDefault();
+    //         const url = el.getAttribute("href");
+    //         // console.log(url);
+    //         // @ts-ignore
+    //         window.tangleConnect.open(url);
+    //         break;
+    //       }
+    //     }
+    //   });
   }
 
   // deprecated. This function will be deleted with refactoring to JavaConnect
