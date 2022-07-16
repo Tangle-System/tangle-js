@@ -76,6 +76,15 @@ class FlutterConnection {
         // @ts-ignore
         window.flutterConnection.emit(value);
       });
+
+      window.addEventListener("#process", e => {
+        // @ts-ignore
+        const value = e.detail.value;
+        logging.debug("Triggered #process:", value);
+
+        // @ts-ignore
+        window.flutterConnection.process(value);
+      });
       
       
     } else {
@@ -402,16 +411,12 @@ export class FlutterConnector extends FlutterConnection {
 
     // @ts-ignore
     window.flutterConnection.emit = (event, param) => {
-      logging.info(`Got event ${event} with param ${param}`);
-
-      if (event === "#notification") {
-        const dataview = new DataView(new Uint8Array(param).buffer);
-        logging.info("Processing notification", dataview);
-        this.#interfaceReference.process(dataview);
-        return;
-      }
-
       this.#interfaceReference.emit(event, param);
+    };
+
+    // @ts-ignore
+    window.flutterConnection.process = (event, param) => {
+      this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
     };
   }
 
