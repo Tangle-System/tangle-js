@@ -344,13 +344,17 @@ export class TangleInterface {
 
   requestWakeLock() {
     logging.debug("> Activating wakeLock...");
-
+    if (detectFlutterConnect()) {
+      return window.flutter_inappwebview.callHandler("setWakeLock", true);
+    }
     return noSleep.enable();
   }
 
   releaseWakeLock() {
     logging.debug("> Deactivating wakeLock...");
-
+    if (detectFlutterConnect()) {
+      return window.flutter_inappwebview.callHandler("setWakeLock", false);
+    }
     noSleep.disable();
 
     return Promise.resolve();
