@@ -70,18 +70,18 @@ class FlutterConnection {
 
       window.addEventListener("#emit", e => {
         // @ts-ignore
-        const value = e.detail.value;
-        logging.debug("Triggered #emit:", typeof(value), value);
+        const event = e.detail.value;
+        logging.debug("Triggered #emit:", typeof(event), event);
 
         // @ts-ignore
-        window.flutterConnection.emit(value);
+        window.flutterConnection.emit(event);
       });
 
       window.addEventListener("#process", e => {
         // @ts-ignore
         const bytes = e.detail.value;
         logging.debug("Triggered #process:", typeof(bytes), bytes);
-        
+
         // @ts-ignore
         window.flutterConnection.process(bytes);
       });
@@ -410,12 +410,12 @@ export class FlutterConnector extends FlutterConnection {
     this.#promise = null;
 
     // @ts-ignore
-    window.flutterConnection.emit = (event, param) => {
-      this.#interfaceReference.emit(event, param);
+    window.flutterConnection.emit = (event) => {
+      this.#interfaceReference.emit(event, null);
     };
 
     // @ts-ignore
-    window.flutterConnection.process = (event, bytes) => {
+    window.flutterConnection.process = (bytes) => {
       this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
     };
   }
