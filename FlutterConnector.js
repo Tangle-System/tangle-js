@@ -53,7 +53,7 @@ class FlutterConnection {
       window.addEventListener("#resolve", e => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #resolve:", value);
+        logging.debug("Triggered #resolve:", typeof(value), value);
 
         // @ts-ignore
         window.flutterConnection.resolve(value);
@@ -62,7 +62,7 @@ class FlutterConnection {
       window.addEventListener("#reject", e => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #reject:", value);
+        logging.debug("Triggered #reject:", typeof(value), value);
 
         // @ts-ignore
         window.flutterConnection.reject(value);
@@ -71,7 +71,7 @@ class FlutterConnection {
       window.addEventListener("#emit", e => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #emit:", value);
+        logging.debug("Triggered #emit:", typeof(value), value);
 
         // @ts-ignore
         window.flutterConnection.emit(value);
