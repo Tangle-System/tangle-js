@@ -82,8 +82,15 @@ class FlutterConnection {
         const bytes = e.detail.value;
         logging.debug("Triggered #process:", typeof(bytes), bytes);
 
+        const array = new Uint8Array(bytes);
+        logging.debug("array", array);
+
+        const view = new DataView(array.buffer)
+        logging.debug("view", view);
+
+
         // @ts-ignore
-        window.flutterConnection.process(new DataView(new Uint8Array(bytes).buffer));
+        window.flutterConnection.process(view);
       });
       
       
