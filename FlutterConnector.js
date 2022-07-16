@@ -76,6 +76,16 @@ class FlutterConnection {
         // @ts-ignore
         window.flutterConnection.emit(value);
       });
+
+      window.addEventListener("#process", e => {
+        // @ts-ignore
+        const value = e.detail.value;
+        logging.debug("Triggered #process:", value);
+
+        // @ts-ignore
+        window.flutterConnection.process(value);
+      });
+      
       
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
@@ -401,12 +411,12 @@ export class FlutterConnector extends FlutterConnection {
 
     // @ts-ignore
     window.flutterConnection.emit = (event, param) => {
-      if (event === "#notification") {
-        this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
-        return;
-      }
-
       this.#interfaceReference.emit(event, param);
+    };
+
+    // @ts-ignore
+    window.flutterConnection.process = (event, param) => {
+      this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
     };
   }
 
