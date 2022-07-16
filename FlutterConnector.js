@@ -81,16 +81,9 @@ class FlutterConnection {
         // @ts-ignore
         const bytes = e.detail.value;
         logging.debug("Triggered #process:", typeof(bytes), bytes);
-
-        const array = new Uint8Array(bytes);
-        logging.debug("array", array);
-
-        const view = new DataView(array.buffer)
-        logging.debug("view", view);
-
-
+        
         // @ts-ignore
-        window.flutterConnection.process(view);
+        window.flutterConnection.process(bytes);
       });
       
       
@@ -422,8 +415,8 @@ export class FlutterConnector extends FlutterConnection {
     };
 
     // @ts-ignore
-    window.flutterConnection.process = (event, param) => {
-      this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+    window.flutterConnection.process = (event, bytes) => {
+      this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
     };
   }
 
