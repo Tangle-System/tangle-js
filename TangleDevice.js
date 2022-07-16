@@ -640,7 +640,7 @@ export class TangleDevice {
       .then(() => {
         return this.interface.connect();
       })
-      .catch(error => {
+      .catch(error => { // TODO: tady tento catch by mel dal thrownout error jako ze nepodarilo pripojit. 
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
@@ -912,7 +912,7 @@ export class TangleDevice {
     return (
       window
         //@ts-ignore
-        .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?")
+        .confirm("Nastaví rychlejší přenos dat, který ale nemá takový dosah.", "Jsou zařízení blízko sebe?", { confirm: "Ano", secondary: "Ne" })
         //@ts-ignore
         .then(result => {
           if (result) {
