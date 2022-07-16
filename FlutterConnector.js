@@ -79,11 +79,11 @@ class FlutterConnection {
 
       window.addEventListener("#process", e => {
         // @ts-ignore
-        const value = e.detail.value;
-        logging.debug("Triggered #process:", value);
+        const bytes = e.detail.value;
+        logging.debug("Triggered #process:", typeof(bytes), bytes);
 
         // @ts-ignore
-        window.flutterConnection.process(value);
+        window.flutterConnection.process(new DataView(new Uint8Array(bytes).buffer));
       });
       
       
