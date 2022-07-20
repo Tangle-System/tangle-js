@@ -725,6 +725,14 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
+  /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   emitEvent(event_label, device_ids = [0xff], force_delivery = true, is_lazy = true) {
     // logging.debug("emitTimestampEvent(id=" + device_ids + ")");
 
@@ -759,6 +767,14 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
+    /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     lastEvents[event_label] = { value: event_value, type: "timestamp" };
 
@@ -791,6 +807,14 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: "#00aaff"
+    /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitColorEvent(id=" + device_ids + ")");
     lastEvents[event_label] = { value: event_value, type: "color" };
@@ -818,6 +842,14 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 100.0
   // !!! PARAMETER CHANGE !!!
+    /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitPercentageEvent(id=" + device_ids + ")");
     lastEvents[event_label] = { value: event_value, type: "percentage" };
@@ -849,6 +881,14 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: "label"
   // !!! PARAMETER CHANGE !!!
+    /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
     // logging.debug("emitLabelEvent(id=" + device_ids + ")");
     lastEvents[event_label] = { value: event_value, type: "label" };
