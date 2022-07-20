@@ -218,7 +218,7 @@ export class SpectodaSound {
 
     // console.log("spectrum avarge loudnes: "+ out);
     // this.#handleControlSend(out);
-    this.#events.emit("loudness", out);
+    this.#events.emit("loudness", (out * this.#sensitivity) / 100);
     this.#bufferedValues.push(out);
     this.#movingAverageGapValues.push(new Date().getTime());
     // { timestamp: new Date().getTime(), value:
