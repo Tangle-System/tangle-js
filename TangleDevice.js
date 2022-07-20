@@ -210,20 +210,26 @@ export class TangleDevice {
         // }
       });
 
-      this.socket.on("deliver", (payload) => {
-        logging.debug("deliver", payload);
-        this.interface.deliver(new Uint8Array(payload));
+      this.socket.on("deliver", async (reqId, payload) => {
+        logging.debug("deliver", reqId, payload);
+        this.interface.deliver(new Uint8Array(payload)).then((payload) => {
+          this.socket.emit("response_success", reqId, payload)
+        }).catch((error) => this.socket.emit("response_error", reqId, error));
       });
 
-      this.socket.on("transmit", (payload) => {
-        logging.debug("transmit", payload);
-        this.interface.transmit(new Uint8Array(payload));
+      this.socket.on("transmit", async (reqId, payload) => {
+        logging.debug("transmit", reqId, payload);
+        this.interface.transmit(new Uint8Array(payload)).then((payload) => {
+          this.socket.emit("response_success", reqId, payload)
+        }).catch((error) => this.socket.emit("response_error", reqId, error));
       });
 
-      // this.socket.on("request", payload => {
-      //   logging.debug("request", payload);
-      //   this.interface.request(new Uint8Array(payload));
-      // });
+      this.socket.on("request", async (reqId, payload, read_response) => {
+        logging.debug("request", reqId, payload);
+        this.interface.request(new Uint8Array(payload), read_response).then((payload) => {
+          this.socket.emit("response_success", reqId, payload)
+        }).catch((error) => this.socket.emit("response_error", reqId, error));
+      });
 
       this.socket.on("connect_error", (error) => {
         logging.debug("connect_error", error);

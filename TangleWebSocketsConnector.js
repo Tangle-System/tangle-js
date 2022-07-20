@@ -2,6 +2,7 @@ import { logging } from "./Logging.js";
 import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./lib/socketio.js";
+import { nanoid } from "nanoid"
 
 // const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
 export const WEBSOCKET_URL = "http://localhost:3000/"
@@ -11,6 +12,7 @@ export class TangleWebSocketsConnector {
   #interfaceReference;
   #selected;
   #connected;
+  #promise;
 
   constructor(interfaceReference) {
     this.type = "websockets";
@@ -20,6 +22,7 @@ export class TangleWebSocketsConnector {
     this.#selected = false;
     this.#connected = false;
     this.socket = null;
+    this.#promise = null;
   }
 
   userSelect(criteria) {
@@ -104,10 +107,25 @@ export class TangleWebSocketsConnector {
 
   deliver(payload) {
     if (this.#connected) {
-      this.socket.emit("deliver", payload);
-      return sleep(100).then(() => {
-        Promise.resolve();
+      const reqId = nanoid()
+      this.socket.emit("deliver", reqId, payload);
+
+      this.#promise = new Promise((resolve, reject) => {
+        this.socket.once("response_success", (reqId, response) => {
+          if (reqId === reqId) {
+            resolve(response);
+          }
+        });
+
+        this.socket.once("response_error", (reqId, error) => {
+          if (reqId === reqId) {
+            reject(error);
+          }
+        })
       });
+
+      return this.#promise;
+
     } else {
       return Promise.reject("Disconnected");
     }
@@ -115,10 +133,25 @@ export class TangleWebSocketsConnector {
 
   transmit(payload) {
     if (this.#connected) {
-      this.socket.emit("transmit", payload);
-      return sleep(100).then(() => {
-        Promise.resolve();
+      const reqId = nanoid()
+      this.socket.emit("transmit", reqId, payload);
+
+      this.#promise = new Promise((resolve, reject) => {
+        this.socket.once("response_success", (reqId, response) => {
+          if (reqId === reqId) {
+            resolve(response);
+          }
+        });
+
+        this.socket.once("response_error", (reqId, error) => {
+          if (reqId === reqId) {
+            reject(error);
+          }
+        })
       });
+
+      return this.#promise;
+
     } else {
       return Promise.reject("Disconnected");
     }
@@ -126,8 +159,30 @@ export class TangleWebSocketsConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
-      //this.socket.emit("request", payload);
-      return Promise.resolve([]);
+      const reqId = nanoid()
+      this.socket.emit("request", reqId, payload, read_response);
+
+      this.#promise = new Promise((resolve, reject) => {
+        // TODO optimize this to kill the socket if the request is not received and destroy also the second socket
+        this.socket.once("response_success", (reqId, response) => {
+          console.log(reqId, response);
+
+          if (reqId === reqId) {
+            resolve(response);
+          }
+        });
+
+        this.socket.once("response_error", (reqId, error) => {
+          console.log(reqId, 'Failed', error);
+
+          if (reqId === reqId) {
+            reject(error);
+          }
+        })
+      });
+
+      return this.#promise;
+
     } else {
       return Promise.reject("Disconnected");
     }
