@@ -1,11 +1,16 @@
 import { logging } from "./Logging.js";
-import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
+import {
+  sleep,
+  stringToBytes,
+  toBytes,
+  getClockTimestamp,
+} from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./lib/socketio.js";
-import { nanoid } from "nanoid"
+import { nanoid } from "nanoid";
 
 // const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
-export const WEBSOCKET_URL = "http://localhost:3000/"
+export const WEBSOCKET_URL = "http://localhost:3000/";
 /////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleWebSocketsConnector {
@@ -50,11 +55,11 @@ export class TangleWebSocketsConnector {
         this.#connected = true;
 
         if (!this.socket) {
-          this.socket = io(WEBSOCKET_URL, { transports: ['websocket'] });
+          this.socket = io(WEBSOCKET_URL, { transports: ["websocket"] });
 
           logging.debug(this.socket);
 
-          this.socket.on("connect", socket => {
+          this.socket.on("connect", (socket) => {
             logging.debug("connected");
 
             logging.debug("> Connected to remote control");
@@ -72,7 +77,7 @@ export class TangleWebSocketsConnector {
             this.#interfaceReference.emit("#disconnected");
           });
 
-          this.socket.on("connect_error", error => {
+          this.socket.on("connect_error", (error) => {
             logging.debug("connect_error", error);
             setTimeout(() => {
               this.socket.connect();
@@ -107,9 +112,10 @@ export class TangleWebSocketsConnector {
 
   deliver(payload) {
     if (this.#connected) {
-      const reqId = nanoid()
-      this.socket.emit("deliver", reqId, payload);
+      const reqId = nanoid();
+      console.log("Emit deliver", reqId, payload);
 
+      this.socket.emit("deliver", reqId, payload);
       this.#promise = new Promise((resolve, reject) => {
         this.socket.once("response_success", (reqId, response) => {
           if (reqId === reqId) {
@@ -121,11 +127,10 @@ export class TangleWebSocketsConnector {
           if (reqId === reqId) {
             reject(error);
           }
-        })
+        });
       });
 
       return this.#promise;
-
     } else {
       return Promise.reject("Disconnected");
     }
@@ -133,7 +138,9 @@ export class TangleWebSocketsConnector {
 
   transmit(payload) {
     if (this.#connected) {
-      const reqId = nanoid()
+      const reqId = nanoid();
+      console.log("Emit transmit", reqId, payload);
+
       this.socket.emit("transmit", reqId, payload);
 
       this.#promise = new Promise((resolve, reject) => {
@@ -147,11 +154,10 @@ export class TangleWebSocketsConnector {
           if (reqId === reqId) {
             reject(error);
           }
-        })
+        });
       });
 
       return this.#promise;
-
     } else {
       return Promise.reject("Disconnected");
     }
@@ -159,7 +165,9 @@ export class TangleWebSocketsConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
-      const reqId = nanoid()
+      const reqId = nanoid();
+      console.log("Emit request", reqId, payload, read_response);
+
       this.socket.emit("request", reqId, payload, read_response);
 
       this.#promise = new Promise((resolve, reject) => {
@@ -173,16 +181,15 @@ export class TangleWebSocketsConnector {
         });
 
         this.socket.once("response_error", (reqId, error) => {
-          console.log(reqId, 'Failed', error);
+          console.log(reqId, "Failed", error);
 
           if (reqId === reqId) {
             reject(error);
           }
-        })
+        });
       });
 
       return this.#promise;
-
     } else {
       return Promise.reject("Disconnected");
     }
@@ -267,10 +274,10 @@ export class TangleWebSocketsConnector {
 
   destroy() {
     return this.disconnect()
-      .catch(() => { })
+      .catch(() => {})
       .then(() => {
         return this.unselect();
       })
-      .catch(() => { });
+      .catch(() => {});
   }
 }
