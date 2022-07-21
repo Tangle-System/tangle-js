@@ -90,6 +90,7 @@ export class SpectodaSound {
               reject(e);
             });
         });
+        console.log("Connected Mic");
         // await new Promise((resolve, reject) => { navigator.mediaDevices.getUserMedia(constraints).then(resolve).catch(reject)) };
       } else {
         // TODO - check, tato chyba možná vzniká jinak. Navíc ta chyba nemusí být bluefy only
@@ -99,10 +100,14 @@ export class SpectodaSound {
       this.#stream = mediaStream;
       this.#source = this.#audioContext.createMediaStreamSource(mediaStream);
       logging.debug("SpectodaSound.connect", "Connected mediaStream");
+      console.log("Connected mediaStream");
     }
   }
 
-  start() {
+  async start() {
+    if (!this.#stream) {
+      await this.connect()
+    }
     if (!this.running) {
       this.#gain_node = this.#audioContext.createGain();
       this.#gain_node.connect(this.#audioContext.destination);
