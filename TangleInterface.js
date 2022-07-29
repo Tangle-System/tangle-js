@@ -32,6 +32,7 @@ import "./TnglReader.js";
 import "./TnglWriter.js";
 import { TnglReader } from "./TnglReader.js";
 import { FlutterConnector } from "./FlutterConnector.js";
+import { t } from "./i18n.js";
 
 export const DEVICE_FLAGS = Object.freeze({
   // legacy FW update flags
@@ -168,7 +169,7 @@ export class TangleInterface {
   #disconnectQuery;
 
   #reconnectionInterval;
-  
+
   #connectGuard;
 
   #lastUpdateTime;
@@ -193,7 +194,7 @@ export class TangleInterface {
     this.#disconnectQuery = null;
 
     this.#reconnectionInterval = reconnectionInterval;
-    
+
     this.#connectGuard = false;
 
     this.#lastUpdateTime = new Date().getTime();
@@ -257,6 +258,48 @@ export class TangleInterface {
       this.#onDisconnected(e);
     });
 
+    // open external links in Flutter SC
+    if (detectFlutterConnect()) {
+      // target="_blank" global handler
+      // @ts-ignore
+
+      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+        e.preventDefault();
+        // @ts-ignore
+        for (let el of e.path) {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+            e.preventDefault();
+            const url = el.getAttribute("href");
+            // console.log(url);
+            // @ts-ignore
+            window.flutter_inappwebview.callHandler("openExternalUrl", url);
+            break;
+          }
+        }
+      });
+    }
+
+    // open external links in JAVA TC
+    else if (detectTangleConnect()) {
+      // target="_blank" global handler
+      // @ts-ignore
+      window.tangleConnect.hasOwnProperty("openExternal") &&
+        /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
+          e.preventDefault();
+          // @ts-ignore
+          for (let el of e.path) {
+            if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+              e.preventDefault();
+              const url = el.getAttribute("href");
+              // console.log(url);
+              // @ts-ignore
+              window.tangleConnect.open(url);
+              break;
+            }
+          }
+        });
+    }
+
     window.addEventListener("beforeunload", e => {
       // If I cant disconnect right now for some readon
       // return this.disconnect(false).catch(reason => {
@@ -301,13 +344,17 @@ export class TangleInterface {
 
   requestWakeLock() {
     logging.debug("> Activating wakeLock...");
-
+    if (detectFlutterConnect()) {
+      return window.flutter_inappwebview.callHandler("setWakeLock", true);
+    }
     return noSleep.enable();
   }
 
   releaseWakeLock() {
     logging.debug("> Deactivating wakeLock...");
-
+    if (detectFlutterConnect()) {
+      return window.flutter_inappwebview.callHandler("setWakeLock", false);
+    }
     noSleep.disable();
 
     return Promise.resolve();
@@ -355,7 +402,7 @@ export class TangleInterface {
             return (
               window
                 // @ts-ignore
-                .prompt("Simulace FW verze dummy connecoru", "DUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
+                .prompt("Simulace FW verze dummy connecoru", "VDUMMY_0.8.1_20220301", "Zvolte FW verzi dummy connecoru", "text", {
                   placeholder: "DUMMY_0.0.0_00000000",
                   regex: /^[\w\d]+_\d.\d.\d_[\d]{8}/,
                   invalidText: "FW verze není správná",
@@ -366,8 +413,6 @@ export class TangleInterface {
                   this.connector = new TangleDummyConnector(this, false, version);
                 })
             );
-
-            break;
 
           case "edummy":
             this.connector = new TangleDummyConnector(this, true);
@@ -380,7 +425,7 @@ export class TangleInterface {
               // iPhone outside Bluefy and TangleConnect
               if (detectIPhone()) {
                 // @ts-ignore
-                window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.", "Prohlížeč není podporován").then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Bluefy v app store
                     window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
@@ -390,7 +435,7 @@ export class TangleInterface {
               // Macs outside Google Chrome
               else if (detectMacintosh()) {
                 // @ts-ignore
-                window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
@@ -400,7 +445,7 @@ export class TangleInterface {
               // Android outside Google Chrome
               else if (detectAndroid()) {
                 // @ts-ignore
-                window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
@@ -410,7 +455,7 @@ export class TangleInterface {
               // Windows outside Google Chrome
               else if (detectWindows()) {
                 // @ts-ignore
-                window.confirm("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.", "Prohlížeč není podporován").then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Google Chrome
                     window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
@@ -419,7 +464,7 @@ export class TangleInterface {
               }
               // Linux ChromeBooks atd...
               else {
-                window.confirm("Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.");
+                window.confirm(t("Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat."));
               }
             }
 
@@ -445,7 +490,6 @@ export class TangleInterface {
 
           default:
             throw "UnknownConnector";
-            break;
         }
       });
   }
@@ -852,7 +896,6 @@ export class TangleInterface {
                 await this.connector
                   .connect(item.a, item.b) // a = timeout, b = supportLegacy
                   .then(device => {
-
                     if (!this.#connectGuard) {
                       logging.error("Connection logic error. #connected not called during successful connect()?");
                       logging.warn("Emitting #connected");
