@@ -169,7 +169,7 @@ export class TangleInterface {
   #disconnectQuery;
 
   #reconnectionInterval;
-  
+
   #connectGuard;
 
   #lastUpdateTime;
@@ -194,14 +194,14 @@ export class TangleInterface {
     this.#disconnectQuery = null;
 
     this.#reconnectionInterval = reconnectionInterval;
-    
+
     this.#connectGuard = false;
 
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
 
-    this.onConnected = e => {};
-    this.onDisconnected = e => {};
+    this.onConnected = e => { };
+    this.onDisconnected = e => { };
 
     // this.#otaStart = new Date().getTime();
 
@@ -341,7 +341,7 @@ export class TangleInterface {
     }
 
     return this.destroyConnector()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         switch (connector_type) {
           case "none":
@@ -704,6 +704,7 @@ export class TangleInterface {
   }
 
   request(bytes, read_response) {
+    console.log({ bytes, read_response });
     const item = new Query(Query.TYPE_REQUEST, bytes, read_response);
     this.#process(item);
     return item.promise;
@@ -895,7 +896,7 @@ export class TangleInterface {
                 this.#disconnectQuery = new Query();
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
-                  .catch(() => {})
+                  .catch(() => { })
                   .then(() => {
                     return this.connector.disconnect();
                   })
@@ -1014,7 +1015,7 @@ export class TangleInterface {
               case Query.TYPE_FIRMWARE_UPDATE:
                 try {
                   await this.requestWakeLock();
-                } catch {}
+                } catch { }
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
@@ -1033,7 +1034,7 @@ export class TangleInterface {
                 this.#reconection = false;
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
-                  .catch(() => {})
+                  .catch(() => { })
                   .then(() => {
                     return this.connector.disconnect();
                   })

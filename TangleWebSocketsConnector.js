@@ -10,7 +10,7 @@ import { io } from "./lib/socketio.js";
 import { nanoid } from "nanoid";
 
 // const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
-export const WEBSOCKET_URL = "http://localhost:3000/";
+export const WEBSOCKET_URL = "https://ws.host.spectoda.com/";
 /////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleWebSocketsConnector {
@@ -173,10 +173,10 @@ export class TangleWebSocketsConnector {
       this.#promise = new Promise((resolve, reject) => {
         // TODO optimize this to kill the socket if the request is not received and destroy also the second socket
         this.socket.once("response_success", (reqId, response) => {
-          console.log(reqId, response);
+          console.log(reqId, new DataView(new Uint8Array(response).buffer));
 
           if (reqId === reqId) {
-            resolve(response);
+            resolve(new DataView(new Uint8Array(response).buffer));
           }
         });
 
@@ -187,6 +187,7 @@ export class TangleWebSocketsConnector {
             reject(error);
           }
         });
+        // todo kill sockets on receive
       });
 
       return this.#promise;
@@ -274,10 +275,10 @@ export class TangleWebSocketsConnector {
 
   destroy() {
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
