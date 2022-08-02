@@ -1,14 +1,23 @@
 import { logging } from "./Logging.js";
-import { sleep, stringToBytes, toBytes, getClockTimestamp } from "./functions.js";
+import {
+  sleep,
+  stringToBytes,
+  toBytes,
+  getClockTimestamp,
+} from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { io } from "./lib/socketio.js";
+import { nanoid } from "nanoid";
 
+// const WEBSOCKET_URL = "https://tangle-remote-control.glitch.me/"
+export const WEBSOCKET_URL = "https://ws.host.spectoda.com/";
 /////////////////////////////////////////////////////////////////////////////////////
 
 export class TangleWebSocketsConnector {
   #interfaceReference;
   #selected;
   #connected;
+  #promise;
 
   constructor(interfaceReference) {
     this.type = "websockets";
@@ -18,6 +27,7 @@ export class TangleWebSocketsConnector {
     this.#selected = false;
     this.#connected = false;
     this.socket = null;
+    this.#promise = null;
   }
 
   userSelect(criteria) {
@@ -45,11 +55,12 @@ export class TangleWebSocketsConnector {
         this.#connected = true;
 
         if (!this.socket) {
-          this.socket = io("https://tangle-remote-control.glitch.me/", { transports: ["websocket"] });
+          this.socket = io(WEBSOCKET_URL, { transports: ["websocket"] });
+          window.wssocket = this.socket;
 
           logging.debug(this.socket);
 
-          this.socket.on("connect", socket => {
+          this.socket.on("connect", (socket) => {
             logging.debug("connected");
 
             logging.debug("> Connected to remote control");
@@ -67,7 +78,7 @@ export class TangleWebSocketsConnector {
             this.#interfaceReference.emit("#disconnected");
           });
 
-          this.socket.on("connect_error", error => {
+          this.socket.on("connect_error", (error) => {
             logging.debug("connect_error", error);
             setTimeout(() => {
               this.socket.connect();
@@ -102,10 +113,37 @@ export class TangleWebSocketsConnector {
 
   deliver(payload) {
     if (this.#connected) {
-      this.socket.emit("deliver", payload);
-      return sleep(100).then(() => {
-        Promise.resolve();
+      const reqId = nanoid();
+      // console.log("Emit deliver", reqId, payload);
+
+      this.socket.emit("deliver", reqId, payload);
+      const socket = this.socket;
+      this.#promise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
+          if (reqId === reqId) {
+            resolve(response);
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        function rejectFunc(reqId, error) {
+          if (reqId === reqId) {
+            reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
+
+
       });
+
+      return this.#promise;
     } else {
       return Promise.reject("Disconnected");
     }
@@ -113,10 +151,37 @@ export class TangleWebSocketsConnector {
 
   transmit(payload) {
     if (this.#connected) {
-      this.socket.emit("transmit", payload);
-      return sleep(100).then(() => {
-        Promise.resolve();
+      const reqId = nanoid();
+
+      // console.log("Emit transmit", reqId, payload);
+
+      this.socket.emit("transmit", reqId, payload);
+      const socket = this.socket;
+
+      this.#promise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
+          if (reqId === reqId) {
+            resolve(response);
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        function rejectFunc(reqId, error) {
+          if (reqId === reqId) {
+            reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
       });
+
+      return this.#promise;
     } else {
       return Promise.reject("Disconnected");
     }
@@ -124,8 +189,42 @@ export class TangleWebSocketsConnector {
 
   request(payload, read_response = true) {
     if (this.#connected) {
-      //this.socket.emit("request", payload);
-      return Promise.resolve([]);
+      const reqId = nanoid();
+      // console.log("Emit request", reqId, payload, read_response);
+
+      this.socket.emit("request", reqId, payload, read_response);
+      const socket = this.socket;
+
+      this.#promise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
+          // console.log(reqId, new DataView(new Uint8Array(response).buffer));
+
+          if (reqId === reqId) {
+            resolve(new DataView(new Uint8Array(response).buffer));
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        function rejectFunc(reqId, error) {
+          // console.log(reqId, "Failed", error);
+
+          if (reqId === reqId) {
+            reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
+          }
+        }
+
+        // TODO optimize this to kill the socket if the request is not received and destroy also the second socket
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
+        // todo kill sockets on receive
+      });
+
+      return this.#promise;
     } else {
       return Promise.reject("Disconnected");
     }
@@ -210,10 +309,10 @@ export class TangleWebSocketsConnector {
 
   destroy() {
     return this.disconnect()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         return this.unselect();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 }
