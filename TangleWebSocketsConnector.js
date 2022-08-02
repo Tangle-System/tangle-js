@@ -56,6 +56,7 @@ export class TangleWebSocketsConnector {
 
         if (!this.socket) {
           this.socket = io(WEBSOCKET_URL, { transports: ["websocket"] });
+          window.wssocket = this.socket;
 
           logging.debug(this.socket);
 
@@ -113,21 +114,33 @@ export class TangleWebSocketsConnector {
   deliver(payload) {
     if (this.#connected) {
       const reqId = nanoid();
-      console.log("Emit deliver", reqId, payload);
+      // console.log("Emit deliver", reqId, payload);
 
       this.socket.emit("deliver", reqId, payload);
+      const socket = this.socket;
       this.#promise = new Promise((resolve, reject) => {
-        this.socket.once("response_success", (reqId, response) => {
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
           if (reqId === reqId) {
             resolve(response);
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
 
-        this.socket.once("response_error", (reqId, error) => {
+        function rejectFunc(reqId, error) {
           if (reqId === reqId) {
             reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
+
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
+
+
       });
 
       return this.#promise;
@@ -139,22 +152,33 @@ export class TangleWebSocketsConnector {
   transmit(payload) {
     if (this.#connected) {
       const reqId = nanoid();
-      console.log("Emit transmit", reqId, payload);
+
+      // console.log("Emit transmit", reqId, payload);
 
       this.socket.emit("transmit", reqId, payload);
+      const socket = this.socket;
 
       this.#promise = new Promise((resolve, reject) => {
-        this.socket.once("response_success", (reqId, response) => {
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
           if (reqId === reqId) {
             resolve(response);
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
 
-        this.socket.once("response_error", (reqId, error) => {
+        function rejectFunc(reqId, error) {
           if (reqId === reqId) {
             reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
+
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
       });
 
       return this.#promise;
@@ -166,27 +190,37 @@ export class TangleWebSocketsConnector {
   request(payload, read_response = true) {
     if (this.#connected) {
       const reqId = nanoid();
-      console.log("Emit request", reqId, payload, read_response);
+      // console.log("Emit request", reqId, payload, read_response);
 
       this.socket.emit("request", reqId, payload, read_response);
+      const socket = this.socket;
 
       this.#promise = new Promise((resolve, reject) => {
-        // TODO optimize this to kill the socket if the request is not received and destroy also the second socket
-        this.socket.once("response_success", (reqId, response) => {
-          console.log(reqId, new DataView(new Uint8Array(response).buffer));
+        const timeout = setTimeout(() => rejectFunc(reqId, 'timeout'), 5000);
+
+        function resolveFunc(reqId, response) {
+          // console.log(reqId, new DataView(new Uint8Array(response).buffer));
 
           if (reqId === reqId) {
             resolve(new DataView(new Uint8Array(response).buffer));
+            socket.off("response_error", rejectFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
 
-        this.socket.once("response_error", (reqId, error) => {
-          console.log(reqId, "Failed", error);
+        function rejectFunc(reqId, error) {
+          // console.log(reqId, "Failed", error);
 
           if (reqId === reqId) {
             reject(error);
+            socket.off("response_success", resolveFunc);
+            clearTimeout(timeout);
           }
-        });
+        }
+
+        // TODO optimize this to kill the socket if the request is not received and destroy also the second socket
+        this.socket.once("response_success", resolveFunc);
+        this.socket.once("response_error", rejectFunc);
         // todo kill sockets on receive
       });
 
