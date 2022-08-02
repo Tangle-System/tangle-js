@@ -353,8 +353,8 @@ export class TnglCompiler {
     else if (total === 0) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
       return;
-    } 
-    
+    }
+
     else {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP);
       this.#tnglWriter.writeInt32(total);
@@ -707,9 +707,9 @@ export class TnglCompiler {
 }
 
 export class TnglCodeParser {
-  #compiler;
+  // compiler;
   constructor() {
-    this.#compiler = new TnglCompiler();
+    this.compiler = new TnglCompiler();
   }
 
   parseTnglCode(tngl_code) {
@@ -729,39 +729,39 @@ export class TnglCodeParser {
           break;
 
         case "htmlrgb":
-          this.#compiler.compileColor(element.token);
+          this.compiler.compileColor(element.token);
           break;
 
         case "infinity":
-          this.#compiler.compileInfinity(element.token);
+          this.compiler.compileInfinity(element.token);
           break;
 
         case "string":
-          this.#compiler.compileString(element.token);
+          this.compiler.compileString(element.token);
           break;
 
         case "timestamp":
-          this.#compiler.compileTimestamp(element.token);
+          this.compiler.compileTimestamp(element.token);
           break;
 
         case "label":
-          this.#compiler.compileLabel(element.token);
+          this.compiler.compileLabel(element.token);
           break;
 
         case "char":
-          this.#compiler.compileChar(element.token);
+          this.compiler.compileChar(element.token);
           break;
 
         case "byte":
-          this.#compiler.compileByte(element.token);
+          this.compiler.compileByte(element.token);
           break;
 
         case "pixels":
-          this.#compiler.compilePixels(element.token);
+          this.compiler.compilePixels(element.token);
           break;
 
         case "percentage":
-          this.#compiler.compilePercentage(element.token);
+          this.compiler.compilePercentage(element.token);
           break;
 
         case "float":
@@ -777,7 +777,7 @@ export class TnglCodeParser {
           break;
 
         case "word":
-          this.#compiler.compileWord(element.token);
+          this.compiler.compileWord(element.token);
           break;
 
         case "whitespace":
@@ -786,7 +786,7 @@ export class TnglCodeParser {
 
         case "punctuation":
           if (element.token === "}") {
-            this.#compiler.compileFlag(TNGL_FLAGS.END_OF_STATEMENT);
+            this.compiler.compileFlag(TNGL_FLAGS.END_OF_STATEMENT);
           }
           break;
 
@@ -796,9 +796,9 @@ export class TnglCodeParser {
       }
     }
 
-    this.#compiler.compileFlag(TNGL_FLAGS.END_OF_TNGL_BYTES);
+    this.compiler.compileFlag(TNGL_FLAGS.END_OF_TNGL_BYTES);
 
-    let tnglBytes = this.#compiler.tnglBytes;
+    let tnglBytes = this.compiler.tnglBytes;
 
     logging.verbose(tnglBytes);
     logging.debug(uint8ArrayToHexString(tnglBytes));

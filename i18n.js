@@ -8,7 +8,7 @@ const i18 = I18.createInstance();
 i18.init(
   {
     lng: "en",
-    debug: true,
+    debug: false,
 
     // supportedLngs: ["cs", "en", "cs-CZ", "en-US"],
     // fallbackLng: "en",

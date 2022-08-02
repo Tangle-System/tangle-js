@@ -713,7 +713,8 @@ export class TangleDevice {
     }
 
     if (tngl_bytes === null) {
-      tngl_bytes = new TnglCodeParser().parseTnglCode(tngl_code);
+      const tnglParser = new TnglCodeParser();
+      tngl_bytes = tnglParser.parseTnglCode(tngl_code);
     }
 
     const timeline_flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
