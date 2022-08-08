@@ -1,5 +1,5 @@
 import { logging, setLoggingLevel } from "./Logging.js";
-import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, detectTangleConnect, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
+import { colorToBytes, computeTnglFingerprint, czechHackyToEnglish, detectBluefy, detectFlutterConnect, detectTangleConnect, getClockTimestamp, hexStringToUint8Array, labelToBytes, numberToBytes, percentageToBytes, sleep, stringToBytes } from "./functions.js";
 import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
 import { TnglCodeParser } from "./TangleParser.js";
 import { TimeTrack } from "./TimeTrack.js";
@@ -627,7 +627,7 @@ export class TangleDevice {
     }
 
     if (connectAny) {
-      if (detectBluefy()) {
+      if (detectBluefy() || detectFlutterConnect()) {
         criteria = [{}];
       } else {
         criteria = [{}, { adoptionFlag: true }, { legacy: true }];
