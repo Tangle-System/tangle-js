@@ -353,27 +353,27 @@ class NoSleep {
       this.noSleepTimer = null;
     } else {
       // Set up no sleep video element
-      this.noSleepVideo = document.createElement("video");
+      // this.noSleepVideo = document.createElement("video");
 
-      this.noSleepVideo.setAttribute("title", "No Sleep");
-      this.noSleepVideo.setAttribute("playsinline", "");
+      // this.noSleepVideo.setAttribute("title", "No Sleep");
+      // this.noSleepVideo.setAttribute("playsinline", "");
 
-      this._addSourceToVideo(this.noSleepVideo, "webm", webm);
-      this._addSourceToVideo(this.noSleepVideo, "mp4", mp4);
+      // this._addSourceToVideo(this.noSleepVideo, "webm", webm);
+      // this._addSourceToVideo(this.noSleepVideo, "mp4", mp4);
 
-      this.noSleepVideo.addEventListener("loadedmetadata", () => {
-        if (this.noSleepVideo.duration <= 1) {
-          // webm source
-          this.noSleepVideo.setAttribute("loop", "");
-        } else {
-          // mp4 source
-          this.noSleepVideo.addEventListener("timeupdate", () => {
-            if (this.noSleepVideo.currentTime > 0.5) {
-              this.noSleepVideo.currentTime = Math.random();
-            }
-          });
-        }
-      });
+      // this.noSleepVideo.addEventListener("loadedmetadata", () => {
+      //   if (this.noSleepVideo.duration <= 1) {
+      //     // webm source
+      //     this.noSleepVideo.setAttribute("loop", "");
+      //   } else {
+      //     // mp4 source
+      //     this.noSleepVideo.addEventListener("timeupdate", () => {
+      //       if (this.noSleepVideo.currentTime > 0.5) {
+      //         this.noSleepVideo.currentTime = Math.random();
+      //       }
+      //     });
+      //   }
+      // });
     }
   }
 
@@ -415,24 +415,24 @@ class NoSleep {
         active or long-running network requests from completing successfully.
         See https://github.com/richtr/NoSleep.js/issues/15 for more details.
       `);
-      this.noSleepTimer = window.setInterval(() => {
-        if (!document.hidden) {
-          window.location.href = window.location.href.split("#")[0];
-          window.setTimeout(window.stop, 0);
-        }
-      }, 15000);
+      // this.noSleepTimer = window.setInterval(() => {
+      //   if (!document.hidden) {
+      //     window.location.href = window.location.href.split("#")[0];
+      //     window.setTimeout(window.stop, 0);
+      //   }
+      // }, 15000);
       this.enabled = true;
       return Promise.resolve();
     } else {
-      return this.noSleepVideo.play()
-        .then(res => {
-          this.enabled = true;
-          // return res;
-        })
-        .catch(err => {
-          this.enabled = false;
-          throw err;
-        });
+      // return this.noSleepVideo.play()
+      //   .then(res => {
+      //     this.enabled = true;
+      //     // return res;
+      //   })
+      //   .catch(err => {
+      //     this.enabled = false;
+      //     throw err;
+      //   });
     }
   }
 
@@ -451,7 +451,7 @@ class NoSleep {
         this.noSleepTimer = null;
       }
     } else {
-      this.noSleepVideo.pause();
+      // this.noSleepVideo.pause();
     }
     this.enabled = false;
   }

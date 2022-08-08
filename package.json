@@ -4,5 +4,8 @@
   "type": "module",
   "devDependencies": {
     "i18next-parser": "^6.0.0"
+  },
+  "dependencies": {
+    "nanoid": "^4.0.0"
   }
 }
