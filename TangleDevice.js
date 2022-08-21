@@ -740,7 +740,7 @@ export class TangleDevice {
     }
 
     if (connectAny) {
-      if (detectBluefy() || detectFlutterConnect()) {
+      if (detectBluefy() || detectFlutterConnect() || detectFlutterConnect()) {
         criteria = [{}];
       } else {
         criteria = [{}, { adoptionFlag: true }, { legacy: true }];
@@ -864,6 +864,14 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 1000
+  /**
+   * 
+   * @param {*} event_label 
+   * @param {number|number[]} device_ids 
+   * @param {*} force_delivery 
+   * @param {*} is_lazy 
+   * @returns 
+   */
   /**
    * 
    * @param {*} event_label 

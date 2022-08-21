@@ -1225,10 +1225,10 @@ export class TangleInterface {
 
             if (is_lazy) {
               let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
-              // this.emit("event", event);
+              this.emit("event", event);
             } else {
               let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
-              // this.emit("event", event);
+              this.emit("event", event);
             }
           }
           break;
