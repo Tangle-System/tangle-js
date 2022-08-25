@@ -715,7 +715,7 @@ export class TnglCodeParser {
   parseTnglCode(tngl_code) {
     logging.verbose(tngl_code);
 
-    const tokens = this.#tokenize(tngl_code, TnglCodeParser.#parses);
+    const tokens = this.#tokenize(tngl_code, TnglCodeParser.parses);
     logging.verbose(tokens);
 
     for (let index = 0; index < tokens.length; index++) {
@@ -806,7 +806,7 @@ export class TnglCodeParser {
     return tnglBytes;
   }
 
-  static #parses = {
+  static parses = {
     comment: /\/\/[^\n]*/,
     htmlrgb: /#[0-9a-f]{6}/i,
     infinity: /[+-]?Infinity/,
