@@ -54,7 +54,7 @@ export class SpectodaSound {
 
   /**
    *
-   * @param {MediaStream|"microphone"} mediaStream
+   * @param {MediaStream|"microphone"|"system"} mediaStream
    */
   async connect(mediaStream = null) {
     // Uává velikost bloků ze kterých bude vypočítávána průměrná hlasitos.
@@ -108,6 +108,40 @@ export class SpectodaSound {
           t("Mikrofon se nepodařilo spustit.")
         );
       }
+    } else if (!mediaStream || mediaStream === "system") {
+      const gdmOptions = {
+        video: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          sampleRate: 44100,
+        },
+      };
+      let videoEl;
+      if (document.querySelector("#spectoda_video_system")) {
+        videoEl = document.querySelector("#spectoda_video_system");
+      } else {
+        videoEl = document.createElement("video");
+        videoEl.id = "spectoda_video_system";
+        document.body.appendChild(videoEl);
+      }
+
+      await new Promise(async (resolve, reject) => {
+        const srcObject = await navigator.mediaDevices
+          .getDisplayMedia(gdmOptions)
+          .then((stream) => {
+            this.#stream = stream;
+            this.#source = this.#audioContext.createMediaStreamSource(
+              this.#stream
+            );
+            resolve();
+            logging.debug("SpectodaSound.connect", "Connected SystemSound");
+          })
+          .catch((e) => {
+            window.alert(t("Vaše zařízení není podporováno"), t("Chyba"));
+            reject(e);
+          });
+      });
     } else {
       this.#stream = mediaStream;
       this.#source = this.#audioContext.createMediaStreamSource(mediaStream);
