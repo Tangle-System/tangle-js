@@ -575,7 +575,8 @@ export class TangleDevice {
 
             if (error_code === 0) {
               return (
-                (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
+                // (tnglCode ? this.writeTngl(tnglCode) : Promise.resolve())
+                Promise.resolve()
                   .then(() => {
                     return sleep(1000).then(() => {
                       return this.rebootAndDisconnectDevice();
@@ -593,10 +594,10 @@ export class TangleDevice {
                   // })
                   .then(() => {
                     setTimeout(() => {
-                      if (this.interface.connected()) {
+                      return this.interface.connected().then(() => {
                         logging.debug("> Device connected");
                         this.interface.emit("connected", { target: this });
-                      }
+                      });
                     }, 1);
                   })
                   .catch((e) => {
@@ -623,9 +624,9 @@ export class TangleDevice {
                     { confirm: t("Zkusit znovu"), cancel: t("Zpět") }
                   )
                   .then((result) => {
-                    if (result) {
-                      this.adopt(newDeviceName, newDeviceId, tnglCode);
-                    }
+                    // if (result) {
+                    //   this.adopt(newDeviceName, newDeviceId, tnglCode);
+                    // }
                   });
                 throw "AdoptionRefused";
               });
@@ -642,9 +643,9 @@ export class TangleDevice {
                   { confirm: t("Zkusit znovu"), cancel: t("Zpět") }
                 )
                 .then((result) => {
-                  if (result) {
-                    this.adopt(newDeviceName, newDeviceId, tnglCode);
-                  }
+                  // if (result) {
+                  //   this.adopt(newDeviceName, newDeviceId, tnglCode);
+                  // }
                 });
               throw "AdoptionFailed";
             });
