@@ -44,6 +44,7 @@ export class SpectodaSound {
     this.#sensitivity = 100;
     this.evRate = 100;
     this.lastValue = 0;
+    this.silentCountdown;
     /**
      * @type {"static"|"dynamic"}
      */
@@ -152,6 +153,7 @@ export class SpectodaSound {
 
   async start() {
     if (!this.#stream) {
+      this.startCountDown();
       await this.connect();
     }
     if (!this.running) {
@@ -246,6 +248,22 @@ export class SpectodaSound {
     this.#sensitivity = value;
   }
 
+  startCountDown() {
+    clearTimeout(this.silentCountdown);
+    this.silentCountdown = setTimeout(() => {
+      this.#events.emit("silent", true);
+    }, 3000);
+  }
+
+  resetSilentCountdown() {
+    clearTimeout(this.silentCountdown);
+    this.silentCountdown = setTimeout(() => {
+      this.#events.emit("silent", true);
+    }, 3000);
+
+    this.#events.emit("silent", false);
+  }
+
   processHandler(e) {
     var samples = e.inputBuffer.getChannelData(0);
     var rms_loudness_spectrum = 0;
@@ -278,6 +296,10 @@ export class SpectodaSound {
     // console.log("spectrum avarge loudnes: "+ out);
     // this.#handleControlSend(out);
     this.#events.emit("loudness", (out * this.#sensitivity) / 100);
+    if (out > 2) {
+      this.resetSilentCountdown();
+    }
+
     this.#bufferedValues.push(out);
     this.#movingAverageGapValues.push(new Date().getTime());
     // { timestamp: new Date().getTime(), value:
