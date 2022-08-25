@@ -296,7 +296,7 @@ export class SpectodaSound {
     // console.log("spectrum avarge loudnes: "+ out);
     // this.#handleControlSend(out);
     this.#events.emit("loudness", (out * this.#sensitivity) / 100);
-    if (out > 2) {
+    if (out > 5) {
       this.resetSilentCountdown();
     }
 
