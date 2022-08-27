@@ -448,7 +448,7 @@ criteria example:
           setTimeout(() => {
             this.#transmitStreamWriter.releaseLock();
             resolve();
-          }, 25);
+          }, 100);
         } else {
           //try to write it once more
           logging.debug("Trying to recover...");
