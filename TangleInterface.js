@@ -263,20 +263,44 @@ export class TangleInterface {
       // target="_blank" global handler
       // @ts-ignore
 
-      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
-        e.preventDefault();
-        // @ts-ignore
-        for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-            e.preventDefault();
-            const url = el.getAttribute("href");
-            // console.log(url);
-            // @ts-ignore
-            window.flutter_inappwebview.callHandler("openExternalUrl", url);
-            break;
-          }
+      /** @type {HTMLBodyElement} */ document.querySelector("body").addEventListener("click", function (e) {
+      e.preventDefault();
+
+      (function (e, d, w) {
+        if (!e.composedPath) {
+          e.composedPath = function () {
+            if (this.path) {
+              return this.path;
+            }
+            var target = this.target;
+
+            this.path = [];
+            while (target.parentNode !== null) {
+              this.path.push(target);
+              target = target.parentNode;
+            }
+            this.path.push(d, w);
+            return this.path;
+          };
         }
-      });
+      })(Event.prototype, document, window);
+      // @ts-ignore
+      const path = e.path || (e.composedPath && e.composedPath());
+
+      // @ts-ignore
+      for (let el of path) {
+        console.log("External url path", el);
+        if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+          e.preventDefault();
+          const url = el.getAttribute("href");
+          // console.log(url);
+          // @ts-ignore
+          console.log("Openning external url", url)
+          window.flutter_inappwebview.callHandler("openExternalUrl", url);
+          break;
+        }
+      }
+    });
     }
 
     // open external links in JAVA TC
