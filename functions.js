@@ -494,10 +494,13 @@ class NoSleep {
 
 export const noSleep = new NoSleep();
 
-var script = document.createElement("script");
-script.src = "//cdn.jsdelivr.net/npm/eruda";
-script.setAttribute("defer", true);
-document.body.appendChild(script);
+if (typeof window !== "undefined") {
+  var script = document.createElement("script");
+  script.src = "//cdn.jsdelivr.net/npm/eruda";
+  script.setAttribute("defer", true);
+  document.body.appendChild(script);
+}
+
 
 export function enableDebugMode() {
   if (window.eruda) {
