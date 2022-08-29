@@ -48,7 +48,7 @@ export function getClockTimestamp() {
 }
 
 export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // The MIT License (MIT)
@@ -75,19 +75,20 @@ export function sleep(ms) {
 export const createNanoEvents = () => ({
   events: {},
   emit(event, ...args) {
-    (this.events[event] || []).forEach(i => {
+    (this.events[event] || []).forEach((i) => {
       let res = i(...args);
     });
   },
   on(event, cb) {
     (this.events[event] = this.events[event] || []).push(cb);
-    return () => (this.events[event] = (this.events[event] || []).filter(i => i !== cb));
+    return () =>
+      (this.events[event] = (this.events[event] || []).filter((i) => i !== cb));
   },
 });
 
 /////////////////////////////////////////////// == 0.7 == ///////////////////////////////////////////////////
 
-export const getSeconds = str => {
+export const getSeconds = (str) => {
   let seconds = 0;
   let months = str.match(/(\d+)\s*M/);
   let days = str.match(/(\d+)\s*D/);
@@ -126,7 +127,8 @@ export function mapValue(x, in_min, in_max, out_min, out_max) {
     x = maximum;
   }
 
-  let result = ((x - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+  let result =
+    ((x - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
 
   minimum = Math.min(out_min, out_max);
   maximum = Math.max(out_min, out_max);
@@ -163,7 +165,9 @@ export function colorToBytes(color_hex_code) {
     return [0, 0, 0];
   }
 
-  let reg = color_hex_code.match(/#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i);
+  let reg = color_hex_code.match(
+    /#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i
+  );
   if (!reg) {
     console.error('Wrong color code: "' + color_hex_code + '"');
     return [0, 0, 0];
@@ -177,7 +181,13 @@ export function colorToBytes(color_hex_code) {
 }
 
 export function percentageToBytes(percentage_float) {
-  const value = mapValue(percentage_float, -100.0, 100.0, -2147483647, 2147483647);
+  const value = mapValue(
+    percentage_float,
+    -100.0,
+    100.0,
+    -2147483647,
+    2147483647
+  );
   return toBytes(Math.floor(value), 4);
 }
 
@@ -258,7 +268,6 @@ export function detectFlutterConnect() {
   return flutterConnectDetected;
 }
 
-
 //////////////////////////////////////////////////////
 
 export function computeTnglFingerprint(tngl_bytes, tngl_label) {
@@ -267,11 +276,14 @@ export function computeTnglFingerprint(tngl_bytes, tngl_label) {
   let body = new Uint8Array(tngl_bytes);
 
   return crypto.subtle
-    .importKey("raw", enc.encode(tngl_label), algorithm, false, ["sign", "verify"])
-    .then(key => {
+    .importKey("raw", enc.encode(tngl_label), algorithm, false, [
+      "sign",
+      "verify",
+    ])
+    .then((key) => {
       return crypto.subtle.sign(algorithm.name, key, body);
     })
-    .then(signature => {
+    .then((signature) => {
       // let digest = btoa(String.fromCharCode(...new Uint8Array(signature)));
       // console.info(digest);
       return new Uint8Array(signature);
@@ -298,7 +310,9 @@ export function hexStringToUint8Array(hexString, arrayLength) {
 }
 
 export function uint8ArrayToHexString(bytes) {
-  return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2, "0")).join("");
+  return [...new Uint8Array(bytes)]
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export function czechHackyToEnglish(string) {
@@ -336,7 +350,17 @@ export function czechHackyToEnglish(string) {
 // Detect iOS browsers < version 10
 const oldIOS = () =>
   typeof navigator !== "undefined" &&
-  parseFloat(("" + (/CPU.*OS ([0-9_]{3,4})[0-9_]{0,1}|(CPU like).*AppleWebKit.*Mobile/i.exec(navigator.userAgent) || [0, ""])[1]).replace("undefined", "3_2").replace("_", ".").replace("_", "")) < 10 &&
+  parseFloat(
+    (
+      "" +
+      (/CPU.*OS ([0-9_]{3,4})[0-9_]{0,1}|(CPU like).*AppleWebKit.*Mobile/i.exec(
+        navigator.userAgent
+      ) || [0, ""])[1]
+    )
+      .replace("undefined", "3_2")
+      .replace("_", ".")
+      .replace("_", "")
+  ) < 10 &&
   !window.MSStream;
 
 // Detect native Wake Lock API support
@@ -367,27 +391,24 @@ class NoSleep {
       this.noSleepTimer = null;
     } else {
       // Set up no sleep video element
-      this.noSleepVideo = document.createElement("video");
-
-      this.noSleepVideo.setAttribute("title", "No Sleep");
-      this.noSleepVideo.setAttribute("playsinline", "");
-
-      this._addSourceToVideo(this.noSleepVideo, "webm", webm);
-      this._addSourceToVideo(this.noSleepVideo, "mp4", mp4);
-
-      this.noSleepVideo.addEventListener("loadedmetadata", () => {
-        if (this.noSleepVideo.duration <= 1) {
-          // webm source
-          this.noSleepVideo.setAttribute("loop", "");
-        } else {
-          // mp4 source
-          this.noSleepVideo.addEventListener("timeupdate", () => {
-            if (this.noSleepVideo.currentTime > 0.5) {
-              this.noSleepVideo.currentTime = Math.random();
-            }
-          });
-        }
-      });
+      // this.noSleepVideo = document.createElement("video");
+      // this.noSleepVideo.setAttribute("title", "No Sleep");
+      // this.noSleepVideo.setAttribute("playsinline", "");
+      // this._addSourceToVideo(this.noSleepVideo, "webm", webm);
+      // this._addSourceToVideo(this.noSleepVideo, "mp4", mp4);
+      // this.noSleepVideo.addEventListener("loadedmetadata", () => {
+      //   if (this.noSleepVideo.duration <= 1) {
+      //     // webm source
+      //     this.noSleepVideo.setAttribute("loop", "");
+      //   } else {
+      //     // mp4 source
+      //     this.noSleepVideo.addEventListener("timeupdate", () => {
+      //       if (this.noSleepVideo.currentTime > 0.5) {
+      //         this.noSleepVideo.currentTime = Math.random();
+      //       }
+      //     });
+      //   }
+      // });
     }
   }
 
@@ -406,7 +427,7 @@ class NoSleep {
     if (nativeWakeLock()) {
       return navigator.wakeLock
         .request("screen")
-        .then(wakeLock => {
+        .then((wakeLock) => {
           this._wakeLock = wakeLock;
           this.enabled = true;
           console.info("Wake Lock active.");
@@ -417,7 +438,7 @@ class NoSleep {
             console.info("Wake Lock released.");
           });
         })
-        .catch(err => {
+        .catch((err) => {
           this.enabled = false;
           console.error(`${err.name}, ${err.message}`);
           throw err;
@@ -429,24 +450,24 @@ class NoSleep {
         active or long-running network requests from completing successfully.
         See https://github.com/richtr/NoSleep.js/issues/15 for more details.
       `);
-      this.noSleepTimer = window.setInterval(() => {
-        if (!document.hidden) {
-          window.location.href = window.location.href.split("#")[0];
-          window.setTimeout(window.stop, 0);
-        }
-      }, 15000);
+      // this.noSleepTimer = window.setInterval(() => {
+      //   if (!document.hidden) {
+      //     window.location.href = window.location.href.split("#")[0];
+      //     window.setTimeout(window.stop, 0);
+      //   }
+      // }, 15000);
       this.enabled = true;
       return Promise.resolve();
     } else {
-      return this.noSleepVideo.play()
-        .then(res => {
-          this.enabled = true;
-          // return res;
-        })
-        .catch(err => {
-          this.enabled = false;
-          throw err;
-        });
+      // return this.noSleepVideo.play()
+      //   .then(res => {
+      //     this.enabled = true;
+      //     // return res;
+      //   })
+      //   .catch(err => {
+      //     this.enabled = false;
+      //     throw err;
+      //   });
     }
   }
 
@@ -465,7 +486,7 @@ class NoSleep {
         this.noSleepTimer = null;
       }
     } else {
-      this.noSleepVideo.pause();
+      // this.noSleepVideo.pause();
     }
     this.enabled = false;
   }
@@ -473,14 +494,16 @@ class NoSleep {
 
 export const noSleep = new NoSleep();
 
+var script = document.createElement("script");
+script.src = "//cdn.jsdelivr.net/npm/eruda";
+script.setAttribute("defer", true);
+document.body.appendChild(script);
+
 export function enableDebugMode() {
-  var script = document.createElement("script");
-  script.src = "//cdn.jsdelivr.net/npm/eruda";
-  document.body.appendChild(script);
-  script.onload = function () {
+  if (window.eruda) {
     window.eruda.init();
     setLoggingLevel(4);
-  };
+  }
 }
 
 export function deactivateDebugMode() {
@@ -527,7 +550,7 @@ export function hexStringToArray(str) {
     return [];
   }
   var arr = str.match(/[0-9a-f]{2}/gi); // convert into array of hex pairs
-  arr = arr.map(x => parseInt(x, 16)); // convert hex pairs into ints (bytes)
+  arr = arr.map((x) => parseInt(x, 16)); // convert hex pairs into ints (bytes)
   return new Uint8Array(arr);
 }
 
@@ -582,11 +605,21 @@ export function validateTimestamp(value) {
 
   value = value.trim();
 
-  if (value == "inf" || value == "Inf" || value == "infinity" || value == "Infinity") {
+  if (
+    value == "inf" ||
+    value == "Inf" ||
+    value == "infinity" ||
+    value == "Infinity"
+  ) {
     return [2147483647, "Infinity"];
   }
 
-  if (value == "-inf" || value == "-Inf" || value == "-infinity" || value == "-Infinity") {
+  if (
+    value == "-inf" ||
+    value == "-Inf" ||
+    value == "-infinity" ||
+    value == "-Infinity"
+  ) {
     return [-2147483648, "-Infinity"];
   }
 

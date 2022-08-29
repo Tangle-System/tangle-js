@@ -53,7 +53,7 @@ class FlutterConnection {
       window.addEventListener("#resolve", e => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #resolve:", value);
+        logging.debug("Triggered #resolve:", typeof(value), value);
 
         // @ts-ignore
         window.flutterConnection.resolve(value);
@@ -62,7 +62,7 @@ class FlutterConnection {
       window.addEventListener("#reject", e => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #reject:", value);
+        logging.debug("Triggered #reject:", typeof(value), value);
 
         // @ts-ignore
         window.flutterConnection.reject(value);
@@ -70,20 +70,20 @@ class FlutterConnection {
 
       window.addEventListener("#emit", e => {
         // @ts-ignore
-        const value = e.detail.value;
-        logging.debug("Triggered #emit:", value);
+        const event = e.detail.value;
+        logging.debug("Triggered #emit:", typeof(event), event);
 
         // @ts-ignore
-        window.flutterConnection.emit(value);
+        window.flutterConnection.emit(event);
       });
 
       window.addEventListener("#process", e => {
         // @ts-ignore
-        const value = e.detail.value;
-        logging.debug("Triggered #process:", value);
+        const bytes = e.detail.value;
+        logging.debug("Triggered #process:", typeof(bytes), bytes);
 
         // @ts-ignore
-        window.flutterConnection.process(value);
+        window.flutterConnection.process(bytes);
       });
       
       
@@ -410,13 +410,13 @@ export class FlutterConnector extends FlutterConnection {
     this.#promise = null;
 
     // @ts-ignore
-    window.flutterConnection.emit = (event, param) => {
-      this.#interfaceReference.emit(event, param);
+    window.flutterConnection.emit = (event) => {
+      this.#interfaceReference.emit(event, null);
     };
 
     // @ts-ignore
-    window.flutterConnection.process = (event, param) => {
-      this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+    window.flutterConnection.process = (bytes) => {
+      this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
     };
   }
 

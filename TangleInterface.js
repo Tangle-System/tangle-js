@@ -200,8 +200,8 @@ export class TangleInterface {
     this.#lastUpdateTime = new Date().getTime();
     this.#lastUpdatePercentage = 0;
 
-    this.onConnected = e => {};
-    this.onDisconnected = e => {};
+    this.onConnected = e => { };
+    this.onDisconnected = e => { };
 
     // this.#otaStart = new Date().getTime();
 
@@ -263,20 +263,43 @@ export class TangleInterface {
       // target="_blank" global handler
       // @ts-ignore
 
-      /** @type {HTMLBodyElement} */ (document.querySelector("body")).addEventListener("click", function (e) {
-        e.preventDefault();
-        // @ts-ignore
-        for (let el of e.path) {
-          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-            e.preventDefault();
-            const url = el.getAttribute("href");
-            // console.log(url);
-            // @ts-ignore
-            window.flutter_inappwebview.callHandler("openExternalUrl", url);
-            break;
-          }
+      /** @type {HTMLBodyElement} */ document.querySelector("body").addEventListener("click", function (e) {
+      e.preventDefault();
+
+      (function (e, d, w) {
+        if (!e.composedPath) {
+          e.composedPath = function () {
+            if (this.path) {
+              return this.path;
+            }
+            var target = this.target;
+
+            this.path = [];
+            while (target.parentNode !== null) {
+              this.path.push(target);
+              target = target.parentNode;
+            }
+            this.path.push(d, w);
+            return this.path;
+          };
         }
-      });
+      })(Event.prototype, document, window);
+      // @ts-ignore
+      const path = e.path || (e.composedPath && e.composedPath());
+
+      // @ts-ignore
+      for (let el of path) {
+        if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+          e.preventDefault();
+          const url = el.getAttribute("href");
+          // console.log(url);
+          // @ts-ignore
+          console.log("Openning external url", url)
+          window.flutter_inappwebview.callHandler("openExternalUrl", url);
+          break;
+        }
+      }
+    });
     }
 
     // open external links in JAVA TC
@@ -387,7 +410,7 @@ export class TangleInterface {
     }
 
     return this.destroyConnector()
-      .catch(() => {})
+      .catch(() => { })
       .then(() => {
         switch (connector_type) {
           case "none":
@@ -750,6 +773,7 @@ export class TangleInterface {
   }
 
   request(bytes, read_response) {
+    console.log({ bytes, read_response });
     const item = new Query(Query.TYPE_REQUEST, bytes, read_response);
     this.#process(item);
     return item.promise;
@@ -940,7 +964,7 @@ export class TangleInterface {
                 this.#disconnectQuery = new Query();
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
-                  .catch(() => {})
+                  .catch(() => { })
                   .then(() => {
                     return this.connector.disconnect();
                   })
@@ -1059,7 +1083,7 @@ export class TangleInterface {
               case Query.TYPE_FIRMWARE_UPDATE:
                 try {
                   await this.requestWakeLock();
-                } catch {}
+                } catch { }
                 await this.connector
                   .updateFW(item.a)
                   .then(response => {
@@ -1078,7 +1102,7 @@ export class TangleInterface {
                 this.#reconection = false;
                 await this.connector
                   .request([DEVICE_FLAGS.FLAG_DEVICE_DISCONNECT_REQUEST], false)
-                  .catch(() => {})
+                  .catch(() => { })
                   .then(() => {
                     return this.connector.disconnect();
                   })
@@ -1224,10 +1248,10 @@ export class TangleInterface {
 
             if (is_lazy) {
               let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
-              // this.emit("event", event);
+              this.emit("event", event);
             } else {
               let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
-              // this.emit("event", event);
+              this.emit("event", event);
             }
           }
           break;
