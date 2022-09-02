@@ -4,7 +4,7 @@ import {
   computeTnglFingerprint,
   czechHackyToEnglish,
   detectBluefy,
-  detectFlutterConnect,
+  detectSpectodaConnect,
   detectTangleConnect,
   getClockTimestamp,
   hexStringToUint8Array,
@@ -741,7 +741,7 @@ export class TangleDevice {
     }
 
     if (connectAny) {
-      if (detectBluefy() || detectFlutterConnect() || detectFlutterConnect()) {
+      if (detectBluefy() || detectSpectodaConnect()) {
         criteria = [{}];
       } else {
         criteria = [{}, { adoptionFlag: true }, { legacy: true }];

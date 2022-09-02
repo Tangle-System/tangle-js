@@ -119,6 +119,13 @@ export class TangleWebSerialConnector {
     while (true) {
       // try {
       let { value, done } = await this.#receiveStreamReader.read().catch(e => {
+        
+        if (e.toString().includes("break condition")) {
+          logging.warn(e);
+
+          return { value: null, done: true };
+        }
+
         logging.error(e);
         return { value: null, done: true };
       });
@@ -146,6 +153,10 @@ export class TangleWebSerialConnector {
             logging.verbose("match", match);
             let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i); // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
             reg && this.#dataCallback && this.#dataCallback(hexStringToArray(reg[1]));
+          } else if (match.match(/>>>NOTIFY=/)) {
+            logging.verbose("match", match);
+            let reg = match.match(/>>>NOTIFY=([0123456789abcdef]*)<<</i); // >>>NOTIFY=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
+            reg && this.#interfaceReference.process(new DataView(new Uint8Array(hexStringToArray(reg[1])).buffer));
           }
 
           // Return the replacement leveraging the parameters.
@@ -153,7 +164,7 @@ export class TangleWebSerialConnector {
         });
 
         if (value.length !== 0) {
-          logging.info(value);
+          // logging.verbose(value);
           this.#interfaceReference.emit("receive", { target: this, payload: value });
         }
       }
@@ -326,7 +337,7 @@ criteria example:
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
-          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n",12)));
+          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n", 12)));
           this.#transmitStreamWriter.releaseLock();
         });
       })
@@ -435,10 +446,13 @@ criteria example:
         () => {
           logging.error("ResponseTimeout");
           this.#feedbackCallback = null;
-          this.#transmitStreamWriter.releaseLock();
+          if (this.#transmitStreamWriter) {
+            this.#transmitStreamWriter.releaseLock();
+          }
+          this.disconnect();
           reject("ResponseTimeout");
         },
-        timeout < 5000 ? 10000 : timeout * 2,
+        timeout < 5000 ? 15000 : timeout * 3,
       );
 
       this.#feedbackCallback = success => {
