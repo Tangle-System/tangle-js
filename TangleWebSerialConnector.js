@@ -119,6 +119,13 @@ export class TangleWebSerialConnector {
     while (true) {
       // try {
       let { value, done } = await this.#receiveStreamReader.read().catch(e => {
+        
+        if (e.toString().includes("break condition")) {
+          logging.warn(e);
+
+          return { value: null, done: true };
+        }
+
         logging.error(e);
         return { value: null, done: true };
       });
@@ -330,7 +337,7 @@ criteria example:
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
-          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n",12)));
+          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n", 12)));
           this.#transmitStreamWriter.releaseLock();
         });
       })
@@ -439,7 +446,10 @@ criteria example:
         () => {
           logging.error("ResponseTimeout");
           this.#feedbackCallback = null;
-          this.#transmitStreamWriter.releaseLock();
+          if (this.#transmitStreamWriter) {
+            this.#transmitStreamWriter.releaseLock();
+          }
+          this.disconnect();
           reject("ResponseTimeout");
         },
         timeout < 5000 ? 15000 : timeout * 3,
