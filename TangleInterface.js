@@ -289,7 +289,6 @@ export class TangleInterface {
 
       // @ts-ignore
       for (let el of path) {
-        console.log("External url path", el);
         if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
           e.preventDefault();
           const url = el.getAttribute("href");
