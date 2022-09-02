@@ -11,7 +11,7 @@ import {
   detectBluefy,
   noSleep,
   detectTangleConnect,
-  detectFlutterConnect,
+  detectSpectodaConnect,
   mapValue,
   rgbToHex,
   detectAndroid,
@@ -179,7 +179,7 @@ export class TangleInterface {
 
     this.clock = new TimeTrack(0);
 
-    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | FlutterConnector | TangleWebSocketsConnector} */ (null);
+    this.connector = /** @type {TangleDummyConnector | TangleWebBluetoothConnector | TangleWebSerialConnector | TangleConnectConnector | FlutterConnector | TangleWebSocketsConnector | null} */ (null);
 
     this.#eventEmitter = createNanoEvents();
     this.#wakeLock = null;
@@ -258,7 +258,7 @@ export class TangleInterface {
     });
 
     // open external links in Flutter SC
-    if (detectFlutterConnect()) {
+    if (detectSpectodaConnect()) {
       // target="_blank" global handler
       // @ts-ignore
 
@@ -392,20 +392,18 @@ export class TangleInterface {
     }
 
     if (connector_type == "default") {
-      if (detectFlutterConnect()) {
+      if (detectSpectodaConnect()) {
         connector_type = "flutter";
       } else if (detectTangleConnect()) {
         connector_type = "tangleconnect";
       } else if (navigator.bluetooth) {
         connector_type = "webbluetooth";
-      } else if (navigator.serial) {
-        connector_type = "webserial";
       } else {
-        connector_type = "webbluetooth";
+        connector_type = "none";
       }
     }
 
-    return this.destroyConnector()
+    return this.connector ? this.destroyConnector() : Promise.resolve()
       .catch(() => {})
       .then(() => {
         switch (connector_type) {
@@ -440,8 +438,8 @@ export class TangleInterface {
             break;
 
           case "webbluetooth":
-            if (detectTangleConnect() || detectBluefy() || (detectAndroid() && detectChrome()) || (detectMacintosh() && detectChrome()) || (detectWindows() && detectChrome()) || (detectLinux() && detectChrome())) {
-              // NOP
+            if (detectBluefy() || (detectAndroid() && detectChrome()) || (detectMacintosh() && detectChrome()) || (detectWindows() && detectChrome()) || (detectLinux() && detectChrome())) {
+              this.connector = new TangleWebBluetoothConnector(this);
             } else {
               // iPhone outside Bluefy and TangleConnect
               if (detectIPhone()) {
@@ -487,22 +485,38 @@ export class TangleInterface {
               else {
                 window.confirm("Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.");
               }
-            }
 
-            this.connector = new TangleWebBluetoothConnector(this);
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;
+            }
 
             break;
 
           case "webserial":
+            if (detectChrome()) {
             this.connector = new TangleWebSerialConnector(this);
+            } else {
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;  
+            }
             break;
 
           case "tangleconnect":
-            this.connector = new TangleConnectConnector(this);
+            if (detectTangleConnect()) {
+              this.connector = new TangleConnectConnector(this);
+            } else {
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;
+            }
             break;
 
           case "flutter":
-            this.connector = new FlutterConnector(this);
+            if (detectSpectodaConnect()) {
+              this.connector = new FlutterConnector(this);
+            } else {
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;
+            }
             break;
 
           case "websockets":
@@ -856,6 +870,7 @@ export class TangleInterface {
             const item = this.#queue.shift();
 
             if (this.connector === null) {
+              window.alert("Error: ConnectorNotAssigned");
               item.reject("ConnectorNotAssigned");
               continue;
             }
