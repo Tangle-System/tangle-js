@@ -385,6 +385,7 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
+    
     if (!connector_type) {
       connector_type = "none";
     }
@@ -408,7 +409,7 @@ export class TangleInterface {
       }
     }
 
-    return this.connector ? this.destroyConnector() : Promise.resolve()
+    return (this.connector ? this.destroyConnector() : Promise.resolve())
       .catch(() => {})
       .then(() => {
         switch (connector_type) {
@@ -513,7 +514,7 @@ export class TangleInterface {
             break;
 
           case "flutter":
-            if (detectSpectodaConnect()) {
+            if (detectSpectodaConnect() || detectWindows() || detectMacintosh()) {
               this.connector = new FlutterConnector(this);
             } else {
               logging.error("Error: Assigning unsupported connector");
