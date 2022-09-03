@@ -491,7 +491,8 @@ export class TangleInterface {
               }
             }
 
-            this.connector = new TangleWebBluetoothConnector(this);
+            logging.error("Error: Assigning unsupported connector");
+            this.connector = null;
 
             break;
 
