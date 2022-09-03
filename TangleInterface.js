@@ -489,19 +489,19 @@ export class TangleInterface {
               else {
                 window.confirm(t("Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat."));
               }
-            }
 
-            logging.error("Error: Assigning unsupported connector");
-            this.connector = null;
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;
+            }
 
             break;
 
           case "webserial":
             if (detectChrome()) {
-            this.connector = new TangleWebSerialConnector(this);
+              this.connector = new TangleWebSerialConnector(this);
             } else {
               logging.error("Error: Assigning unsupported connector");
-              this.connector = null;  
+              this.connector = null;
             }
             break;
 
