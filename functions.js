@@ -471,7 +471,7 @@ export function enableDebugMode() {
   document.body.appendChild(script);
   script.onload = function () {
     window.eruda.init();
-    setLoggingLevel(4);
+    setLoggingLevel(5);
   };
 }
 
