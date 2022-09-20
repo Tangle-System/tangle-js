@@ -71,6 +71,8 @@ const TNGL_FLAGS = Object.freeze({
   ANIMATION_COLOR_ROLL: 38,
   ANIMATION_COLOR_GRADIENT3: 39,
   ANIMATION_COLOR_GRADIENT5: 40,
+  ANIMATION_COLOR_GRADIENT2: 41,
+  ANIMATION_COLOR_GRADIENT4: 42,
   ANIMATION_INL_ANI: 126,
   ANIMATION_DEFINED: 127,
 
@@ -506,8 +508,14 @@ export class TnglCompiler {
       // case "animPaletteRoll":
       //   this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_PALLETTE_ROLL);
       //   break;
+      case "animColorGradient2":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT2);
+        break;
       case "animColorGradient3":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT3);
+        break;
+      case "animColorGradient4":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT4);
         break;
       case "animColorGradient5":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.ANIMATION_COLOR_GRADIENT5);

@@ -276,7 +276,7 @@ criteria example:
     return Promise.resolve();
   }
 
-  connect(timeout = 12000) {
+  connect(timeout = 15000) {
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
       return Promise.reject("ConnectionFailed");
@@ -452,7 +452,8 @@ criteria example:
           this.disconnect();
           reject("ResponseTimeout");
         },
-        timeout < 5000 ? 15000 : timeout * 3,
+        timeout < 5000 ? 20000 : timeout * 4,
+        // 60000
       );
 
       this.#feedbackCallback = success => {
@@ -460,14 +461,18 @@ criteria example:
         clearInterval(timeout_handle);
         if (success) {
           setTimeout(() => {
-            this.#transmitStreamWriter.releaseLock();
+            if (this.#transmitStreamWriter) {
+              this.#transmitStreamWriter.releaseLock();
+            }
             resolve();
           }, 100);
         } else {
           //try to write it once more
           logging.debug("Trying to recover...");
           setTimeout(() => {
-            this.#transmitStreamWriter.releaseLock();
+            if (this.#transmitStreamWriter) {
+              this.#transmitStreamWriter.releaseLock();
+            }
             resolve(this.#initiate(initiate_code, payload, tries - 1));
           }, 100);
         }
