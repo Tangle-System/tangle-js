@@ -1002,8 +1002,8 @@ export class TangleDevice {
     // logging.debug("emitColorEvent(id=" + device_ids + ")");
     lastEvents[event_label] = { value: event_value, type: "color" };
 
-    if (!event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
-      logging.error("Invalid event value");
+    if (!event_value || !event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
+      logging.error("Invalid event value. event_value=", event_value);
       event_value = "#000000";
     }
 
@@ -1460,8 +1460,8 @@ export class TangleDevice {
       ...numberToBytes(request_uuid, 4),
     ];
 
-    return this.interface.request(bytes, true).then((response) => {
-      logging.debug("> Got response:", response);
+    return this.interface.request(bytes, true).then(response => {
+      logging.verbose("response=", response);
 
       let reader = new TnglReader(response);
 
@@ -1479,9 +1479,7 @@ export class TangleDevice {
       const timeline_timestamp = reader.readInt32();
       const timeline_paused = reader.readUint8();
 
-      logging.debug(
-        `clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`
-      );
+      logging.verbose(`clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`);
 
       if (timeline_paused) {
         this.timeline.setState(timeline_timestamp, true);
@@ -1834,7 +1832,7 @@ export class TangleDevice {
     return this.interface.request(bytes, true).then((response) => {
       let reader = new TnglReader(response);
 
-      logging.debug("> Got response:", response);
+      logging.verbose("response=", response);
 
       if (
         reader.readFlag() !== DEVICE_FLAGS.FLAG_CONNECTED_PEERS_INFO_RESPONSE
@@ -1850,7 +1848,7 @@ export class TangleDevice {
 
       const error_code = reader.readUint8();
 
-      logging.debug(`error_code=${error_code}`);
+      logging.verbose(`error_code=${error_code}`);
 
       let count = 0;
       let peers = [];
@@ -1869,7 +1867,7 @@ export class TangleDevice {
       } else {
         throw "Fail";
       }
-      logging.debug(`count=${count}, peers=`, peers);
+      logging.verbose(`count=${count}, peers=`, peers);
 
       return peers;
     });
