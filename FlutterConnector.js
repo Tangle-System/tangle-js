@@ -788,17 +788,20 @@ criteria example:
   updateFW(firmware_bytes) {
     logging.debug(`updateFW(firmware.length=${firmware_bytes.length})`);
 
-    this.#promise = new Promise((resolve, reject) => {
-      // @ts-ignore
-      window.flutterConnection.resolve = resolve;
-      // @ts-ignore
-      window.flutterConnection.reject = reject;
-    });
+    // this.#promise = new Promise((resolve, reject) => {
+    //   // @ts-ignore
+    //   window.flutterConnection.resolve = resolve;
+    //   // @ts-ignore
+    //   window.flutterConnection.reject = reject;
+    // });
 
-    // @ts-ignore
-    window.flutter_inappwebview.callHandler("updateFW", firmware_bytes);
+    // // @ts-ignore
+    // window.flutter_inappwebview.callHandler("updateFW", firmware_bytes);
 
-    return this.#applyTimeout(this.#promise, 600000, "updateFW");
+    // return this.#applyTimeout(this.#promise, 600000, "updateFW");
+
+    logging.error("Device update is not yet implemented.");
+    return Promise.reject("NotImplemented");
   }
 
   destroy() {

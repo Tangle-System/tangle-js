@@ -1155,6 +1155,8 @@ export class TangleInterface {
 
     logging.verbose(tangleBytes);
 
+    let emitted_events_log = [];
+
     while (tangleBytes.available > 0) {
       switch (tangleBytes.peekFlag()) {
         case NETWORK_FLAGS.FLAG_CONF_BYTES:
@@ -1204,6 +1206,9 @@ export class TangleInterface {
             let event_value = null;
             let event_type = "unknown";
 
+            let log_value_prefix = "";
+            let log_value_postfix = "";
+
             switch (tangleBytes.readFlag()) {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
                 is_lazy = true;
@@ -1219,6 +1224,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
                 event_type = "timestamp";
+                log_value_postfix = "ms"
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
@@ -1236,6 +1242,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_PERCENTAGE_EVENT");
                 event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
                 event_type = "percentage";
+                log_value_postfix = "%";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
@@ -1244,6 +1251,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_LABEL_EVENT");
                 event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
                 event_type = "label";
+                log_value_prefix = "$";
                 break;
 
               default:
@@ -1265,11 +1273,11 @@ export class TangleInterface {
 
             if (is_lazy) {
               let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
-              logging.debug(`Emitting: $${event.label} = ${event.value} [${event.type}] -> ${event.id}`);
+              emitted_events_log.push(`${event.id?.toString().padStart(3)} -> $${event.label}: ${log_value_prefix + event.value + log_value_postfix}`);
               this.emit("event", event);
             } else {
               let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
-              logging.debug(`Emitting: $${event.label} = ${event.value} [${event.type}] -> ${event.id}`);
+              emitted_events_log.push(`${event.id?.toString().padStart(3)} -> $${event.label}: ${log_value_prefix + event.value + log_value_postfix}`);
               this.emit("event", event);
             }
           }
@@ -1376,6 +1384,8 @@ export class TangleInterface {
           break;
       }
     }
+
+    logging.info(emitted_events_log.join('\n'));
   }
 }
 
