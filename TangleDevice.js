@@ -935,17 +935,26 @@ export class TangleDevice {
   }
 
   updateDeviceFirmware(firmware) {
-    logging.verbose("updateDeviceFirmware()");
-    if (firmware.length < 100000) {
-      logging.error("Invalid firmware image");
-      return Promise.reject("InvalidFirmwareImage");
+    logging.verbose(`updateDeviceFirmware(firmware.length=${firmware?.length})`);
+
+    if (!firmware || firmware.length < 10000) {
+      logging.error("Invalid firmware");
+      return Promise.reject("InvalidFirmware");
     }
+
     return this.interface.updateFW(firmware).then(() => {
       this.disconnect();
     });
   }
 
   updateNetworkFirmware(firmware) {
+    logging.verbose(`updateNetworkFirmware(firmware.length=${firmware?.length})`);
+
+    if (!firmware || firmware.length < 10000) {
+      logging.error("Invalid firmware");
+      return Promise.reject("InvalidFirmware");
+    }
+
     this.#updating = true;
 
     this.interface.requestWakeLock();
@@ -961,11 +970,6 @@ export class TangleDevice {
 
       logging.info("OTA UPDATE");
       logging.verbose(firmware);
-
-      if(!firmware || firmware.length < 1000) {
-        logging.error("Invalid Firmware");
-        reject("InvalidFirmware");
-      }
 
       const start_timestamp = new Date().getTime();
 
@@ -1540,11 +1544,10 @@ export class TangleDevice {
 
       logging.verbose(`error_code=${error_code}`);
 
-      let count = 0;
       let peers = [];
 
       if (error_code === 0) {
-        count = reader.readUint16();
+        let count = reader.readUint16();
 
         for (let index = 0; index < count; index++) {
           peers.push({
@@ -1554,12 +1557,15 @@ export class TangleDevice {
               .join(":"),
           });
         }
+
+        logging.verbose(`count=${count}, peers=`, peers);
+        return peers;
+
       } else {
         throw "Fail";
       }
-      logging.verbose(`count=${count}, peers=`, peers);
 
-      return peers;
+      
     });
   }
 
