@@ -728,7 +728,7 @@ export class TangleInterface {
     // this.#queue = [];
 
     if (this.#reconection && this.#reconnectionInterval) {
-      logging.debug("Reconnecting...");
+      logging.info("Reconnecting...");
       setTimeout(() => {
         logging.debug("Reconnecting device");
         return this.connect(this.#reconnectionInterval).catch(() => {
@@ -1248,23 +1248,25 @@ export class TangleInterface {
                 break;
             }
 
-            logging.debug(`is_lazy = ${is_lazy ? "true" : "false"}`);
-            logging.debug(`event_value = ${event_value}`);
+            logging.verbose(`is_lazy = ${is_lazy ? "true" : "false"}`);
+            logging.verbose(`event_value = ${event_value}`);
 
             const event_label = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0]; // 5 bytes
-            logging.debug(`event_label = ${event_label}`);
+            logging.verbose(`event_label = ${event_label}`);
 
             const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
-            logging.debug(`event_timestamp = ${event_timestamp} ms`);
+            logging.verbose(`event_timestamp = ${event_timestamp} ms`);
 
             const event_device_id = tangleBytes.readUint8(); // 1 byte
-            logging.debug(`event_device_id = ${event_device_id}`);
+            logging.verbose(`event_device_id = ${event_device_id}`);
 
             if (is_lazy) {
               let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
+              logging.debug(`Emitting: $${event.label} = ${event.value} [${event.type}] -> ${event.id}`);
               this.emit("event", event);
             } else {
               let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
+              logging.debug(`Emitting: $${event.label} = ${event.value} [${event.type}] -> ${event.id}`);
               this.emit("event", event);
             }
           }
@@ -1284,12 +1286,12 @@ export class TangleInterface {
             const clock_timestamp = tangleBytes.readInt32();
             const timeline_timestamp = tangleBytes.readInt32();
             const timeline_flags = tangleBytes.readUint8();
-            logging.debug(`clock_timestamp = ${clock_timestamp} ms`);
-            logging.debug(`timeline_timestamp = ${timeline_timestamp} ms`);
-            logging.debug(`timeline_flags = ${timeline_flags}`);
+            logging.verbose(`clock_timestamp = ${clock_timestamp} ms`);
+            logging.verbose(`timeline_timestamp = ${timeline_timestamp} ms`);
+            logging.verbose(`timeline_flags = ${timeline_flags}`);
 
             const timeline_paused = timeline_flags & PAUSED_FLAG ? true : false;
-            logging.debug("timeline_paused = %s", timeline_paused ? "true" : "false");
+            logging.verbose("timeline_paused = %s", timeline_paused ? "true" : "false");
 
             if (timeline_paused) {
               this.#deviceReference.timeline.pause();
@@ -1332,7 +1334,7 @@ export class TangleInterface {
               obj.rssi.push(item);
             }
 
-            logging.debug(obj);
+            logging.verbose(obj);
             this.#eventEmitter.emit("rssi_data", obj);
           }
           break;
