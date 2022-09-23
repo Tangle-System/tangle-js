@@ -448,10 +448,10 @@ export class TangleInterface {
               // iPhone outside Bluefy and TangleConnect
               if (detectIPhone()) {
                 // @ts-ignore
-                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy."), t("Prohlížeč není podporován")).then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Bluefy v app store
-                    window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
+                    window.location.replace("https://apps.apple.com/us/app/id1635118423");
                   }
                 });
               }
@@ -468,10 +468,10 @@ export class TangleInterface {
               // Android outside Google Chrome
               else if (detectAndroid()) {
                 // @ts-ignore
-                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome."), t("Prohlížeč není podporován")).then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Google Chrome
-                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                    window.location.replace("https://play.google.com/store/apps/details?id=com.spectoda.spectodaconnect");
                   }
                 });
               }
