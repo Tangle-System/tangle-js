@@ -410,12 +410,12 @@ export class FlutterConnector extends FlutterConnection {
     this.#promise = null;
 
     // @ts-ignore
-    window.flutterConnection.emit = (event) => {
+    window.flutterConnection.emit = event => {
       this.#interfaceReference.emit(event, null);
     };
 
     // @ts-ignore
-    window.flutterConnection.process = (bytes) => {
+    window.flutterConnection.process = bytes => {
       this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
     };
   }
@@ -604,7 +604,10 @@ criteria example:
     // @ts-ignore
     window.flutter_inappwebview.callHandler("connect", timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect");
+    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect").then(() => {
+      logging.debug("Sleeping for 200ms");
+      return sleep(200);
+    });
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
