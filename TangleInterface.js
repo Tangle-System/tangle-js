@@ -287,19 +287,19 @@ export class TangleInterface {
       // @ts-ignore
       const path = e.path || (e.composedPath && e.composedPath());
 
-      // @ts-ignore
-      for (let el of path) {
-        if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-          e.preventDefault();
-          const url = el.getAttribute("href");
-          // console.log(url);
-          // @ts-ignore
-          console.log("Openning external url", url)
-          window.flutter_inappwebview.callHandler("openExternalUrl", url);
-          break;
+        // @ts-ignore
+        for (let el of path) {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+            e.preventDefault();
+            const url = el.getAttribute("href");
+            // logging.verbose(url);
+            // @ts-ignore
+            logging.debug("Openning external url", url);
+            window.flutter_inappwebview.callHandler("openExternalUrl", url);
+            break;
+          }
         }
-      }
-    });
+      });
     }
 
     // open external links in JAVA TC
@@ -314,7 +314,7 @@ export class TangleInterface {
             if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
               e.preventDefault();
               const url = el.getAttribute("href");
-              // console.log(url);
+              // logging.verbose(url);
               // @ts-ignore
               window.tangleConnect.open(url);
               break;
