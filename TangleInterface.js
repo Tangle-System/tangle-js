@@ -288,13 +288,13 @@ export class TangleInterface {
 
         // @ts-ignore
         for (let el of path) {
-          console.log("External url path", el);
+          logging.verbose("External url path", el);
           if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
             e.preventDefault();
             const url = el.getAttribute("href");
-            // console.log(url);
+            // logging.verbose(url);
             // @ts-ignore
-            console.log("Openning external url", url);
+            logging.verbose("Openning external url", url);
             window.flutter_inappwebview.callHandler("openExternalUrl", url);
             break;
           }
@@ -314,7 +314,7 @@ export class TangleInterface {
             if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
               e.preventDefault();
               const url = el.getAttribute("href");
-              // console.log(url);
+              // logging.verbose(url);
               // @ts-ignore
               window.tangleConnect.open(url);
               break;
