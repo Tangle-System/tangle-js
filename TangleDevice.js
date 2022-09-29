@@ -1055,7 +1055,7 @@ export class TangleDevice {
         return;
       }
     }).then(() => {
-      this.disconnect();
+      return this.disconnect();
     })
 
   .finally(() => {
