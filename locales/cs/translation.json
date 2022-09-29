@@ -1,8 +1,8 @@
 {
   "Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu Pro spárování nové lampy prosím stiskněte tlačítko \"Přidat zařízení\".": "Aktivujte prosím Bluetooth a vyberte svou lampu ze seznamu. Pro spárování nové lampy prosím stiskněte tlačítko \"Přidat zařízení\".",
   "Chyba: ": "Chyba: ",
-  "Connected to remote control": "Connected to remote control",
-  "Disconnected from remote control": "Disconnected from remote control",
+  "Connected to remote control": "Připojeno k websocketům",
+  "Disconnected from remote control": "Odpojeno od websoket",
   "Jsou zařízení blízko sebe?": "Jsou zařízení blízko sebe?",
   "Nastavení rychlejšího přenosu dat se nezdařilo.": "Nastavení rychlejšího přenosu dat se nezdařilo.",
   "Nastaví rychlejší přenos dat, který ale nemá takový dosah.": "Nastaví rychlejší přenos dat, který ale nemá takový dosah.",
@@ -19,9 +19,10 @@
   "Zkusit znovu": "Zkusit znovu",
   "Zkuste to, prosím, později.": "Zkuste to, prosím, později.",
   "Zpět": "Zpět",
-  "Prohlížeč není podporován": "This browser is not supported",
-  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.": "Unfortunately, it is not possible to control NARA from this web browser. Please open app in Google Chrome.",
-  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.": "Unfortunately, it is not possible to control NARU from this web browser. Please open the app in the Bluefy browser.",
-  "Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.": "Unfortunately, it is probably not possible to control NARA from this web browser.",
-  "Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu.": "Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu."
+  "Prohlížeč není podporován": "Prohlížeč není podporován",
+  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.": "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome.",
+  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.": "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy.",
+  "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect.": "Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect.",
+  "Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.": "Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat.",
+  "Zkontrolujte, zda jste v Nastavení povolili aplikaci přístup k mikrofonu.": "Zkontrolujte, zda jste v Nastavení povolili aplikaci přístup k mikrofonu."
 }

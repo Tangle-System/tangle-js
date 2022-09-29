@@ -91,7 +91,7 @@ export class SpectodaSound {
             .catch((e) => {
               window.alert(
                 t(
-                  "Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu."
+                  "Zkontrolujte, zda jste v Nastavení povolili aplikaci přístup k mikrofonu."
                 ),
                 t("Mikrofon se nepodařilo spustit.")
               );
@@ -104,7 +104,7 @@ export class SpectodaSound {
         // TODO - check, tato chyba možná vzniká jinak. Navíc ta chyba nemusí být bluefy only
         window.alert(
           t(
-            "Zkontrolujte, zda jste v Nastavení povolili aplikaci Bluefy přístup k mikrofonu. Pokud ano, obnovte aktuální stránku, vymažte cookies a zkuste to znovu."
+            "Zkontrolujte, zda jste v Nastavení povolili aplikaci přístup k mikrofonu."
           ),
           t("Mikrofon se nepodařilo spustit.")
         );

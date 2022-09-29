@@ -287,19 +287,19 @@ export class TangleInterface {
       // @ts-ignore
       const path = e.path || (e.composedPath && e.composedPath());
 
-      // @ts-ignore
-      for (let el of path) {
-        if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
-          e.preventDefault();
-          const url = el.getAttribute("href");
-          // console.log(url);
-          // @ts-ignore
-          console.log("Openning external url", url)
-          window.flutter_inappwebview.callHandler("openExternalUrl", url);
-          break;
+        // @ts-ignore
+        for (let el of path) {
+          if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
+            e.preventDefault();
+            const url = el.getAttribute("href");
+            // logging.verbose(url);
+            // @ts-ignore
+            logging.debug("Openning external url", url);
+            window.flutter_inappwebview.callHandler("openExternalUrl", url);
+            break;
+          }
         }
-      }
-    });
+      });
     }
 
     // open external links in JAVA TC
@@ -314,7 +314,7 @@ export class TangleInterface {
             if (el.tagName === "A" && el.getAttribute("target") === "_blank") {
               e.preventDefault();
               const url = el.getAttribute("href");
-              // console.log(url);
+              // logging.verbose(url);
               // @ts-ignore
               window.tangleConnect.open(url);
               break;
@@ -448,10 +448,10 @@ export class TangleInterface {
               // iPhone outside Bluefy and TangleConnect
               if (detectIPhone()) {
                 // @ts-ignore
-                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Bluefy."), t("Prohlížeč není podporován")).then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Bluefy v app store
-                    window.location.replace("https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055");
+                    window.location.replace("https://apps.apple.com/us/app/id1635118423");
                   }
                 });
               }
@@ -468,10 +468,10 @@ export class TangleInterface {
               // Android outside Google Chrome
               else if (detectAndroid()) {
                 // @ts-ignore
-                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, otevřete aplikace v prohlížeči Google Chrome."), t("Prohlížeč není podporován")).then(result => {
+                window.confirm(t("Z tohoto webového prohlížeče bohužel není možné NARU ovládat. Prosím, stáhněte si aplikaci Spectoda Connect."), t("Prohlížeč není podporován")).then(result => {
                   if (result) {
                     // redirect na Google Chrome
-                    window.location.replace("https://www.google.com/intl/cs_CZ/chrome/");
+                    window.location.replace("https://play.google.com/store/apps/details?id=com.spectoda.spectodaconnect");
                   }
                 });
               }
@@ -489,18 +489,19 @@ export class TangleInterface {
               else {
                 window.confirm(t("Z tohoto webového prohlížeče bohužel nejspíš není možné NARU ovládat."));
               }
-            }
 
-            this.connector = new TangleWebBluetoothConnector(this);
+              logging.error("Error: Assigning unsupported connector");
+              this.connector = null;
+            }
 
             break;
 
           case "webserial":
             if (detectChrome()) {
-            this.connector = new TangleWebSerialConnector(this);
+              this.connector = new TangleWebSerialConnector(this);
             } else {
               logging.error("Error: Assigning unsupported connector");
-              this.connector = null;  
+              this.connector = null;
             }
             break;
 
@@ -729,7 +730,7 @@ export class TangleInterface {
     // this.#queue = [];
 
     if (this.#reconection && this.#reconnectionInterval) {
-      logging.debug("Reconnecting...");
+      logging.info("Reconnecting...");
       setTimeout(() => {
         logging.debug("Reconnecting device");
         return this.connect(this.#reconnectionInterval).catch(() => {
@@ -1154,6 +1155,8 @@ export class TangleInterface {
 
     logging.verbose(tangleBytes);
 
+    let emitted_events_log = [];
+
     while (tangleBytes.available > 0) {
       switch (tangleBytes.peekFlag()) {
         case NETWORK_FLAGS.FLAG_CONF_BYTES:
@@ -1203,6 +1206,9 @@ export class TangleInterface {
             let event_value = null;
             let event_type = "unknown";
 
+            let log_value_prefix = "";
+            let log_value_postfix = "";
+
             switch (tangleBytes.readFlag()) {
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT:
                 is_lazy = true;
@@ -1218,6 +1224,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
                 event_type = "timestamp";
+                log_value_postfix = "ms"
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
@@ -1235,6 +1242,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_PERCENTAGE_EVENT");
                 event_value = Math.round(mapValue(tangleBytes.readInt32(), -2147483647, 2147483647, -100, 100) * 1000000.0) / 1000000.0;
                 event_type = "percentage";
+                log_value_postfix = "%";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT:
@@ -1243,6 +1251,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_LABEL_EVENT");
                 event_value = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0];
                 event_type = "label";
+                log_value_prefix = "$";
                 break;
 
               default:
@@ -1250,23 +1259,25 @@ export class TangleInterface {
                 break;
             }
 
-            logging.debug(`is_lazy = ${is_lazy ? "true" : "false"}`);
-            logging.debug(`event_value = ${event_value}`);
+            logging.verbose(`is_lazy = ${is_lazy ? "true" : "false"}`);
+            logging.verbose(`event_value = ${event_value}`);
 
             const event_label = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0]; // 5 bytes
-            logging.debug(`event_label = ${event_label}`);
+            logging.verbose(`event_label = ${event_label}`);
 
             const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
-            logging.debug(`event_timestamp = ${event_timestamp} ms`);
+            logging.verbose(`event_timestamp = ${event_timestamp} ms`);
 
             const event_device_id = tangleBytes.readUint8(); // 1 byte
-            logging.debug(`event_device_id = ${event_device_id}`);
+            logging.verbose(`event_device_id = ${event_device_id}`);
 
             if (is_lazy) {
               let event = { type: event_type, value: event_value, label: event_label, id: event_device_id };
+              emitted_events_log.push(`${event.id?.toString().padStart(3)} -> $${event.label}: ${log_value_prefix + event.value + log_value_postfix}`);
               this.emit("event", event);
             } else {
               let event = { type: event_type, value: event_value, label: event_label, timestamp: event_timestamp, id: event_device_id };
+              emitted_events_log.push(`${event.id?.toString().padStart(3)} -> $${event.label}: ${log_value_prefix + event.value + log_value_postfix}`);
               this.emit("event", event);
             }
           }
@@ -1286,12 +1297,12 @@ export class TangleInterface {
             const clock_timestamp = tangleBytes.readInt32();
             const timeline_timestamp = tangleBytes.readInt32();
             const timeline_flags = tangleBytes.readUint8();
-            logging.debug(`clock_timestamp = ${clock_timestamp} ms`);
-            logging.debug(`timeline_timestamp = ${timeline_timestamp} ms`);
-            logging.debug(`timeline_flags = ${timeline_flags}`);
+            logging.verbose(`clock_timestamp = ${clock_timestamp} ms`);
+            logging.verbose(`timeline_timestamp = ${timeline_timestamp} ms`);
+            logging.verbose(`timeline_flags = ${timeline_flags}`);
 
             const timeline_paused = timeline_flags & PAUSED_FLAG ? true : false;
-            logging.debug("timeline_paused = %s", timeline_paused ? "true" : "false");
+            logging.verbose("timeline_paused = %s", timeline_paused ? "true" : "false");
 
             if (timeline_paused) {
               this.#deviceReference.timeline.pause();
@@ -1334,7 +1345,7 @@ export class TangleInterface {
               obj.rssi.push(item);
             }
 
-            logging.debug(obj);
+            logging.verbose(obj);
             this.#eventEmitter.emit("rssi_data", obj);
           }
           break;
@@ -1373,6 +1384,8 @@ export class TangleInterface {
           break;
       }
     }
+
+    logging.info(emitted_events_log.join('\n'));
   }
 }
 
