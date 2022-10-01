@@ -139,7 +139,12 @@ export class SpectodaSound {
             logging.debug("SpectodaSound.connect", "Connected SystemSound");
           })
           .catch((e) => {
-            window.alert(t("Vaše zařízení není podporováno"), t("Chyba"));
+            window.alert(
+              t(
+                "Your device is not supported or correctly configured (You have to allow 'System Sound when sharing screen')"
+              ),
+              t("Error")
+            );
             reject(e);
           });
       });
