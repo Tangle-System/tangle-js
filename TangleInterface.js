@@ -383,7 +383,6 @@ export class TangleInterface {
   }
 
   assignConnector(connector_type) {
-    
     if (!connector_type) {
       connector_type = "none";
     }
@@ -498,10 +497,10 @@ export class TangleInterface {
 
           case "webserial":
             if (detectChrome()) {
-            this.connector = new TangleWebSerialConnector(this);
+              this.connector = new TangleWebSerialConnector(this);
             } else {
               logging.error("Error: Assigning unsupported connector");
-              this.connector = null;  
+              this.connector = null;
             }
             break;
 
@@ -1224,7 +1223,7 @@ export class TangleInterface {
                 logging.verbose("FLAG_TIMESTAMP_EVENT");
                 event_value = tangleBytes.readInt32();
                 event_type = "timestamp";
-                log_value_postfix = "ms"
+                log_value_postfix = "ms";
                 break;
 
               case NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT:
@@ -1265,7 +1264,7 @@ export class TangleInterface {
             const event_label = String.fromCharCode(...tangleBytes.readBytes(5)).match(/[\w\d_]*/g)[0]; // 5 bytes
             logging.verbose(`event_label = ${event_label}`);
 
-            const event_timestamp = is_lazy ? -1 : tangleBytes.readInt32(); // 4 bytes
+            const event_timestamp = is_lazy ? -1 : tangleBytes.readUint48(); // !!! 6 bytes in 0.9
             logging.verbose(`event_timestamp = ${event_timestamp} ms`);
 
             const event_device_id = tangleBytes.readUint8(); // 1 byte
@@ -1294,7 +1293,7 @@ export class TangleInterface {
             // (int32_t) = timeline_timestamp
             // (uint8_t) = timeline_flags bits: [ Reserved,Reserved,Reserved,PausedFLag,IndexBit3,IndexBit2,IndexBit1,IndexBit0]
 
-            const clock_timestamp = tangleBytes.readInt32();
+            const clock_timestamp = tangleBytes.readUint48(); // !!! 6 bytes in 0.9
             const timeline_timestamp = tangleBytes.readInt32();
             const timeline_flags = tangleBytes.readUint8();
             logging.verbose(`clock_timestamp = ${clock_timestamp} ms`);
@@ -1385,7 +1384,9 @@ export class TangleInterface {
       }
     }
 
-    logging.info(emitted_events_log.join('\n'));
+    if (emitted_events_log.length) {
+      logging.info(emitted_events_log.join("\n"));
+    }
   }
 }
 
