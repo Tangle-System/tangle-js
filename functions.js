@@ -207,6 +207,21 @@ export function numberToBytes(value, byteCount) {
 // Iphone 11, iOS 15.3.1, Bluefy:   Mozilla/5.0 (iPhone; CPU iPhone OS 15_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Bluefy/3.3.4
 // Macbook M1, Google Chrome:       Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36
 // Macbook M1, Safari:              Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Safari/605.1.15
+// Android Spectoda Connect         Mozilla/5.0 (Linux; Android 11; Pixel 2 XL Build/RP1A.201005.004.A1; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/104.0.5112.97 Mobile Safari/537.36
+// Android Google Chrome            Mozilla/5.0 (Linux; Android 11; Pixel 2 XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36
+// IPhone SE Spectoda Connect       Mozilla/5.0 (iPhone; CPU iPhone OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148         
+// IPhone SE Safari                 Mozilla/5.0 (iPhone; CPU iPhone OS 15_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6.1 Mobile/15E148 Safari/604.1
+
+
+const tangleConnectDetected = typeof window !== "undefined" && "tangleConnect" in window;
+export function detectTangleConnect() {
+  return tangleConnectDetected;
+}
+
+const spectodaConnectDetected = typeof window !== "undefined" && "flutter_inappwebview" in window;
+export function detectSpectodaConnect() {
+  return spectodaConnectDetected;
+}
 
 export function detectAndroid() {
   const androidDetected = navigator.userAgent.toLowerCase().indexOf("android") > -1;
@@ -232,16 +247,16 @@ export function detectWindows() {
   return windowsDetected;
 }
 
+
 export function detectLinux() {
   const linuxDetected = navigator.userAgent.toLowerCase().indexOf("linux") > -1;
 
   return linuxDetected;
 }
 
+const chromeDetected = typeof window !== "undefined" && navigator.userAgent.toLowerCase().indexOf("chrome") > -1;
 export function detectChrome() {
-  const chromeDetected = navigator.userAgent.toLowerCase().indexOf("chrome") > -1;
-
-  return chromeDetected;
+  return chromeDetected && !tangleConnectDetected && !spectodaConnectDetected;
 }
 
 export function detectBluefy() {
@@ -251,21 +266,7 @@ export function detectBluefy() {
 }
 
 export function detectSafari() {
-  const safariDetected = navigator.userAgent.toLowerCase().indexOf("safari") > -1 && navigator.userAgent.toLowerCase().indexOf("chrome") == -1;
-
-  return safariDetected;
-}
-
-export function detectTangleConnect() {
-  const tangleConnectDetected = "tangleConnect" in window;
-
-  return tangleConnectDetected;
-}
-
-export function detectFlutterConnect() {
-  const flutterConnectDetected = "flutter_inappwebview" in window;
-
-  return flutterConnectDetected;
+  return safariDetected && !tangleConnectDetected && !spectodaConnectDetected;
 }
 
 //////////////////////////////////////////////////////

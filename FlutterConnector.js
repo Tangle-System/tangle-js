@@ -1,7 +1,9 @@
 import { logging } from "./Logging.js";
-import { sleep, toBytes, detectTangleConnect } from "./functions.js";
+import { sleep, toBytes, detectTangleConnect, numberToBytes } from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
+import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -410,12 +412,12 @@ export class FlutterConnector extends FlutterConnection {
     this.#promise = null;
 
     // @ts-ignore
-    window.flutterConnection.emit = (event) => {
+    window.flutterConnection.emit = event => {
       this.#interfaceReference.emit(event, null);
     };
 
     // @ts-ignore
-    window.flutterConnection.process = (bytes) => {
+    window.flutterConnection.process = bytes => {
       this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
     };
   }
@@ -604,7 +606,10 @@ criteria example:
     // @ts-ignore
     window.flutter_inappwebview.callHandler("connect", timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect");
+    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect").then(() => {
+      logging.debug("Sleeping for 200ms");
+      return sleep(200);
+    });
   }
 
   // disconnect Connector from the connected Tangle Device. But keep it selected
@@ -786,19 +791,126 @@ criteria example:
   // TODO - emit "ota_progress" events
 
   updateFW(firmware_bytes) {
-    logging.debug(`updateFW(firmware.length=${firmware_bytes.length})`);
+    logging.debug(`updateFW(firmware_bytes.length=${firmware_bytes.length})`);
 
-    this.#promise = new Promise((resolve, reject) => {
-      // @ts-ignore
-      window.flutterConnection.resolve = resolve;
-      // @ts-ignore
-      window.flutterConnection.reject = reject;
+    // this.#promise = new Promise((resolve, reject) => {
+    //   // @ts-ignore
+    //   window.flutterConnection.resolve = resolve;
+    //   // @ts-ignore
+    //   window.flutterConnection.reject = reject;
+    // });
+
+    // // @ts-ignore
+    // window.flutter_inappwebview.callHandler("updateFW", firmware_bytes);
+
+    // return this.#applyTimeout(this.#promise, 600000, "updateFW");
+
+    // logging.error("Device update is not yet implemented.");
+    // return Promise.reject("NotImplemented");
+
+    this.#interfaceReference.requestWakeLock();
+
+    return new Promise(async (resolve, reject) => {
+      const chunk_size = 3984; // must be modulo 16
+      // const chunk_size = 992; // must be modulo 16
+
+      let index_from = 0;
+      let index_to = chunk_size;
+
+      let written = 0;
+
+      logging.info("OTA UPDATE");
+      logging.verbose(firmware_bytes);
+
+      const start_timestamp = new Date().getTime();
+
+      await sleep(100);
+
+      try {
+        this.#interfaceReference.emit("ota_status", "begin");
+
+        {
+          //===========// RESET //===========//
+          logging.info("OTA RESET");
+
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+          // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          await this.request(device_bytes, false);
+        }
+
+        await sleep(100);
+
+        {
+          //===========// BEGIN //===========//
+          logging.info("OTA BEGIN");
+
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware_bytes.length, 4)];
+          // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          await this.request(device_bytes, false);
+        }
+
+        await sleep(8000);
+
+        {
+          //===========// WRITE //===========//
+          logging.info("OTA WRITE");
+
+          while (written < firmware_bytes.length) {
+            if (index_to > firmware_bytes.length) {
+              index_to = firmware_bytes.length;
+            }
+
+            const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware_bytes.slice(index_from, index_to)];
+            // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+            await this.request(device_bytes, false);
+
+            written += index_to - index_from;
+
+            const percentage = Math.floor((written * 10000) / firmware_bytes.length) / 100;
+            logging.debug(percentage + "%");
+            this.#interfaceReference.emit("ota_progress", percentage);
+
+            index_from += chunk_size;
+            index_to = index_from + chunk_size;
+          }
+        }
+
+        await sleep(100);
+
+        {
+          //===========// END //===========//
+          logging.info("OTA END");
+
+          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          await this.request(device_bytes, false);
+        }
+
+        await sleep(100);
+
+        logging.info("Rebooting device...");
+
+        const device_bytes = [DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+        // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+        await this.request(device_bytes, false);
+
+        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+
+        this.#interfaceReference.emit("ota_status", "success");
+
+        resolve(null);
+      } catch (e) {
+        this.#interfaceReference.emit("ota_status", "fail");
+
+        reject(e);
+      }
+    })
+    .then(() => {
+      return this.disconnect();
+    })
+    .finally(() => {
+      this.#interfaceReference.releaseWakeLock();
     });
-
-    // @ts-ignore
-    window.flutter_inappwebview.callHandler("updateFW", firmware_bytes);
-
-    return this.#applyTimeout(this.#promise, 600000, "updateFW");
   }
 
   destroy() {

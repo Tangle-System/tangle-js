@@ -9,7 +9,7 @@ export var logging = {
   error: console.error,
   warn: console.warn,
   info: console.log,
-  debug: function (...msg) { },
+  debug: console.log,
   verbose: function (...msg) { },
 };
 
