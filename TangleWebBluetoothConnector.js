@@ -66,12 +66,12 @@ export class WebBLEConnection {
     */
     this.#writing = false;
 
-    this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
+    this.#uuidCounter = Math.floor(Math.random() * 4294967295); // fills the #uuidCounter variable with random number from 0 to 4294967295
   }
 
   #getUUID() {
     // valid UUIDs are in range [1..4294967295] (32 bit number)
-    if (this.#uuidCounter >= 0xffffffff) {
+    if (this.#uuidCounter >= 4294967295) {
       this.#uuidCounter = 0;
     }
 
@@ -79,7 +79,7 @@ export class WebBLEConnection {
   }
 
   #writeBytes(characteristic, bytes, response) {
-    const write_uuid = this.#getUUID(); // two messages za sebou nesmi mit stejne UUID!
+    const write_uuid = this.#getUUID(); // two messages near to each other must not have the same UUID!
     const packet_header_size = 12; // 3x 4byte integers: write_uuid, index_from, payload.length
     const packet_size = detectAndroid() ? 212 : 512; // min size packet_header_size + 1 !!!! ANDROID NEEDS PACKET SIZE <= 212!!!!
     const bytes_size = packet_size - packet_header_size;
@@ -316,7 +316,7 @@ export class WebBLEConnection {
 
     this.#writing = true;
 
-    const bytes = toBytes(timestamp, 4);
+    const bytes = toBytes(timestamp, 8); // !!!
     return this.#clockChar
       .writeValueWithoutResponse(new Uint8Array(bytes))
       .catch(e => {
@@ -349,7 +349,7 @@ export class WebBLEConnection {
       .readValue()
       .then(dataView => {
         let reader = new TnglReader(dataView);
-        return reader.readInt32();
+        return reader.readUint64(); // !!!
       })
       .catch(e => {
         logging.error(e);

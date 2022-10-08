@@ -846,7 +846,7 @@ export class TangleDevice {
     const timeline_flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
     const timeline_payload = [
       NETWORK_FLAGS.FLAG_SET_TIMELINE,
-      ...numberToBytes(this.interface.clock.millis(), 4),
+      ...numberToBytes(this.interface.clock.millis(), 6),
       ...numberToBytes(this.timeline.millis(), 4),
       timeline_flags,
     ];
@@ -894,7 +894,7 @@ export class TangleDevice {
         : [
           NETWORK_FLAGS.FLAG_EMIT_EVENT,
           ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
+          ...numberToBytes(this.interface.clock.millis(), 6),
           device_id,
         ];
       return this.interface.execute(
@@ -964,7 +964,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT,
           ...numberToBytes(event_value, 4),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
+          ...numberToBytes(this.interface.clock.millis(), 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1019,7 +1019,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT,
           ...colorToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
+          ...numberToBytes(this.interface.clock.millis(), 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1038,7 +1038,7 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: 100.0
-  // !!! PARAMETER CHANGE !!!
+
   /**
    *
    * @param {*} event_label
@@ -1079,7 +1079,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT,
           ...percentageToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
+          ...numberToBytes(this.interface.clock.millis(), 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1098,7 +1098,6 @@ export class TangleDevice {
 
   // event_label example: "evt1"
   // event_value example: "label"
-  // !!! PARAMETER CHANGE !!!
   /**
    *
    * @param {*} event_label
@@ -1140,7 +1139,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT,
           ...labelToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
+          ...numberToBytes(this.interface.clock.millis(), 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1157,13 +1156,12 @@ export class TangleDevice {
     }
   }
 
-  // !!! PARAMETER CHANGE !!!
   syncTimeline() {
     logging.verbose("syncTimeline()");
     const flags = this.timeline.paused() ? 0b00010000 : 0b00000000; // flags: [reserved,reserved,reserved,timeline_paused,reserved,reserved,reserved,reserved]
     const payload = [
       NETWORK_FLAGS.FLAG_SET_TIMELINE,
-      ...numberToBytes(this.interface.clock.millis(), 4),
+      ...numberToBytes(this.interface.clock.millis(), 6),
       ...numberToBytes(this.timeline.millis(), 4),
       flags,
     ];
@@ -1171,7 +1169,7 @@ export class TangleDevice {
   }
 
   syncClock() {
-    logging.debug("> Forcing sync clock...");
+    logging.debug("> Forcing sync clock to cca " + this.interface.clock.millis() + " ms ...");
     return this.interface.syncClock().then(() => {
       logging.debug("> Device clock synchronized");
     });
@@ -1921,5 +1919,13 @@ export class TangleDevice {
       ...numberToBytes(request_uuid, 4),
     ];
     return this.interface.execute(payload, null);
+  }
+
+  syncState() {
+    logging.debug("> Synchronizing state...");
+
+    const request_uuid = this.#getUUID();
+    const device_request = [DEVICE_FLAGS.FLAG_SYNC_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return this.interface.request(device_request, false);
   }
 }

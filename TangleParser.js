@@ -120,6 +120,7 @@ const TNGL_FLAGS = Object.freeze({
   /* events */
   EVENT_SET_VALUE: 184,
   EVENT_EMIT_LOCAL: 185,
+  EVENT_RANDOM_CHOICE: 186,
 
   // ======================
 
@@ -624,6 +625,10 @@ export class TnglCompiler {
       case "emitAs":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.EVENT_EMIT_LOCAL);
         break;
+        case "randomChoice":
+          this.#tnglWriter.writeFlag(TNGL_FLAGS.EVENT_RANDOM_CHOICE);
+          break;
+        
 
       // === generators ===
       case "genLastEventParam":

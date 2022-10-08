@@ -587,7 +587,7 @@ criteria example:
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
         try {
-          await this.#write(this.CHANNEL_CLOCK, [...toBytes(clock.millis(), 4)]);
+          await this.#write(this.CHANNEL_CLOCK, [...toBytes(clock.millis(), 8)]); // !!!
           logging.debug("Clock write success");
           resolve();
           return;
@@ -618,7 +618,7 @@ criteria example:
           const bytes = await this.#read(this.CHANNEL_CLOCK);
 
           const reader = new TnglReader(bytes);
-          const timestamp = reader.readInt32();
+          const timestamp = reader.readUint64(); // !!!
 
           // const timestamp = await this.#promise;
           logging.debug("Clock read success:", timestamp);
