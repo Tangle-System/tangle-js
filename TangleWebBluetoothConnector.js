@@ -996,6 +996,8 @@ criteria example:
       .then(server => {
         this.#connection.reset();
 
+        logging.debug("supportLegacy=", supportLegacy);
+
         if (supportLegacy) {
           // SUPPORT LEGACY FW SERVICE UUIDS
 

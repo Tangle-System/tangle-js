@@ -894,7 +894,7 @@ export class TangleDevice {
         : [
           NETWORK_FLAGS.FLAG_EMIT_EVENT,
           ...labelToBytes(event_label),
-          ...numberToBytes(this.interface.clock.millis(), 6),
+          ...numberToBytes(this.interface.clock.millis() + 10, 6),
           device_id,
         ];
       return this.interface.execute(
@@ -964,7 +964,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT,
           ...numberToBytes(event_value, 4),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.interface.clock.millis(), 6),
+          ...numberToBytes(this.interface.clock.millis() + 10, 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1019,7 +1019,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT,
           ...colorToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.interface.clock.millis(), 6),
+          ...numberToBytes(this.interface.clock.millis() + 10, 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1079,7 +1079,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT,
           ...percentageToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.interface.clock.millis(), 6),
+          ...numberToBytes(this.interface.clock.millis() + 10, 6),
           device_id,
         ];
       return this.interface.execute(
@@ -1139,7 +1139,7 @@ export class TangleDevice {
           NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT,
           ...labelToBytes(event_value),
           ...labelToBytes(event_label),
-          ...numberToBytes(this.interface.clock.millis(), 6),
+          ...numberToBytes(this.interface.clock.millis() + 10, 6),
           device_id,
         ];
       return this.interface.execute(
