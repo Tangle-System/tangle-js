@@ -735,7 +735,9 @@ export class TangleDevice {
    * @returns 
    */
   emitEvent(event_label, device_ids = [0xff], force_delivery = true, is_lazy = true) {
-    logging.verbose("emitTimestampEvent(id=" + device_ids + ")");
+    logging.verbose(`emitEvent(label=${event_label},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
+
+    lastEvents[event_label] = { value: null, type: "none" };
 
     const func = device_id => {
       const payload = is_lazy ? [NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT, ...labelToBytes(event_label), device_id] : [NETWORK_FLAGS.FLAG_EMIT_EVENT, ...labelToBytes(event_label), ...numberToBytes(this.interface.clock.millis() + 10, 6), device_id];
@@ -762,6 +764,12 @@ export class TangleDevice {
         case "color":
           this.emitColorEvent(key, lastEvents[key].value);
           break;
+        case "label":
+          this.emitLabelEvent(key, lastEvents[key].value);
+          break;
+        case "none":
+          this.emitEvent(key);
+          break;
       }
     });
   }
@@ -777,9 +785,9 @@ export class TangleDevice {
    * @returns 
    */
   emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
+    logging.verbose(`emitTimestampEvent(label=${event_label},value=${event_value},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
+    
     lastEvents[event_label] = { value: event_value, type: "timestamp" };
-
-    logging.verbose("emitTimestampEvent(id=" + device_ids + ")");
 
     if (event_value > 2147483647) {
       logging.error("Invalid event value");
@@ -817,7 +825,8 @@ export class TangleDevice {
    * @returns 
    */
   emitColorEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    logging.verbose("emitColorEvent(id=" + device_ids + ")");
+    logging.verbose(`emitTimestampEvent(label=${event_label},value=${event_value},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
+    
     lastEvents[event_label] = { value: event_value, type: "color" };
 
     if (!event_value || !event_value.match(/#[\dabcdefABCDEF]{6}/g)) {
@@ -852,8 +861,10 @@ export class TangleDevice {
    * @returns 
    */
   emitPercentageEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    logging.verbose("emitPercentageEvent(id=" + device_ids + ")");
+    logging.verbose(`emitPercentageEvent(label=${event_label},value=${event_value},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
+    
     lastEvents[event_label] = { value: event_value, type: "percentage" };
+
     if (event_value > 100.0) {
       logging.error("Invalid event value");
       event_value = 100.0;
@@ -890,7 +901,8 @@ export class TangleDevice {
    * @returns 
    */
   emitLabelEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
-    logging.verbose("emitLabelEvent(id=" + device_ids + ")");
+    logging.verbose(`emitLabelEvent(label=${event_label},value=${event_value},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
+    
     lastEvents[event_label] = { value: event_value, type: "label" };
 
     if (typeof event_value !== "string") {
