@@ -1055,7 +1055,7 @@ export class TangleDevice {
     force_delivery = false,
     is_lazy = true
   ) {
-    logging.verbose("emitPercentageEvent(id=" + device_ids + ")");
+    logging.verbose(`emitPercentageEvent(label=${event_label},value=${event_value},id=${device_ids},force=${force_delivery},lazy=${is_lazy})`);
     lastEvents[event_label] = { value: event_value, type: "percentage" };
     if (event_value > 100.0) {
       logging.error("Invalid event value");
