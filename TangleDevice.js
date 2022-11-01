@@ -1603,4 +1603,12 @@ export class TangleDevice {
     const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_SAVE_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
     return this.interface.execute(payload, null);
   }
+
+  syncState() {
+    logging.debug("> Synchronizing state...");
+
+    const request_uuid = this.#getUUID();
+    const device_request = [DEVICE_FLAGS.FLAG_SYNC_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return this.interface.request(device_request, false);
+  }
 }
