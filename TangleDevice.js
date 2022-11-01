@@ -1303,12 +1303,23 @@ export class TangleDevice {
   }
 
   removeNetworkOwner() {
-    logging.debug("> Removing network owner...");
 
-    const request_uuid = this.#getUUID();
-    const bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST, ...numberToBytes(request_uuid, 4)];
+    return window.confirm("Opravdu chcete odpárovat všechna zařízení?").then(result => {
 
-    return this.interface.execute(bytes, true);
+      if (!result) {
+        return;
+      }
+
+      logging.debug("> Removing network owner...");
+
+      const request_uuid = this.#getUUID();
+      const bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+      return this.interface.execute(bytes, true);
+
+    })
+
+
   }
 
   getFwVersion() {
