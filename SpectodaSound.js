@@ -262,17 +262,21 @@ export class SpectodaSound {
   startCountDown() {
     clearTimeout(this.silentCountdown);
     this.silentCountdown = setTimeout(() => {
-      this.#events.emit("silent", true);
-    }, 500);
+      // this.#events.emit("silent", true);
+      this.#rmsMax = 0.01;
+      this.#rmsMin = 0.01;
+    }, 600);
   }
 
   resetSilentCountdown() {
     clearTimeout(this.silentCountdown);
     this.silentCountdown = setTimeout(() => {
-      this.#events.emit("silent", true);
-    }, 500);
+      // this.#events.emit("silent", true);
+      this.#rmsMax = 0.01; // reset min max on silent
+      this.#rmsMin = 0.01;
+    }, 600);
 
-    this.#events.emit("silent", false);
+    // this.#events.emit("silent", false);
   }
 
   processHandler(e) {
@@ -317,8 +321,8 @@ export class SpectodaSound {
       this.#rmsMax = 0.01;
     }
 
-    if (this.#rmsMin < 0) {
-      this.#rmsMin = 0;
+    if (this.#rmsMin < 0.0) {
+      this.#rmsMin = 0.0;
     }
 
     if (rms_loudness_spectrum < this.#rmsMin) {
@@ -328,7 +332,6 @@ export class SpectodaSound {
     if (rms_loudness_spectrum > this.#rmsMax) {
       this.#rmsMax = rms_loudness_spectrum;
     }
-
 
     // Mapování efektivní hodnoty signálu na rozmezí 0-255 pro vhodný přenos dat.
     // Zde je zejmána nutné dobře nastavit mapovací prahy. Spodní pro odstranění šumu okolí a horní nám udává výslednou dynamiku.
@@ -351,7 +354,7 @@ export class SpectodaSound {
     // this.#handleControlSend(out);
     //this.#events.emit("loudness", (out * this.#sensitivity) / 100);
     this.#events.emit("loudness", out);
-    if (out > 1) {
+    if (out > 1.0) {
       this.resetSilentCountdown();
     }
 
