@@ -11,6 +11,47 @@ import { io } from "./socketio.js";
 let lastEvents = {};
 /////////////////////////////////////////////////////////////////////////
 
+export const SPECTODA_PRODUCT_CODES = Object.freeze({
+  /* command flags */
+
+  PRODUCT_CODE_NARA_ALPHA: 0x0001,
+  PRODUCT_CODE_NARA_LEGACY: 0x0002,
+  PRODUCT_CODE_TRAINING_LIGHTS: 0x0003,
+  PRODUCT_CODE_TANGLE_STICK: 0x0004,
+  PRODUCT_CODE_SANS_SOUCI_CHANDELIER: 0x0005,
+  PRODUCT_CODE_GRAO_CHANDELIER: 0x0006,
+  PRODUCT_CODE_BARK7_KRYMSKA: 0x0007,
+  PRODUCT_CODE_SPECTODA_PROFI_CONTROLLER: 0x0008,
+  PRODUCT_CODE_ARABESQUE_UNIVERSAL_CONTROLLER: 0x0009,
+  PRODUCT_CODE_NARA_STRIP: 0x0010,
+  PRODUCT_CODE_GOBO_CONTROLLER: 0x0011,
+  PRODUCT_CODE_EXX_CONTROLLER: 0x0012,
+  PRODUCT_CODE_SPECTASTICK_GEN2: 0x0013,
+  PRODUCT_CODE_BATTERY_MODULE: 0x0014,
+  PRODUCT_CODE_NONE: 0xffff,
+});
+
+export const SPECTODA_PCB_CODES = Object.freeze({
+  /* command flags */
+
+  PCB_CODE_NARA_HOBBY_V1_1: 0x0001,
+  PCB_CODE_NARA_SQUARE_V1: 0x0002,
+  PCB_CODE_DSPARX_MK2_2_X: 0x0003,
+  PCB_CODE_SANS_SOUCI_DMX: 0x0004,
+  PCB_CODE_NARA_HOBBY_V1_2: 0x0005,
+  PCB_CODE_DSPARX_MK2_3: 0x0006,
+  PCB_CODE_SPECTODA_PROFI_CONTROLLER: 0x0007,
+  PCB_CODE_NARA_HOBBY_V1_4: 0x0008,
+  PCB_CODE_GOBO_MODULE_V1_0: 0x0009,
+  PCB_CODE_EXX_SPECTODA_CONTROLLER_V1_0: 0x0010,
+  PCB_CODE_SPECTASTICK_GEN2: 0x0011,
+  PCB_CODE_BATTERY_CONTROLLER: 0xfffb,
+  PCB_CODE_HOBBY_PROJECT_V2: 0xfffc,
+  PCB_CODE_HOBBY_PROJECT: 0xfffd,
+  PCB_CODE_WEMOS_D1_MINI: 0xfffe,
+  PCB_CODE_NONE: 0xffff,
+});
+
 // should not create more than one object!
 // the destruction of the TangleDevice is not well implemented
 
@@ -1610,5 +1651,48 @@ export class TangleDevice {
     const request_uuid = this.#getUUID();
     const device_request = [DEVICE_FLAGS.FLAG_SYNC_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
     return this.interface.request(device_request, false);
+  }
+
+  getControllerInfo() {
+    logging.debug("> Requesting controller info ...");
+
+    const request_uuid = this.#getUUID();
+    const bytes = [DEVICE_FLAGS.FLAG_CONTROLLER_INFO_REQUEST, ...numberToBytes(request_uuid, 4)];
+
+    return this.interface.request(bytes, true).then(response => {
+      let reader = new TnglReader(response);
+
+      logging.verbose("response=", response);
+
+      if (reader.readFlag() !== DEVICE_FLAGS.FLAG_CONTROLLER_INFO_RESPONSE) {
+        throw "InvalidResponseFlag";
+      }
+
+      const response_uuid = reader.readUint32();
+
+      if (response_uuid != request_uuid) {
+        throw "InvalidResponseUuid";
+      }
+
+      const error_code = reader.readUint8();
+
+      logging.verbose(`error_code=${error_code}`);
+
+      let pcb_code = null;
+      let product_code = null;
+
+      if (error_code === 0) {
+        pcb_code = reader.readUint16();
+        product_code = reader.readUint16();
+      } else {
+        throw "Fail";
+      }
+
+      logging.info(`pcb_code=${pcb_code}`);
+      logging.info(`product_code=${product_code}`);
+
+      return { pcb_code: pcb_code, product_code: product_code };
+    });
+
   }
 }
