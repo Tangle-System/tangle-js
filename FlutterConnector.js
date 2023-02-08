@@ -88,6 +88,33 @@ class FlutterConnection {
         window.flutterConnection.process(bytes);
       });
       
+      window.addEventListener("#device", e => {
+        // @ts-ignore
+        const bytes = e.detail.value;
+        logging.debug("Triggered #device:", typeof(bytes), bytes);
+
+        // @ts-ignore
+        // window.flutterConnection.process(bytes);
+      });
+      
+      window.addEventListener("#network", e => {
+        // @ts-ignore
+        const bytes = e.detail.value;
+        logging.debug("Triggered #network:", typeof(bytes), bytes);
+
+        // @ts-ignore
+        window.flutterConnection.process(bytes);
+      });
+      
+      window.addEventListener("#clock", e => {
+        // @ts-ignore
+        const bytes = e.detail.value;
+        logging.debug("Triggered #clock:", typeof(bytes), bytes);
+
+        // @ts-ignore
+        // window.flutterConnection.process(bytes);
+      });
+      
       
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
