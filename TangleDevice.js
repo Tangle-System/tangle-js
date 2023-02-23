@@ -91,7 +91,14 @@ export class TangleDevice {
 
   #reconnectRC;
 
-  constructor(connectorType = "default", reconnectionInterval = 1000) {
+  #autonomousConnection;
+  #clockSyncHandle;
+
+  constructor(
+    connectorType = "default",
+    reconnectionInterval = 1000,
+    autonomousConnection = false
+  ) {
     this.timeline = new TimeTrack(0, true);
 
     this.#uuidCounter = Math.floor(Math.random() * 0xffffffff);
@@ -112,12 +119,16 @@ export class TangleDevice {
 
     this.#reconnectRC = false;
 
+    this.#reconnectHandle = false;
+
     // this.interface.on("#connected", e => {
     //   this.#onConnected(e);
     // });
     // this.interface.on("#disconnected", e => {
     //   this.#onDisconnected(e);
     // });
+
+    this.#autonomousConnection = autonomousConnection;
 
     this.interface.onConnected = (event) => {
       if (!this.#adopting) {
@@ -142,17 +153,33 @@ export class TangleDevice {
     };
 
     // auto clock sync loop
-    setInterval(() => {
+    this.#clockSyncHandle = setInterval(() => {
       if (!this.#updating) {
-        this.connected().then((connected) => {
-          if (connected) {
-            this.syncClock().catch((error) => {
-              logging.warn(error);
-            });
-          }
-        });
+        return this.connected()
+          .then((connected) => {
+            if (connected) {
+              return this.syncClock().catch((error) => {
+                logging.warn(error);
+              });
+            } else if (this.#autonomousConnection) {
+              return this.connect(null, true).catch((error) => {
+                logging.warn(error);
+              });
+            }
+          })
+          .catch((e) => {
+            logging.error(e);
+          });
       }
     }, 60000);
+
+    setTimeout(() => {
+      if (this.#autonomousConnection) {
+        return this.connect(null, true).catch((error) => {
+          logging.warn(error);
+        });
+      }
+    }, 3000);
   }
 
   requestWakeLock() {
