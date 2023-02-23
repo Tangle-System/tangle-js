@@ -90,6 +90,7 @@ export class TangleDevice {
   #selected;
 
   #reconnectRC;
+  #reconnectHandle;
 
   #autonomousConnection;
   #clockSyncHandle;
@@ -173,13 +174,14 @@ export class TangleDevice {
       }
     }, 60000);
 
-    setTimeout(() => {
-      if (this.#autonomousConnection) {
-        return this.connect(null, true).catch((error) => {
-          logging.warn(error);
-        });
-      }
-    }, 3000);
+    if (this.#autonomousConnection) {
+      setTimeout(() => {
+          return this.connect(null, true).catch((error) => {
+            logging.warn(error);
+          });
+      }, 3000);
+    }
+
   }
 
   requestWakeLock() {
