@@ -176,12 +176,11 @@ export class TangleDevice {
 
     if (this.#autonomousConnection) {
       setTimeout(() => {
-          return this.connect(null, true).catch((error) => {
-            logging.warn(error);
-          });
+        return this.connect(null, true).catch((error) => {
+          logging.warn(error);
+        });
       }, 3000);
     }
-
   }
 
   requestWakeLock() {
@@ -837,6 +836,12 @@ export class TangleDevice {
       .catch((error) => {
         // TODO: tady tento catch by mel dal thrownout error jako ze nepodarilo pripojit.
         logging.error(error);
+
+        if (!this.#autonomousConnection) {
+          logging.warn("Skipping error alerting");
+          return;
+        }
+
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
           window.alert(
