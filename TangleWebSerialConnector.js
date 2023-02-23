@@ -1,5 +1,14 @@
 import { logging } from "./Logging.js";
-import { sleep, toBytes, numberToBytes, crc8, crc32, hexStringToArray, rgbToHex, stringToBytes } from "./functions.js";
+import {
+  sleep,
+  toBytes,
+  numberToBytes,
+  crc8,
+  crc32,
+  hexStringToArray,
+  rgbToHex,
+  stringToBytes,
+} from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglWriter } from "./TnglWriter.js";
@@ -22,7 +31,7 @@ class LineBreakTransformer {
     this.container += chunk;
     const lines = this.container.split("\n");
     this.container = lines.pop();
-    lines.forEach(line => controller.enqueue(line));
+    lines.forEach((line) => controller.enqueue(line));
   }
 
   flush(controller) {
@@ -67,7 +76,14 @@ export class TangleWebSerialConnector {
 
     this.#interfaceReference = interfaceReference;
 
-    this.PORT_OPTIONS = { baudRate: 1000000, dataBits: 8, stopBits: 1, parity: "none", bufferSize: 65535, flowControl: "none" };
+    this.PORT_OPTIONS = {
+      baudRate: 1000000,
+      dataBits: 8,
+      stopBits: 1,
+      parity: "none",
+      bufferSize: 65535,
+      flowControl: "none",
+    };
 
     this.#serialPort = null;
     this.#writing = false;
@@ -118,17 +134,18 @@ export class TangleWebSerialConnector {
   async #run() {
     while (true) {
       // try {
-      let { value, done } = await this.#receiveStreamReader.read().catch(e => {
-        
-        if (e.toString().includes("break condition")) {
-          logging.warn(e);
+      let { value, done } = await this.#receiveStreamReader
+        .read()
+        .catch((e) => {
+          if (e.toString().includes("break condition")) {
+            logging.warn(e);
 
+            return { value: null, done: true };
+          }
+
+          logging.error(e);
           return { value: null, done: true };
-        }
-
-        logging.error(e);
-        return { value: null, done: true };
-      });
+        });
 
       // logging.debug(value);
 
@@ -152,11 +169,16 @@ export class TangleWebSerialConnector {
           } else if (match.match(/>>>DATA=/)) {
             logging.verbose("match", match);
             let reg = match.match(/>>>DATA=([0123456789abcdef]*)<<</i); // >>>DATA=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
-            reg && this.#dataCallback && this.#dataCallback(hexStringToArray(reg[1]));
+            reg &&
+              this.#dataCallback &&
+              this.#dataCallback(hexStringToArray(reg[1]));
           } else if (match.match(/>>>NOTIFY=/)) {
             logging.verbose("match", match);
             let reg = match.match(/>>>NOTIFY=([0123456789abcdef]*)<<</i); // >>>NOTIFY=ab2351ab90cfe72209999009f08e987a9bcd8dcbbd<<<
-            reg && this.#interfaceReference.process(new DataView(new Uint8Array(hexStringToArray(reg[1])).buffer));
+            reg &&
+              this.#interfaceReference.process(
+                new DataView(new Uint8Array(hexStringToArray(reg[1])).buffer)
+              );
           }
 
           // Return the replacement leveraging the parameters.
@@ -165,7 +187,10 @@ export class TangleWebSerialConnector {
 
         if (value.length !== 0) {
           // logging.verbose(value);
-          this.#interfaceReference.emit("receive", { target: this, payload: value });
+          this.#interfaceReference.emit("receive", {
+            target: this,
+            payload: value,
+          });
         }
       }
 
@@ -236,7 +261,7 @@ criteria example:
       this.#serialPort = null;
     }
 
-    return navigator.serial.requestPort().then(port => {
+    return navigator.serial.requestPort().then((port) => {
       this.#serialPort = port;
       return Promise.resolve({ connector: this.type });
     });
@@ -304,8 +329,12 @@ criteria example:
         // this.receiver.attach(this.serialPort.readable);
         this.#receiveStream = this.#serialPort.readable;
         let textDecoder = new window.TextDecoderStream();
-        this.#receiveTextDecoderDone = this.#receiveStream.pipeTo(textDecoder.writable);
-        this.#receiveStream = textDecoder.readable.pipeThrough(new window.TransformStream(new LineBreakTransformer()));
+        this.#receiveTextDecoderDone = this.#receiveStream.pipeTo(
+          textDecoder.writable
+        );
+        this.#receiveStream = textDecoder.readable.pipeThrough(
+          new window.TransformStream(new LineBreakTransformer())
+        );
         //.pipeThrough(new TransformStream(new JSONTransformer()));
 
         this.#receiveStreamReader = this.#receiveStream.getReader();
@@ -319,7 +348,7 @@ criteria example:
             reject("ConnectTimeout");
           }, timeout);
 
-          this.#beginCallback = result => {
+          this.#beginCallback = (result) => {
             clearTimeout(timeout_handle);
             this.#beginCallback = null;
 
@@ -337,11 +366,13 @@ criteria example:
           };
 
           this.#transmitStreamWriter = this.#transmitStream.getWriter();
-          this.#transmitStreamWriter.write(new Uint8Array(stringToBytes(">>>START<<<\n", 12)));
+          this.#transmitStreamWriter.write(
+            new Uint8Array(stringToBytes(">>>START<<<\n", 12))
+          );
           this.#transmitStreamWriter.releaseLock();
         });
       })
-      .catch(error => {
+      .catch((error) => {
         logging.error(error);
         return this.disconnect().then(() => {
           throw error;
@@ -397,7 +428,7 @@ criteria example:
         this.#opened = false;
         logging.debug("> Serial port closed");
       })
-      .catch(error => {
+      .catch((error) => {
         logging.error("Failed to close serial port. Error: " + error);
       })
       .finally(() => {
@@ -437,7 +468,9 @@ criteria example:
     header_writer.writeUint32(payload.length);
     header_writer.writeUint32(timeout);
     header_writer.writeUint32(crc32(payload));
-    header_writer.writeUint32(crc32(new Uint8Array(header_writer.bytes.buffer)));
+    header_writer.writeUint32(
+      crc32(new Uint8Array(header_writer.bytes.buffer))
+    );
 
     this.#transmitStreamWriter = this.#transmitStream.getWriter();
 
@@ -452,11 +485,11 @@ criteria example:
           this.disconnect();
           reject("ResponseTimeout");
         },
-        timeout < 5000 ? 20000 : timeout * 4,
+        timeout < 5000 ? 20000 : timeout * 4
         // 60000
       );
 
-      this.#feedbackCallback = success => {
+      this.#feedbackCallback = (success) => {
         this.#feedbackCallback = null;
         clearInterval(timeout_handle);
         if (success) {
@@ -483,7 +516,7 @@ criteria example:
         .then(() => {
           return this.#transmitStreamWriter.write(new Uint8Array(payload));
         })
-        .catch(error => {
+        .catch((error) => {
           logging.error(error);
           // this.#transmitStreamWriter.releaseLock();
           // reject(error);
@@ -498,7 +531,7 @@ criteria example:
   #read(channel_type) {
     let response = null;
 
-    this.#dataCallback = data => {
+    this.#dataCallback = (data) => {
       response = new DataView(data.buffer);
       this.#dataCallback = null;
     };
@@ -587,7 +620,9 @@ criteria example:
     return new Promise(async (resolve, reject) => {
       for (let index = 0; index < 3; index++) {
         try {
-          await this.#write(this.CHANNEL_CLOCK, [...toBytes(clock.millis(), 4)]);
+          await this.#write(this.CHANNEL_CLOCK, [
+            ...toBytes(clock.millis(), 4),
+          ]);
           logging.debug("Clock write success");
           resolve();
           return;
@@ -673,7 +708,11 @@ criteria example:
           //===========// RESET //===========//
           logging.debug("OTA RESET");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_RESET,
+            0x00,
+            ...numberToBytes(0x00000000, 4),
+          ];
           await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
@@ -683,7 +722,11 @@ criteria example:
           //===========// BEGIN //===========//
           logging.debug("OTA BEGIN");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_BEGIN,
+            0x00,
+            ...numberToBytes(firmware.length, 4),
+          ];
           await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
@@ -698,12 +741,18 @@ criteria example:
               index_to = firmware.length;
             }
 
-            const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+            const bytes = [
+              DEVICE_FLAGS.FLAG_OTA_WRITE,
+              0x00,
+              ...numberToBytes(written, 4),
+              ...firmware.slice(index_from, index_to),
+            ];
 
             await this.#write(this.CHANNEL_DEVICE, bytes);
             written += index_to - index_from;
 
-            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            const percentage =
+              Math.floor((written * 10000) / firmware.length) / 100;
             logging.debug(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
@@ -719,13 +768,21 @@ criteria example:
           //===========// END //===========//
           logging.debug("OTA END");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_END,
+            0x00,
+            ...numberToBytes(written, 4),
+          ];
           await this.#write(this.CHANNEL_DEVICE, bytes);
         }
 
         await sleep(2000);
 
-        logging.info("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.info(
+          "Firmware written in " +
+            (new Date().getTime() - start_timestamp) / 1000 +
+            " seconds"
+        );
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();

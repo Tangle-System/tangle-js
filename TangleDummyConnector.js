@@ -5,7 +5,6 @@ import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TnglReader } from "./TnglReader.js";
 import { TnglWriter } from "./TnglWriter.js";
 
-
 /////////////////////////////////////////////////////////////////////////////////////
 
 // Connector connects the application with one Tangle Device, that is then in a
@@ -17,9 +16,13 @@ export class TangleDummyConnector {
   #enableErrors;
   #FWVersion;
 
-  constructor(interfaceReference, enableErrors = false, dummyFWVersion = "DUMMY_0.0.0_00000000") {
+  constructor(
+    interfaceReference,
+    enableErrors = false,
+    dummyFWVersion = "DUMMY_0.0.0_00000000"
+  ) {
     this.type = enableErrors ? "edummy" : "dummy";
-    
+
     this.#interfaceReference = interfaceReference;
     this.#enableErrors = enableErrors;
     this.#FWVersion = dummyFWVersion;
@@ -102,7 +105,15 @@ criteria example:
   // are eligible.
 
   autoSelect(criteria, scan_period = 1000, timeout = 3000) {
-    logging.verbose("autoSelect(criteria=", criteria, ", scan_period=", scan_period, "timeout=", timeout, ")");
+    logging.verbose(
+      "autoSelect(criteria=",
+      criteria,
+      ", scan_period=",
+      scan_period,
+      "timeout=",
+      timeout,
+      ")"
+    );
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -243,10 +254,17 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    logging.verbose(`request(payload=${payload}, read_response=${read_response ? "true" : "false"})`);
+    logging.verbose(
+      `request(payload=${payload}, read_response=${
+        read_response ? "true" : "false"
+      })`
+    );
 
     const ERROR_CODE_SUCCESS = 0;
-    const DUMMY_MACS = [0x111111111111, 0x222222222222, 0x333333333333, 0x444444444444, 0x555555555555, 0x666666666666, 0x777777777777, 0x888888888888];
+    const DUMMY_MACS = [
+      0x111111111111, 0x222222222222, 0x333333333333, 0x444444444444,
+      0x555555555555, 0x666666666666, 0x777777777777, 0x888888888888,
+    ];
 
     return new Promise(async (resolve, reject) => {
       if (!this.#connected) {
@@ -291,7 +309,10 @@ criteria example:
             writer.writeUint8(error_code);
 
             if (error_code == ERROR_CODE_SUCCESS) {
-              writer.writeValue(DUMMY_MACS[Math.floor(Math.random() * DUMMY_MACS.length)], 6);
+              writer.writeValue(
+                DUMMY_MACS[Math.floor(Math.random() * DUMMY_MACS.length)],
+                6
+              );
             }
 
             resolve(writer.bytes);
@@ -376,8 +397,13 @@ criteria example:
 
             if (error_code == ERROR_CODE_SUCCESS) {
               writer.writeBytes(
-                new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
-                32,
+                new Uint8Array([
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00,
+                ]),
+                32
               );
             }
 
@@ -409,7 +435,10 @@ criteria example:
 
             // mac address
             if (error_code == ERROR_CODE_SUCCESS) {
-              writer.writeBytes(new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 6);
+              writer.writeBytes(
+                new Uint8Array([0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+                6
+              );
             }
 
             resolve(writer.bytes);

@@ -119,12 +119,12 @@ export class TangleDevice {
     //   this.#onDisconnected(e);
     // });
 
-    this.interface.onConnected = event => {
+    this.interface.onConnected = (event) => {
       if (!this.#adopting) {
         logging.info("> Device connected");
         this.interface.emit("connected", { target: this });
 
-        this.requestTimeline().catch(e => {
+        this.requestTimeline().catch((e) => {
           logging.error("Timeline request after reconnection failed.", e);
         });
       } else {
@@ -132,7 +132,7 @@ export class TangleDevice {
       }
     };
 
-    this.interface.onDisconnected = event => {
+    this.interface.onDisconnected = (event) => {
       if (!this.#adopting) {
         logging.info("> Device disconnected");
         this.interface.emit("disconnected", { target: this });
@@ -154,7 +154,6 @@ export class TangleDevice {
       }
     }, 60000);
   }
-
 
   requestWakeLock() {
     return this.interface.requestWakeLock();
@@ -281,10 +280,10 @@ export class TangleDevice {
         logging.warn("request", reqId, payload);
 
         this.interface
-          .request((payload), read_response)
+          .request(payload, read_response)
           .then((payload) => {
             // ! missing returned payload
-            payload = (payload);
+            payload = payload;
             console.log({ reqId, payload });
             this.socket.emit("response_success", reqId, payload);
           })
@@ -390,8 +389,13 @@ export class TangleDevice {
   //   });
   // }
 
-  adopt(newDeviceName = null, newDeviceId = null, tnglCode = null, ownerSignature = null, ownerKey = null) {
-
+  adopt(
+    newDeviceName = null,
+    newDeviceId = null,
+    tnglCode = null,
+    ownerSignature = null,
+    ownerKey = null
+  ) {
     if (this.#adoptingGuard) {
       return Promise.reject("AdoptingInProgress");
     }
@@ -612,7 +616,9 @@ export class TangleDevice {
               return ("0" + (byte & 0xff).toString(16)).slice(-2);
             }).join(":");
 
-            logging.verbose(`error_code=${error_code}, device_mac=${device_mac}`);
+            logging.verbose(
+              `error_code=${error_code}, device_mac=${device_mac}`
+            );
 
             if (error_code === 0) {
               return (
@@ -799,7 +805,8 @@ export class TangleDevice {
       .then(() => {
         return this.interface.connect();
       })
-      .catch(error => { // TODO: tady tento catch by mel dal thrownout error jako ze nepodarilo pripojit. 
+      .catch((error) => {
+        // TODO: tady tento catch by mel dal thrownout error jako ze nepodarilo pripojit.
         logging.error(error);
         if (error === "UserCanceledSelection" || error === "BluefyError") {
           //@ts-ignore
@@ -818,9 +825,9 @@ export class TangleDevice {
         //@ts-ignore
         window.alert(
           t("Zkuste to, prosím, později.") +
-          "\n\n" +
-          t("Chyba: ") +
-          error.toString(),
+            "\n\n" +
+            t("Chyba: ") +
+            error.toString(),
           t("Připojení selhalo")
         );
       })
@@ -907,37 +914,42 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 1000
   /**
-   * 
-   * @param {*} event_label 
-   * @param {number|number[]} device_ids 
-   * @param {*} force_delivery 
-   * @param {*} is_lazy 
-   * @returns 
+   *
+   * @param {*} event_label
+   * @param {number|number[]} device_ids
+   * @param {*} force_delivery
+   * @param {*} is_lazy
+   * @returns
    */
   /**
-   * 
-   * @param {*} event_label 
-   * @param {number|number[]} device_ids 
-   * @param {*} force_delivery 
-   * @param {*} is_lazy 
-   * @returns 
+   *
+   * @param {*} event_label
+   * @param {number|number[]} device_ids
+   * @param {*} force_delivery
+   * @param {*} is_lazy
+   * @returns
    */
-  emitEvent(event_label, device_ids = [0xff], force_delivery = true, is_lazy = true) {
+  emitEvent(
+    event_label,
+    device_ids = [0xff],
+    force_delivery = true,
+    is_lazy = true
+  ) {
     logging.verbose("emitTimestampEvent(id=" + device_ids + ")");
 
     const func = (device_id) => {
       const payload = is_lazy
         ? [
-          NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT,
-          ...labelToBytes(event_label),
-          device_id,
-        ]
+            NETWORK_FLAGS.FLAG_EMIT_LAZY_EVENT,
+            ...labelToBytes(event_label),
+            device_id,
+          ]
         : [
-          NETWORK_FLAGS.FLAG_EMIT_EVENT,
-          ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
-          device_id,
-        ];
+            NETWORK_FLAGS.FLAG_EMIT_EVENT,
+            ...labelToBytes(event_label),
+            ...numberToBytes(this.timeline.millis(), 4),
+            device_id,
+          ];
       return this.interface.execute(
         payload,
         force_delivery ? null : "E" + event_label + device_id
@@ -971,14 +983,20 @@ export class TangleDevice {
   // event_label example: "evt1"
   // event_value example: 1000
   /**
- * 
- * @param {*} event_label 
- * @param {number|number[]} device_ids 
- * @param {*} force_delivery 
- * @param {*} is_lazy 
- * @returns 
- */
-  emitTimestampEvent(event_label, event_value, device_ids = [0xff], force_delivery = false, is_lazy = true) {
+   *
+   * @param {*} event_label
+   * @param {number|number[]} device_ids
+   * @param {*} force_delivery
+   * @param {*} is_lazy
+   * @returns
+   */
+  emitTimestampEvent(
+    event_label,
+    event_value,
+    device_ids = [0xff],
+    force_delivery = false,
+    is_lazy = true
+  ) {
     lastEvents[event_label] = { value: event_value, type: "timestamp" };
 
     logging.verbose("emitTimestampEvent(id=" + device_ids + ")");
@@ -996,18 +1014,18 @@ export class TangleDevice {
     const func = (device_id) => {
       const payload = is_lazy
         ? [
-          NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT,
-          ...numberToBytes(event_value, 4),
-          ...labelToBytes(event_label),
-          device_id,
-        ]
+            NETWORK_FLAGS.FLAG_EMIT_LAZY_TIMESTAMP_EVENT,
+            ...numberToBytes(event_value, 4),
+            ...labelToBytes(event_label),
+            device_id,
+          ]
         : [
-          NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT,
-          ...numberToBytes(event_value, 4),
-          ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
-          device_id,
-        ];
+            NETWORK_FLAGS.FLAG_EMIT_TIMESTAMP_EVENT,
+            ...numberToBytes(event_value, 4),
+            ...labelToBytes(event_label),
+            ...numberToBytes(this.timeline.millis(), 4),
+            device_id,
+          ];
       return this.interface.execute(
         payload,
         force_delivery ? null : "E" + event_label + device_id
@@ -1051,18 +1069,18 @@ export class TangleDevice {
     const func = (device_id) => {
       const payload = is_lazy
         ? [
-          NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT,
-          ...colorToBytes(event_value),
-          ...labelToBytes(event_label),
-          device_id,
-        ]
+            NETWORK_FLAGS.FLAG_EMIT_LAZY_COLOR_EVENT,
+            ...colorToBytes(event_value),
+            ...labelToBytes(event_label),
+            device_id,
+          ]
         : [
-          NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT,
-          ...colorToBytes(event_value),
-          ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
-          device_id,
-        ];
+            NETWORK_FLAGS.FLAG_EMIT_COLOR_EVENT,
+            ...colorToBytes(event_value),
+            ...labelToBytes(event_label),
+            ...numberToBytes(this.timeline.millis(), 4),
+            device_id,
+          ];
       return this.interface.execute(
         payload,
         force_delivery ? null : "E" + event_label + device_id
@@ -1111,18 +1129,18 @@ export class TangleDevice {
     const func = (device_id) => {
       const payload = is_lazy
         ? [
-          NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT,
-          ...percentageToBytes(event_value),
-          ...labelToBytes(event_label),
-          device_id,
-        ]
+            NETWORK_FLAGS.FLAG_EMIT_LAZY_PERCENTAGE_EVENT,
+            ...percentageToBytes(event_value),
+            ...labelToBytes(event_label),
+            device_id,
+          ]
         : [
-          NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT,
-          ...percentageToBytes(event_value),
-          ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
-          device_id,
-        ];
+            NETWORK_FLAGS.FLAG_EMIT_PERCENTAGE_EVENT,
+            ...percentageToBytes(event_value),
+            ...labelToBytes(event_label),
+            ...numberToBytes(this.timeline.millis(), 4),
+            device_id,
+          ];
       return this.interface.execute(
         payload,
         force_delivery ? null : "E" + event_label + device_id
@@ -1172,18 +1190,18 @@ export class TangleDevice {
     const func = (device_id) => {
       const payload = is_lazy
         ? [
-          NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT,
-          ...labelToBytes(event_value),
-          ...labelToBytes(event_label),
-          device_id,
-        ]
+            NETWORK_FLAGS.FLAG_EMIT_LAZY_LABEL_EVENT,
+            ...labelToBytes(event_value),
+            ...labelToBytes(event_label),
+            device_id,
+          ]
         : [
-          NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT,
-          ...labelToBytes(event_value),
-          ...labelToBytes(event_label),
-          ...numberToBytes(this.timeline.millis(), 4),
-          device_id,
-        ];
+            NETWORK_FLAGS.FLAG_EMIT_LABEL_EVENT,
+            ...labelToBytes(event_value),
+            ...labelToBytes(event_label),
+            ...numberToBytes(this.timeline.millis(), 4),
+            device_id,
+          ];
       return this.interface.execute(
         payload,
         force_delivery ? null : "E" + event_label + device_id
@@ -1219,7 +1237,9 @@ export class TangleDevice {
   }
 
   updateDeviceFirmware(firmware) {
-    logging.verbose(`updateDeviceFirmware(firmware.length=${firmware?.length})`);
+    logging.verbose(
+      `updateDeviceFirmware(firmware.length=${firmware?.length})`
+    );
 
     if (!firmware || firmware.length < 10000) {
       logging.error("Invalid firmware");
@@ -1232,7 +1252,9 @@ export class TangleDevice {
   }
 
   updateNetworkFirmware(firmware) {
-    logging.verbose(`updateNetworkFirmware(firmware.length=${firmware?.length})`);
+    logging.verbose(
+      `updateNetworkFirmware(firmware.length=${firmware?.length})`
+    );
 
     if (!firmware || firmware.length < 10000) {
       logging.error("Invalid firmware");
@@ -1242,7 +1264,7 @@ export class TangleDevice {
     this.#updating = true;
 
     this.interface.requestWakeLock();
- 
+
     return new Promise(async (resolve, reject) => {
       const chunk_size = 3984; // must be modulo 16
       // const chunk_size = 992; // must be modulo 16
@@ -1266,8 +1288,16 @@ export class TangleDevice {
           //===========// RESET //===========//
           logging.info("OTA RESET");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_RESET,
+            0x00,
+            ...numberToBytes(0x00000000, 4),
+          ];
+          const network_bytes = [
+            NETWORK_FLAGS.FLAG_CONF_BYTES,
+            ...numberToBytes(device_bytes.length, 4),
+            ...device_bytes,
+          ];
           await this.interface.execute(network_bytes, null);
         }
 
@@ -1277,8 +1307,16 @@ export class TangleDevice {
           //===========// BEGIN //===========//
           logging.info("OTA BEGIN");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_BEGIN,
+            0x00,
+            ...numberToBytes(firmware.length, 4),
+          ];
+          const network_bytes = [
+            NETWORK_FLAGS.FLAG_CONF_BYTES,
+            ...numberToBytes(device_bytes.length, 4),
+            ...device_bytes,
+          ];
           await this.interface.execute(network_bytes, null);
         }
 
@@ -1293,13 +1331,23 @@ export class TangleDevice {
               index_to = firmware.length;
             }
 
-            const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
-            const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+            const device_bytes = [
+              DEVICE_FLAGS.FLAG_OTA_WRITE,
+              0x00,
+              ...numberToBytes(written, 4),
+              ...firmware.slice(index_from, index_to),
+            ];
+            const network_bytes = [
+              NETWORK_FLAGS.FLAG_CONF_BYTES,
+              ...numberToBytes(device_bytes.length, 4),
+              ...device_bytes,
+            ];
             await this.interface.execute(network_bytes, null);
 
             written += index_to - index_from;
 
-            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            const percentage =
+              Math.floor((written * 10000) / firmware.length) / 100;
             logging.debug(percentage + "%");
             this.interface.emit("ota_progress", percentage);
 
@@ -1314,8 +1362,16 @@ export class TangleDevice {
           //===========// END //===========//
           logging.info("OTA END");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
-          const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_END,
+            0x00,
+            ...numberToBytes(written, 4),
+          ];
+          const network_bytes = [
+            NETWORK_FLAGS.FLAG_CONF_BYTES,
+            ...numberToBytes(device_bytes.length, 4),
+            ...device_bytes,
+          ];
           await this.interface.execute(network_bytes, null);
         }
 
@@ -1323,30 +1379,37 @@ export class TangleDevice {
 
         logging.debug("Rebooting whole network...");
 
-        const payload = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(1, 4), DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST];
+        const payload = [
+          NETWORK_FLAGS.FLAG_CONF_BYTES,
+          ...numberToBytes(1, 4),
+          DEVICE_FLAGS.FLAG_DEVICE_REBOOT_REQUEST,
+        ];
         await this.interface.execute(payload, null);
 
-        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.debug(
+          "Firmware written in " +
+            (new Date().getTime() - start_timestamp) / 1000 +
+            " seconds"
+        );
 
         this.interface.emit("ota_status", "success");
 
         resolve(null);
         return;
-      
       } catch (e) {
         this.interface.emit("ota_status", "fail");
         reject(e);
         return;
       }
-    }).then(() => {
-      return this.disconnect();
     })
+      .then(() => {
+        return this.disconnect();
+      })
 
-  .finally(() => {
-    this.interface.releaseWakeLock();
-    this.#updating = false;
-  })
-
+      .finally(() => {
+        this.interface.releaseWakeLock();
+        this.#updating = false;
+      });
   }
 
   /**
@@ -1510,7 +1573,7 @@ export class TangleDevice {
       ...numberToBytes(request_uuid, 4),
     ];
 
-    return this.interface.request(bytes, true).then(response => {
+    return this.interface.request(bytes, true).then((response) => {
       logging.verbose("response=", response);
 
       let reader = new TnglReader(response);
@@ -1529,14 +1592,16 @@ export class TangleDevice {
       const timeline_timestamp = reader.readInt32();
       const timeline_paused = reader.readUint8();
 
-      logging.verbose(`clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`);
+      logging.verbose(
+        `clock_timestamp=${clock_timestamp}, timeline_timestamp=${timeline_timestamp}, timeline_paused=${timeline_paused}`
+      );
 
       if (timeline_paused) {
         this.timeline.setState(timeline_timestamp, true);
       } else {
         this.timeline.setState(
           timeline_timestamp +
-          (this.interface.clock.millis() - clock_timestamp),
+            (this.interface.clock.millis() - clock_timestamp),
           false
         );
       }
@@ -1608,7 +1673,7 @@ export class TangleDevice {
       const removed_device_mac_bytes = reader.readBytes(6);
 
       return this.rebootAndDisconnectDevice()
-        .catch(() => { })
+        .catch(() => {})
         .then(() => {
           let removed_device_mac = "00:00:00:00:00:00";
           if (removed_device_mac_bytes.length >= 6) {
@@ -1630,23 +1695,25 @@ export class TangleDevice {
   }
 
   removeNetworkOwner() {
+    return window
+      .confirm("Opravdu chcete odpárovat všechna zařízení?")
+      .then((result) => {
+        if (!result) {
+          return;
+        }
 
-    return window.confirm("Opravdu chcete odpárovat všechna zařízení?").then(result => {
+        logging.debug("> Removing network owner...");
 
-      if (!result) {
-        return;
-      }
+        const request_uuid = this.#getUUID();
+        const bytes = [
+          NETWORK_FLAGS.FLAG_CONF_BYTES,
+          ...numberToBytes(5, 4),
+          DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST,
+          ...numberToBytes(request_uuid, 4),
+        ];
 
-      logging.debug("> Removing network owner...");
-
-      const request_uuid = this.#getUUID();
-      const bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(5, 4), DEVICE_FLAGS.FLAG_ERASE_OWNER_REQUEST, ...numberToBytes(request_uuid, 4)];
-
-      return this.interface.execute(bytes, true);
-
-    })
-
-
+        return this.interface.execute(bytes, true);
+      });
   }
 
   getFwVersion() {
@@ -1658,7 +1725,7 @@ export class TangleDevice {
       ...numberToBytes(request_uuid, 4),
     ];
 
-    console.log("getFwVersion", { bytes })
+    console.log("getFwVersion", { bytes });
 
     return this.interface.request(bytes, true).then((response) => {
       let reader = new TnglReader(response);
@@ -1924,12 +1991,9 @@ export class TangleDevice {
 
         logging.verbose(`count=${count}, peers=`, peers);
         return peers;
-
       } else {
         throw "Fail";
       }
-
-      
     });
   }
 
@@ -1974,7 +2038,10 @@ export class TangleDevice {
     logging.debug("> Synchronizing state...");
 
     const request_uuid = this.#getUUID();
-    const device_request = [DEVICE_FLAGS.FLAG_SYNC_STATE_REQUEST, ...numberToBytes(request_uuid, 4)];
+    const device_request = [
+      DEVICE_FLAGS.FLAG_SYNC_STATE_REQUEST,
+      ...numberToBytes(request_uuid, 4),
+    ];
     return this.interface.request(device_request, false);
   }
 
@@ -1982,9 +2049,12 @@ export class TangleDevice {
     logging.debug("> Requesting controller info ...");
 
     const request_uuid = this.#getUUID();
-    const bytes = [DEVICE_FLAGS.FLAG_CONTROLLER_INFO_REQUEST, ...numberToBytes(request_uuid, 4)];
+    const bytes = [
+      DEVICE_FLAGS.FLAG_CONTROLLER_INFO_REQUEST,
+      ...numberToBytes(request_uuid, 4),
+    ];
 
-    return this.interface.request(bytes, true).then(response => {
+    return this.interface.request(bytes, true).then((response) => {
       let reader = new TnglReader(response);
 
       logging.verbose("response=", response);
@@ -2018,6 +2088,5 @@ export class TangleDevice {
 
       return { pcb_code: pcb_code, product_code: product_code };
     });
-
   }
 }

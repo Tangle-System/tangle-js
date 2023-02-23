@@ -32,12 +32,16 @@ export class TimeTrack {
       this.memory_ = Date.now() - this.memory_;
     }
 
-    this.memory_ = this.paused_ ? current_timestamp : Date.now() - current_timestamp;
+    this.memory_ = this.paused_
+      ? current_timestamp
+      : Date.now() - current_timestamp;
     this.eventEmitter_.emit("change", { target: this });
   }
 
   setMillis(current_timestamp) {
-    this.memory_ = this.paused_ ? current_timestamp : Date.now() - current_timestamp;
+    this.memory_ = this.paused_
+      ? current_timestamp
+      : Date.now() - current_timestamp;
     this.eventEmitter_.emit("change", { target: this });
   }
 

@@ -1,5 +1,3 @@
-
-
 import { logging } from "./Logging.js";
 import { mapValue, uint8ArrayToHexString } from "./functions.js";
 import { TnglWriter } from "./TnglWriter.js";
@@ -282,12 +280,22 @@ export class TnglCompiler {
 
     value = value.trim();
 
-    if (value == "inf" || value == "Inf" || value == "infinity" || value == "Infinity") {
+    if (
+      value == "inf" ||
+      value == "Inf" ||
+      value == "infinity" ||
+      value == "Infinity"
+    ) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
       return;
     }
 
-    if (value == "-inf" || value == "-Inf" || value == "-infinity" || value == "-Infinity") {
+    if (
+      value == "-inf" ||
+      value == "-Inf" ||
+      value == "-infinity" ||
+      value == "-Infinity"
+    ) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MIN);
       return;
     }
@@ -346,19 +354,13 @@ export class TnglCompiler {
     if (total >= 2147483647) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MAX);
       return;
-    }
-
-    else if (total <= -2147483648) {
+    } else if (total <= -2147483648) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_MIN);
       return;
-    }
-
-    else if (total === 0) {
+    } else if (total === 0) {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP_ZERO);
       return;
-    } 
-    
-    else {
+    } else {
       this.#tnglWriter.writeFlag(TNGL_FLAGS.TIMESTAMP);
       this.#tnglWriter.writeInt32(total);
       return;
@@ -367,7 +369,9 @@ export class TnglCompiler {
 
   // takes in html color string "#abcdef" and encodes it into 24 bits [FLAG.COLOR, R, G, B]
   compileColor(color) {
-    let reg = color.match(/#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i);
+    let reg = color.match(
+      /#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])/i
+    );
     if (!reg) {
       logging.error("Failed to compile color");
       return;
@@ -625,10 +629,9 @@ export class TnglCompiler {
       case "emitAs":
         this.#tnglWriter.writeFlag(TNGL_FLAGS.EVENT_EMIT_LOCAL);
         break;
-        case "randomChoice":
-          this.#tnglWriter.writeFlag(TNGL_FLAGS.EVENT_RANDOM_CHOICE);
-          break;
-        
+      case "randomChoice":
+        this.#tnglWriter.writeFlag(TNGL_FLAGS.EVENT_RANDOM_CHOICE);
+        break;
 
       // === generators ===
       case "genLastEventParam":
@@ -715,7 +718,11 @@ export class TnglCompiler {
   }
 
   get tnglBytes() {
-    return new Uint8Array(this.#tnglWriter.bytes.buffer, 0, this.#tnglWriter.written);
+    return new Uint8Array(
+      this.#tnglWriter.bytes.buffer,
+      0,
+      this.#tnglWriter.written
+    );
   }
 }
 

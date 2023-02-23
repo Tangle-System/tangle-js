@@ -36,7 +36,10 @@ export class TangleConnectConnector {
       window.tangleConnect = {};
 
       // @ts-ignore
-      window.tangleConnect.userSelect = async function (criteria, timeout = 60000) {
+      window.tangleConnect.userSelect = async function (
+        criteria,
+        timeout = 60000
+      ) {
         if (_connected) {
           // @ts-ignore
           await window.tangleConnect.disconnect();
@@ -58,7 +61,11 @@ export class TangleConnectConnector {
       };
 
       // @ts-ignore
-      window.tangleConnect.autoSelect = async function (criteria, scan_period = 1000, timeout = 10000) {
+      window.tangleConnect.autoSelect = async function (
+        criteria,
+        scan_period = 1000,
+        timeout = 10000
+      ) {
         if (_connected) {
           // @ts-ignore
           await window.tangleConnect.disconnect();
@@ -195,7 +202,9 @@ export class TangleConnectConnector {
         }
 
         // @ts-ignore
-        window.tangleConnect.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
+        window.tangleConnect.resolve([
+          246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0,
+        ]); // returns data as an array of bytes: [0,255,123,89]
       };
 
       // @ts-ignore
@@ -278,9 +287,10 @@ export class TangleConnectConnector {
 
     // @ts-ignore
     window.tangleConnect.emit = (event, param) => {
-
-      if(event === "#bytecode") {
-        this.#interfaceReference.process(new DataView(new Uint8Array(param).buffer));
+      if (event === "#bytecode") {
+        this.#interfaceReference.process(
+          new DataView(new Uint8Array(param).buffer)
+        );
       }
 
       this.#interfaceReference.emit(event, param);
@@ -387,7 +397,9 @@ criteria example:
     // this.#selected = true;
     // //logging.debug("choose()");
 
-    logging.debug(`userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`);
+    logging.debug(
+      `userSelect(criteria=${JSON.stringify(criteria)}, timeout=${timeout})`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -419,7 +431,11 @@ criteria example:
     //         the greatest signal strength. If no device is found until the timeout,
     //         then return error
 
-    logging.debug(`autoSelect(criteria=${JSON.stringify(criteria)}, scan_period=${scan_period}, timeout=${timeout})`);
+    logging.debug(
+      `autoSelect(criteria=${JSON.stringify(
+        criteria
+      )}, scan_period=${scan_period}, timeout=${timeout})`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -432,7 +448,11 @@ criteria example:
 
     // ! for now autoselect calls userSelect
     // @ts-ignore
-    window.tangleConnect.autoSelect(JSON.stringify(criteria), scan_period, timeout);
+    window.tangleConnect.autoSelect(
+      JSON.stringify(criteria),
+      scan_period,
+      timeout
+    );
 
     return this.#applyTimeout(this.#promise, timeout * 2.0, "autoSelect");
   }
@@ -496,7 +516,11 @@ criteria example:
     // @ts-ignore
     window.tangleConnect.connect(timeout);
 
-    return this.#applyTimeout(this.#promise, timeout < 5000 ? 10000 : timeout * 2.0, "connect");
+    return this.#applyTimeout(
+      this.#promise,
+      timeout < 5000 ? 10000 : timeout * 2.0,
+      "connect"
+    );
   }
 
   connected() {
@@ -573,11 +597,15 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload, read_response = true) {
-    logging.debug(`request(payload=[${payload}], read_response=${read_response ? "true" : "false"})`);
+    logging.debug(
+      `request(payload=[${payload}], read_response=${
+        read_response ? "true" : "false"
+      })`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.tangleConnect.resolve = response => {
+      window.tangleConnect.resolve = (response) => {
         resolve(new DataView(new Uint8Array(response).buffer));
       };
       // @ts-ignore
@@ -654,9 +682,15 @@ criteria example:
           // @ts-ignore
           window.tangleConnect.readClock();
 
-          const bytes = await this.#applyTimeout(this.#promise, 5000, "readClock");
+          const bytes = await this.#applyTimeout(
+            this.#promise,
+            5000,
+            "readClock"
+          );
 
-          const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          const reader = new TnglReader(
+            new DataView(new Uint8Array(bytes).buffer)
+          );
           const timestamp = reader.readInt32();
 
           // const timestamp = await this.#promise;

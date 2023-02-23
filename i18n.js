@@ -26,7 +26,7 @@ i18.init(
     // TEST
     // console.log("tanglejs translation", "Zpět", t("Zpět"));
     // console.log("tanglejs translation", "Zkusit znovu", t("Zkusit znovu"));
-  },
+  }
 );
 
 export const changeLanguage = i18.changeLanguage;

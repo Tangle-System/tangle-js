@@ -1,9 +1,17 @@
 import { logging } from "./Logging.js";
-import { sleep, toBytes, detectTangleConnect, numberToBytes } from "./functions.js";
+import {
+  sleep,
+  toBytes,
+  detectTangleConnect,
+  numberToBytes,
+} from "./functions.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
-import { DEVICE_FLAGS, NETWORK_FLAGS, TangleInterface } from "./TangleInterface.js";
-
+import {
+  DEVICE_FLAGS,
+  NETWORK_FLAGS,
+  TangleInterface,
+} from "./TangleInterface.js";
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -52,70 +60,68 @@ class FlutterConnection {
     if (this.available()) {
       logging.debug("Flutter Connector available");
 
-      window.addEventListener("#resolve", e => {
+      window.addEventListener("#resolve", (e) => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #resolve:", typeof(value), value);
+        logging.debug("Triggered #resolve:", typeof value, value);
 
         // @ts-ignore
         window.flutterConnection.resolve(value);
       });
 
-      window.addEventListener("#reject", e => {
+      window.addEventListener("#reject", (e) => {
         // @ts-ignore
         const value = e.detail.value;
-        logging.debug("Triggered #reject:", typeof(value), value);
+        logging.debug("Triggered #reject:", typeof value, value);
 
         // @ts-ignore
         window.flutterConnection.reject(value);
       });
 
-      window.addEventListener("#emit", e => {
+      window.addEventListener("#emit", (e) => {
         // @ts-ignore
         const event = e.detail.value;
-        logging.debug("Triggered #emit:", typeof(event), event);
+        logging.debug("Triggered #emit:", typeof event, event);
 
         // @ts-ignore
         window.flutterConnection.emit(event);
       });
 
-      window.addEventListener("#process", e => {
+      window.addEventListener("#process", (e) => {
         // @ts-ignore
         const bytes = e.detail.value;
-        logging.debug("Triggered #process:", typeof(bytes), bytes);
+        logging.debug("Triggered #process:", typeof bytes, bytes);
 
         // @ts-ignore
         window.flutterConnection.process(bytes);
       });
-      
-      window.addEventListener("#device", e => {
+
+      window.addEventListener("#device", (e) => {
         // @ts-ignore
         const bytes = e.detail.value;
-        logging.debug("Triggered #device:", typeof(bytes), bytes);
+        logging.debug("Triggered #device:", typeof bytes, bytes);
 
         // @ts-ignore
         // window.flutterConnection.process(bytes);
       });
-      
-      window.addEventListener("#network", e => {
+
+      window.addEventListener("#network", (e) => {
         // @ts-ignore
         const bytes = e.detail.value;
-        logging.debug("Triggered #network:", typeof(bytes), bytes);
+        logging.debug("Triggered #network:", typeof bytes, bytes);
 
         // @ts-ignore
         window.flutterConnection.process(bytes);
       });
-      
-      window.addEventListener("#clock", e => {
+
+      window.addEventListener("#clock", (e) => {
         // @ts-ignore
         const bytes = e.detail.value;
-        logging.debug("Triggered #clock:", typeof(bytes), bytes);
+        logging.debug("Triggered #clock:", typeof bytes, bytes);
 
         // @ts-ignore
         // window.flutterConnection.process(bytes);
       });
-      
-      
     } else {
       logging.debug("flutter_inappwebview in window NOT detected");
       logging.info("Simulating Flutter Functions");
@@ -135,7 +141,13 @@ class FlutterConnection {
       window.flutter_inappwebview = {};
 
       // @ts-ignore
-      window.flutter_inappwebview.callHandler = async function (handler, a, b, c, d) {
+      window.flutter_inappwebview.callHandler = async function (
+        handler,
+        a,
+        b,
+        c,
+        d
+      ) {
         //
         switch (handler) {
           //
@@ -186,7 +198,9 @@ class FlutterConnection {
               // params: ()
               if (_selected) {
                 // @ts-ignore
-                window.flutterConnection.resolve('{"connector":"tangleconnect"}'); // if the device is selected, return json
+                window.flutterConnection.resolve(
+                  '{"connector":"tangleconnect"}'
+                ); // if the device is selected, return json
               } else {
                 // @ts-ignore
                 window.flutterConnection.resolve(); // if no device is selected resolve nothing
@@ -261,10 +275,12 @@ class FlutterConnection {
               // params: ()
               if (_connected) {
                 // @ts-ignore
-                window.flutterConnection.resolve('{"connector":"tangleconnect"}');
+                window.flutterConnection.resolve(
+                  '{"connector":"tangleconnect"}'
+                );
               } else {
                 // @ts-ignore
-                window.flutterConnection.resolve();
+                window.flutterConnection.resolve(); // resolves null
               }
             }
             break;
@@ -323,7 +339,9 @@ class FlutterConnection {
               }
 
               // @ts-ignore
-              window.flutterConnection.resolve([246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0]); // returns data as an array of bytes: [0,255,123,89]
+              window.flutterConnection.resolve([
+                246, 1, 0, 0, 0, 188, 251, 18, 0, 212, 247, 18, 0, 0,
+              ]); // returns data as an array of bytes: [0,255,123,89]
             }
             break;
 
@@ -439,13 +457,15 @@ export class FlutterConnector extends FlutterConnection {
     this.#promise = null;
 
     // @ts-ignore
-    window.flutterConnection.emit = event => {
+    window.flutterConnection.emit = (event) => {
       this.#interfaceReference.emit(event, null);
     };
 
     // @ts-ignore
-    window.flutterConnection.process = bytes => {
-      this.#interfaceReference.process(new DataView(new Uint8Array(bytes).buffer));
+    window.flutterConnection.process = (bytes) => {
+      this.#interfaceReference.process(
+        new DataView(new Uint8Array(bytes).buffer)
+      );
     };
   }
 
@@ -523,7 +543,9 @@ criteria example:
   userSelect(criteria_object, timeout_number = 60000) {
     const criteria_json = JSON.stringify(criteria_object);
 
-    logging.debug(`userSelect(criteria=${criteria_json}, timeout=${timeout_number})`);
+    logging.debug(
+      `userSelect(criteria=${criteria_json}, timeout=${timeout_number})`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -535,7 +557,11 @@ criteria example:
     });
 
     // @ts-ignore
-    window.flutter_inappwebview.callHandler("userSelect", criteria_json, timeout_number);
+    window.flutter_inappwebview.callHandler(
+      "userSelect",
+      criteria_json,
+      timeout_number
+    );
 
     return this.#applyTimeout(this.#promise, timeout_number * 2, "userSelect");
   }
@@ -549,7 +575,11 @@ criteria example:
   // if no criteria are provided, all Tangle enabled devices (with all different FWs and Owners and such)
   // are eligible.
 
-  autoSelect(criteria_object, scan_period_number = 1000, timeout_number = 10000) {
+  autoSelect(
+    criteria_object,
+    scan_period_number = 1000,
+    timeout_number = 10000
+  ) {
     // step 1. for the scan_period scan the surroundings for BLE devices.
     // step 2. if some devices matching the criteria are found, then select the one with
     //         the greatest signal strength. If no device is found until the timeout,
@@ -557,7 +587,9 @@ criteria example:
 
     const criteria_json = JSON.stringify(criteria_object);
 
-    logging.debug(`autoSelect(criteria=${criteria_json}, scan_period=${scan_period_number}, timeout=${timeout_number})`);
+    logging.debug(
+      `autoSelect(criteria=${criteria_json}, scan_period=${scan_period_number}, timeout=${timeout_number})`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
@@ -569,9 +601,18 @@ criteria example:
     });
 
     // @ts-ignore
-    window.flutter_inappwebview.callHandler("autoSelect", criteria_json, scan_period_number, timeout_number);
+    window.flutter_inappwebview.callHandler(
+      "autoSelect",
+      criteria_json,
+      scan_period_number,
+      timeout_number
+    );
 
-    return this.#applyTimeout(this.#promise, timeout_number * 2.0, "autoSelect");
+    return this.#applyTimeout(
+      this.#promise,
+      timeout_number * 2.0,
+      "autoSelect"
+    );
   }
 
   selected() {
@@ -633,7 +674,11 @@ criteria example:
     // @ts-ignore
     window.flutter_inappwebview.callHandler("connect", timeout_number);
 
-    return this.#applyTimeout(this.#promise, timeout_number < 5000 ? 10000 : timeout_number * 2, "connect").then(() => {
+    return this.#applyTimeout(
+      this.#promise,
+      timeout_number < 5000 ? 10000 : timeout_number * 2,
+      "connect"
+    ).then(() => {
       logging.debug("Sleeping for 200ms");
       return sleep(200);
     });
@@ -713,11 +758,15 @@ criteria example:
   // request handles the requests on the Tangle network. The command request
   // is guaranteed to get a response
   request(payload_bytes, read_response = true) {
-    logging.debug(`request(payload=[${payload_bytes}], read_response=${read_response ? "true" : "false"})`);
+    logging.debug(
+      `request(payload=[${payload_bytes}], read_response=${
+        read_response ? "true" : "false"
+      })`
+    );
 
     this.#promise = new Promise((resolve, reject) => {
       // @ts-ignore
-      window.flutterConnection.resolve = response => {
+      window.flutterConnection.resolve = (response) => {
         resolve(new DataView(new Uint8Array(response).buffer));
       };
       // @ts-ignore
@@ -725,7 +774,11 @@ criteria example:
     });
 
     // @ts-ignore
-    window.flutter_inappwebview.callHandler("request", payload_bytes, read_response);
+    window.flutter_inappwebview.callHandler(
+      "request",
+      payload_bytes,
+      read_response
+    );
 
     return this.#applyTimeout(this.#promise, 10000, "request");
   }
@@ -791,9 +844,15 @@ criteria example:
           // @ts-ignore
           window.flutter_inappwebview.callHandler("readClock");
 
-          const bytes = await this.#applyTimeout(this.#promise, 5000, "readClock");
+          const bytes = await this.#applyTimeout(
+            this.#promise,
+            5000,
+            "readClock"
+          );
 
-          const reader = new TnglReader(new DataView(new Uint8Array(bytes).buffer));
+          const reader = new TnglReader(
+            new DataView(new Uint8Array(bytes).buffer)
+          );
           const timestamp = reader.readInt32();
 
           // const timestamp = await this.#promise;
@@ -860,7 +919,11 @@ criteria example:
           //===========// RESET //===========//
           logging.info("OTA RESET");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_RESET,
+            0x00,
+            ...numberToBytes(0x00000000, 4),
+          ];
           // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
           await this.request(device_bytes, false);
         }
@@ -871,7 +934,11 @@ criteria example:
           //===========// BEGIN //===========//
           logging.info("OTA BEGIN");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware_bytes.length, 4)];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_BEGIN,
+            0x00,
+            ...numberToBytes(firmware_bytes.length, 4),
+          ];
           // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
           await this.request(device_bytes, false);
         }
@@ -887,13 +954,19 @@ criteria example:
               index_to = firmware_bytes.length;
             }
 
-            const device_bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware_bytes.slice(index_from, index_to)];
+            const device_bytes = [
+              DEVICE_FLAGS.FLAG_OTA_WRITE,
+              0x00,
+              ...numberToBytes(written, 4),
+              ...firmware_bytes.slice(index_from, index_to),
+            ];
             // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
             await this.request(device_bytes, false);
 
             written += index_to - index_from;
 
-            const percentage = Math.floor((written * 10000) / firmware_bytes.length) / 100;
+            const percentage =
+              Math.floor((written * 10000) / firmware_bytes.length) / 100;
             logging.debug(percentage + "%");
             this.#interfaceReference.emit("ota_progress", percentage);
 
@@ -908,7 +981,11 @@ criteria example:
           //===========// END //===========//
           logging.info("OTA END");
 
-          const device_bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          const device_bytes = [
+            DEVICE_FLAGS.FLAG_OTA_END,
+            0x00,
+            ...numberToBytes(written, 4),
+          ];
           // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
           await this.request(device_bytes, false);
         }
@@ -921,7 +998,11 @@ criteria example:
         // const network_bytes = [NETWORK_FLAGS.FLAG_CONF_BYTES, ...numberToBytes(device_bytes.length, 4), ...device_bytes];
         await this.request(device_bytes, false);
 
-        logging.debug("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.debug(
+          "Firmware written in " +
+            (new Date().getTime() - start_timestamp) / 1000 +
+            " seconds"
+        );
 
         this.#interfaceReference.emit("ota_status", "success");
 
@@ -932,12 +1013,12 @@ criteria example:
         reject(e);
       }
     })
-    .then(() => {
-      return this.disconnect();
-    })
-    .finally(() => {
-      this.#interfaceReference.releaseWakeLock();
-    });
+      .then(() => {
+        return this.disconnect();
+      })
+      .finally(() => {
+        this.#interfaceReference.releaseWakeLock();
+      });
   }
 
   destroy() {

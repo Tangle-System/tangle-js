@@ -2,7 +2,15 @@
 /// <reference types="web-bluetooth" />
 
 import { logging } from "./Logging.js";
-import { detectAndroid, detectBluefy, detectSafari, hexStringToUint8Array, numberToBytes, sleep, toBytes } from "./functions.js";
+import {
+  detectAndroid,
+  detectBluefy,
+  detectSafari,
+  hexStringToUint8Array,
+  numberToBytes,
+  sleep,
+  toBytes,
+} from "./functions.js";
 import { DEVICE_FLAGS } from "./TangleInterface.js";
 import { TimeTrack } from "./TimeTrack.js";
 import { TnglReader } from "./TnglReader.js";
@@ -94,10 +102,17 @@ export class WebBLEConnection {
             index_to = bytes.length;
           }
 
-          const payload = [...numberToBytes(write_uuid, 4), ...numberToBytes(index_from, 4), ...numberToBytes(bytes.length, 4), ...bytes.slice(index_from, index_to)];
+          const payload = [
+            ...numberToBytes(write_uuid, 4),
+            ...numberToBytes(index_from, 4),
+            ...numberToBytes(bytes.length, 4),
+            ...bytes.slice(index_from, index_to),
+          ];
 
           try {
-            await characteristic.writeValueWithResponse(new Uint8Array(payload));
+            await characteristic.writeValueWithResponse(
+              new Uint8Array(payload)
+            );
           } catch (e) {
             logging.warn(e);
             reject(e);
@@ -112,10 +127,18 @@ export class WebBLEConnection {
       });
     } else {
       if (bytes.length > bytes_size) {
-        logging.error("The maximum bytes that can be written without response is " + bytes_size);
+        logging.error(
+          "The maximum bytes that can be written without response is " +
+            bytes_size
+        );
         return Promise.reject("WriteError");
       }
-      const payload = [...numberToBytes(write_uuid, 4), ...numberToBytes(0, 4), ...numberToBytes(bytes.length, 4), ...bytes.slice(0, bytes.length)];
+      const payload = [
+        ...numberToBytes(write_uuid, 4),
+        ...numberToBytes(0, 4),
+        ...numberToBytes(bytes.length, 4),
+        ...bytes.slice(0, bytes.length),
+      ];
       return characteristic.writeValueWithoutResponse(new Uint8Array(payload));
     }
   }
@@ -161,22 +184,22 @@ export class WebBLEConnection {
     logging.debug("> Getting Network Characteristics...");
     return this.#service
       .getCharacteristic(networkUUID)
-      .then(characteristic => {
+      .then((characteristic) => {
         this.#networkChar = characteristic;
 
         return this.#networkChar
           .startNotifications()
           .then(() => {
             logging.debug("> Network notifications started");
-            this.#networkChar.oncharacteristicvaluechanged = event => {
+            this.#networkChar.oncharacteristicvaluechanged = (event) => {
               this.#onNetworkNotification(event);
             };
           })
-          .catch(e => {
+          .catch((e) => {
             logging.warn(e);
           });
       })
-      .catch(e => {
+      .catch((e) => {
         logging.warn(e);
         throw "ConnectionFailed";
       })
@@ -184,10 +207,10 @@ export class WebBLEConnection {
         logging.debug("> Getting Clock Characteristics...");
         return this.#service.getCharacteristic(clockUUID);
       })
-      .then(characteristic => {
+      .then((characteristic) => {
         this.#clockChar = characteristic;
       })
-      .catch(e => {
+      .catch((e) => {
         logging.warn(e);
         throw "ConnectionFailed";
       })
@@ -195,22 +218,22 @@ export class WebBLEConnection {
         logging.debug("> Getting Device Characteristics...");
         return this.#service.getCharacteristic(deviceUUID);
       })
-      .then(characteristic => {
+      .then((characteristic) => {
         this.#deviceChar = characteristic;
 
         return this.#deviceChar
           .startNotifications()
           .then(() => {
             logging.debug("> Device notifications started");
-            this.#deviceChar.oncharacteristicvaluechanged = event => {
+            this.#deviceChar.oncharacteristicvaluechanged = (event) => {
               this.#onDeviceNotification(event);
             };
           })
-          .catch(e => {
+          .catch((e) => {
             logging.warn(e);
           });
       })
-      .catch(e => {
+      .catch((e) => {
         logging.warn(e);
         throw "ConnectionFailed";
       });
@@ -235,7 +258,7 @@ export class WebBLEConnection {
     this.#writing = true;
 
     return this.#writeBytes(this.#networkChar, payload, true)
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         throw "DeliverFailed";
       })
@@ -261,7 +284,7 @@ export class WebBLEConnection {
     this.#writing = true;
 
     return this.#writeBytes(this.#networkChar, payload, false)
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         throw "TransmitFailed";
       })
@@ -293,7 +316,7 @@ export class WebBLEConnection {
           return Promise.resolve([]);
         }
       })
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         throw "RequestFailed";
       })
@@ -319,7 +342,7 @@ export class WebBLEConnection {
     const bytes = toBytes(timestamp, 4);
     return this.#clockChar
       .writeValueWithoutResponse(new Uint8Array(bytes))
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         throw "ClockWriteFailed";
       })
@@ -347,11 +370,11 @@ export class WebBLEConnection {
 
     return this.#clockChar
       .readValue()
-      .then(dataView => {
+      .then((dataView) => {
         let reader = new TnglReader(dataView);
         return reader.readInt32();
       })
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         throw "ClockReadFailed";
       })
@@ -393,7 +416,11 @@ export class WebBLEConnection {
           //===========// RESET //===========//
           logging.debug("OTA RESET");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_RESET, 0x00, ...numberToBytes(0x00000000, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_RESET,
+            0x00,
+            ...numberToBytes(0x00000000, 4),
+          ];
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
@@ -403,7 +430,11 @@ export class WebBLEConnection {
           //===========// BEGIN //===========//
           logging.debug("OTA BEGIN");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_BEGIN, 0x00, ...numberToBytes(firmware.length, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_BEGIN,
+            0x00,
+            ...numberToBytes(firmware.length, 4),
+          ];
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
@@ -418,12 +449,18 @@ export class WebBLEConnection {
               index_to = firmware.length;
             }
 
-            const bytes = [DEVICE_FLAGS.FLAG_OTA_WRITE, 0x00, ...numberToBytes(written, 4), ...firmware.slice(index_from, index_to)];
+            const bytes = [
+              DEVICE_FLAGS.FLAG_OTA_WRITE,
+              0x00,
+              ...numberToBytes(written, 4),
+              ...firmware.slice(index_from, index_to),
+            ];
 
             await this.#writeBytes(this.#deviceChar, bytes, true);
             written += index_to - index_from;
 
-            const percentage = Math.floor((written * 10000) / firmware.length) / 100;
+            const percentage =
+              Math.floor((written * 10000) / firmware.length) / 100;
             logging.debug(percentage + "%");
 
             this.#interfaceReference.emit("ota_progress", percentage);
@@ -439,13 +476,21 @@ export class WebBLEConnection {
           //===========// END //===========//
           logging.debug("OTA END");
 
-          const bytes = [DEVICE_FLAGS.FLAG_OTA_END, 0x00, ...numberToBytes(written, 4)];
+          const bytes = [
+            DEVICE_FLAGS.FLAG_OTA_END,
+            0x00,
+            ...numberToBytes(written, 4),
+          ];
           await this.#writeBytes(this.#deviceChar, bytes, true);
         }
 
         await sleep(2000);
 
-        logging.info("Firmware written in " + (new Date().getTime() - start_timestamp) / 1000 + " seconds");
+        logging.info(
+          "Firmware written in " +
+            (new Date().getTime() - start_timestamp) / 1000 +
+            " seconds"
+        );
 
         this.#interfaceReference.emit("ota_status", "success");
         resolve();
@@ -591,7 +636,10 @@ criteria example:
     }
 
     /** @type {RequestDeviceOptions} */
-    let web_ble_options = { filters: /** @type {BluetoothLEScanFilter[]} */ ([]), optionalServices: [this.TANGLE_SERVICE_UUID] };
+    let web_ble_options = {
+      filters: /** @type {BluetoothLEScanFilter[]} */ ([]),
+      optionalServices: [this.TANGLE_SERVICE_UUID],
+    };
 
     // Bluefy Obechcavky
     if (detectBluefy()) {
@@ -649,19 +697,33 @@ criteria example:
       if (add_adoption_uuid && !dont_add_adoption_uuid) {
         // window.alert("add_adoption_uuid");
 
-        web_ble_options.filters.push({ services: [this.TANGLE_ADOPTING_SERVICE_UUID] });
+        web_ble_options.filters.push({
+          services: [this.TANGLE_ADOPTING_SERVICE_UUID],
+        });
       }
 
       if (add_legacy_uuids) {
         // window.alert("add_legacy_uuids");
 
         web_ble_options.filters.push({ name: "Nara Alpha" });
-        web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
-        web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
-        web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
-        web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
-        web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
-        web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+        web_ble_options.filters.push({
+          services: [this.FW_PRE_0_7_SERVICE_UUID],
+        });
+        web_ble_options.filters.push({
+          services: [this.FW_0_7_0_SERVICE_UUID],
+        });
+        web_ble_options.filters.push({
+          services: [this.FW_0_7_1_SERVICE_UUID],
+        });
+        web_ble_options.filters.push({
+          services: [this.FW_0_7_2_SERVICE_UUID],
+        });
+        web_ble_options.filters.push({
+          services: [this.FW_0_7_3_SERVICE_UUID],
+        });
+        web_ble_options.filters.push({
+          services: [this.FW_0_7_4_SERVICE_UUID],
+        });
       }
 
       if (add_all_devices) {
@@ -753,12 +815,24 @@ criteria example:
             legacy_filters_applied = true;
 
             web_ble_options.filters.push({ namePrefix: "Nara Al" });
-            web_ble_options.filters.push({ services: [this.FW_PRE_0_7_SERVICE_UUID] });
-            web_ble_options.filters.push({ services: [this.FW_0_7_0_SERVICE_UUID] });
-            web_ble_options.filters.push({ services: [this.FW_0_7_1_SERVICE_UUID] });
-            web_ble_options.filters.push({ services: [this.FW_0_7_2_SERVICE_UUID] });
-            web_ble_options.filters.push({ services: [this.FW_0_7_3_SERVICE_UUID] });
-            web_ble_options.filters.push({ services: [this.FW_0_7_4_SERVICE_UUID] });
+            web_ble_options.filters.push({
+              services: [this.FW_PRE_0_7_SERVICE_UUID],
+            });
+            web_ble_options.filters.push({
+              services: [this.FW_0_7_0_SERVICE_UUID],
+            });
+            web_ble_options.filters.push({
+              services: [this.FW_0_7_1_SERVICE_UUID],
+            });
+            web_ble_options.filters.push({
+              services: [this.FW_0_7_2_SERVICE_UUID],
+            });
+            web_ble_options.filters.push({
+              services: [this.FW_0_7_3_SERVICE_UUID],
+            });
+            web_ble_options.filters.push({
+              services: [this.FW_0_7_4_SERVICE_UUID],
+            });
           }
 
           continue;
@@ -773,13 +847,22 @@ criteria example:
         }
 
         // if any of these criteria are required, then we need to build a manufacturer data filter.
-        if (criterium.fwVersion || criterium.ownerSignature || criterium.productCode || criterium.adoptionFlag) {
+        if (
+          criterium.fwVersion ||
+          criterium.ownerSignature ||
+          criterium.productCode ||
+          criterium.adoptionFlag
+        ) {
           const company_identifier = 0x02e5; // Bluetooth SIG company identifier of Espressif
 
           delete filter.services;
 
-          let prefix = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-          let mask = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          let prefix = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ];
+          let mask = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ];
 
           if (criterium.productCode) {
             if (criterium.productCode < 0 || criterium.productCode > 0xffff) {
@@ -787,7 +870,10 @@ criteria example:
             }
 
             const product_code_byte_offset = 2;
-            const product_code_bytes = [criterium.productCode & 0xff, (criterium.productCode >> 8) & 0xff];
+            const product_code_bytes = [
+              criterium.productCode & 0xff,
+              (criterium.productCode >> 8) & 0xff,
+            ];
 
             for (let i = 0; i < 2; i++) {
               prefix[product_code_byte_offset + i] = product_code_bytes[i];
@@ -801,10 +887,13 @@ criteria example:
             }
 
             const owner_signature_byte_offset = 4;
-            const owner_signature_code_bytes = hexStringToUint8Array(criterium.ownerSignature);
+            const owner_signature_code_bytes = hexStringToUint8Array(
+              criterium.ownerSignature
+            );
 
             for (let i = 0; i < 16; i++) {
-              prefix[owner_signature_byte_offset + i] = owner_signature_code_bytes[i];
+              prefix[owner_signature_byte_offset + i] =
+                owner_signature_code_bytes[i];
               mask[owner_signature_byte_offset + i] = 0xff;
             }
           }
@@ -827,9 +916,14 @@ criteria example:
 
           if (criterium.fwVersion) {
             const fw_version_byte_offset = 0;
-            const reg = criterium.fwVersion.match(/(!?)([\d]+).([\d]+).([\d]+)/);
+            const reg = criterium.fwVersion.match(
+              /(!?)([\d]+).([\d]+).([\d]+)/
+            );
             const version_code = reg[2] * 10000 + reg[3] * 100 + reg[4] * 1;
-            const version_bytes = [version_code & 0xff, (version_code >> 8) & 0xff];
+            const version_bytes = [
+              version_code & 0xff,
+              (version_code >> 8) & 0xff,
+            ];
 
             if (reg[1] === "!") {
               // workaround for web bluetooth not having a filter for "if the manufacturer data are not this, then show me the device"
@@ -849,11 +943,20 @@ criteria example:
                     mask[fw_version_byte_offset + k] = 0;
                   }
 
-                  prefix[fw_version_byte_offset + i] = ~(version_bytes[i] & (1 << j));
+                  prefix[fw_version_byte_offset + i] = ~(
+                    version_bytes[i] &
+                    (1 << j)
+                  );
                   mask[fw_version_byte_offset + i] = 1 << j;
 
                   let filter_clone = JSON.parse(JSON.stringify(filter));
-                  filter_clone.manufacturerData = [{ companyIdentifier: company_identifier, dataPrefix: new Uint8Array(prefix), mask: new Uint8Array(mask) }];
+                  filter_clone.manufacturerData = [
+                    {
+                      companyIdentifier: company_identifier,
+                      dataPrefix: new Uint8Array(prefix),
+                      mask: new Uint8Array(mask),
+                    },
+                  ];
                   web_ble_options.filters.push(filter_clone);
                 }
               }
@@ -862,11 +965,23 @@ criteria example:
                 prefix[fw_version_byte_offset + i] = version_bytes[i];
                 mask[fw_version_byte_offset + i] = 0xff;
               }
-              filter.manufacturerData = [{ companyIdentifier: company_identifier, dataPrefix: new Uint8Array(prefix), mask: new Uint8Array(mask) }];
+              filter.manufacturerData = [
+                {
+                  companyIdentifier: company_identifier,
+                  dataPrefix: new Uint8Array(prefix),
+                  mask: new Uint8Array(mask),
+                },
+              ];
               web_ble_options.filters.push(filter);
             }
           } else {
-            filter.manufacturerData = [{ companyIdentifier: company_identifier, dataPrefix: new Uint8Array(prefix), mask: new Uint8Array(mask) }];
+            filter.manufacturerData = [
+              {
+                companyIdentifier: company_identifier,
+                dataPrefix: new Uint8Array(prefix),
+                mask: new Uint8Array(mask),
+              },
+            ];
             web_ble_options.filters.push(filter);
           }
         } else {
@@ -876,14 +991,17 @@ criteria example:
     }
 
     if (web_ble_options.filters.length == 0) {
-      web_ble_options = { acceptAllDevices: true, optionalServices: [this.TANGLE_SERVICE_UUID] };
+      web_ble_options = {
+        acceptAllDevices: true,
+        optionalServices: [this.TANGLE_SERVICE_UUID],
+      };
     }
 
     // logging.debug(web_ble_options);
 
     return navigator.bluetooth
       .requestDevice(web_ble_options)
-      .catch(e => {
+      .catch((e) => {
         logging.error(e);
         // Bluefy way how to say "Bluetooth is not enabled"
         if (e.toString() === "2") {
@@ -891,7 +1009,7 @@ criteria example:
         }
         throw "UserCanceledSelection";
       })
-      .then(device => {
+      .then((device) => {
         // logging.debug(device);
 
         this.#webBTDevice = device;
@@ -944,11 +1062,13 @@ criteria example:
 
   // if device is conneced, then disconnect it
   unselect() {
-    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(() => {
-      this.#webBTDevice = null;
-      this.#connection.reset();
-      return Promise.resolve();
-    });
+    return (this.#connected() ? this.disconnect() : Promise.resolve()).then(
+      () => {
+        this.#webBTDevice = null;
+        this.#connection.reset();
+        return Promise.resolve();
+      }
+    );
   }
 
   // #selected returns boolean if a device is selected
@@ -963,7 +1083,9 @@ criteria example:
   // connect Connector to the selected Tangle Device. Also can be used to reconnect.
   // Fails if no device is selected
   connect(timeout = 10000, supportLegacy = false) {
-    logging.verbose(`connect(timeout=${timeout},supportLegacy=${supportLegacy})`);
+    logging.verbose(
+      `connect(timeout=${timeout},supportLegacy=${supportLegacy})`
+    );
 
     if (timeout <= 0) {
       logging.debug("> Connect timeout have expired");
@@ -987,13 +1109,13 @@ criteria example:
         logging.warn("Timeout triggered");
         this.disconnect();
       },
-      timeout < 10000 ? 10000 : timeout,
+      timeout < 10000 ? 10000 : timeout
     );
 
     logging.debug("> Connecting to Bluetooth device...");
     return this.#webBTDevice.gatt
       .connect()
-      .then(server => {
+      .then((server) => {
         this.#connection.reset();
 
         if (supportLegacy) {
@@ -1005,7 +1127,7 @@ criteria example:
             server
               .getPrimaryServices()
               // figure out which FW we are connecting to
-              .then(services => {
+              .then((services) => {
                 if (services.length != 1 || !services[0].isPrimary) {
                   logging.error("Connected to device that is not Tangle");
                   throw "ConnectionFailed";
@@ -1070,12 +1192,17 @@ criteria example:
           return server.getPrimaryService(this.TANGLE_SERVICE_UUID);
         }
       })
-      .then(service => {
+      .then((service) => {
         logging.debug("> Getting the Service Characteristic...");
 
         clearTimeout(timeout_handle);
 
-        return this.#connection.attach(service, this.TERMINAL_CHAR_UUID, this.CLOCK_CHAR_UUID, this.DEVICE_CHAR_UUID);
+        return this.#connection.attach(
+          service,
+          this.TERMINAL_CHAR_UUID,
+          this.CLOCK_CHAR_UUID,
+          this.DEVICE_CHAR_UUID
+        );
       })
       .then(() => {
         logging.debug("> Bluetooth Device Connected");
@@ -1084,7 +1211,7 @@ criteria example:
         }
         return { connector: "webbluetooth" };
       })
-      .catch(error => {
+      .catch((error) => {
         logging.warn(error.name);
 
         clearTimeout(timeout_handle);
@@ -1141,7 +1268,7 @@ criteria example:
   // reconnected only if the this.#reconection is true. The event handlers are fired
   // synchronously. So that only after all event handlers (one after the other) are done,
   // only then start this.connect() to reconnect to the bluetooth device
-  #onDisconnected = event => {
+  #onDisconnected = (event) => {
     logging.debug("> Bluetooth Device disconnected");
     this.#connection.reset();
     if (this.#connectedGuard) {
